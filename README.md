@@ -1,6 +1,6 @@
 # Agent Directory
 
-[![License](https://img.shields.io/github/license/albertfolch/adk-agents)](https://github.com/albertfolch/adk-agents/blob/main/LICENSE)
+[![License](https://img.shields.io/github/license/albertfolch/agent-directory)](https://github.com/albertfolch/agent-directory/blob/main/LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
 
 Welcome to the **Agent Directory** repository! This collection provides production-ready AI agents built on top of the [Agent Development Kit (ADK)](https://github.com/google/adk), designed to showcase various agent patterns, capabilities, and integrations.
