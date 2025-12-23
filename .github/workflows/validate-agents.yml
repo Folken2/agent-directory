@@ -1,0 +1,34 @@
+name: Validate Agent Structure
+
+on:
+  pull_request:
+    paths:
+      - 'agents/**'
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Validate Agent Directory Structure
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Run validation script
+        run: |
+          python .github/validate_agents.py agents
+
+      - name: Validation Summary
+        if: always()
+        run: |
+          echo "✅ Agent structure validation completed"
+          echo "Check the logs above for detailed results"
