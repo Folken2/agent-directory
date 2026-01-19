@@ -17,6 +17,6 @@ REASONING_MODEL = LiteLlm(
 )
 
 IMAGE_MODEL = LiteLlm(
-    model=os.getenv("IMAGE_MODEL", "openrouter/google/gemini-2.5-flash-image-preview"),
+    model=os.getenv("IMAGE_MODEL", "openrouter/google/gemini-2.5-flash-image"),
     app_name="adk-samples-directory",
 )
