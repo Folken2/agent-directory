@@ -11,6 +11,7 @@ import aiohttp
 from google.adk.tools import FunctionTool
 from google.adk.tools.tool_context import ToolContext
 import google.genai.types as types
+from ..config.llm import IMAGE_MODEL
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +50,12 @@ async def generate_image_tool(
         if not api_key:
             return {"status": "error", "message": "OPENROUTER_API_KEY environment variable not set"}
 
+        # Get the model name as a string (use environment variable directly to match config)
+        model_name = os.getenv("IMAGE_MODEL", "google/gemini-2.5-flash-image")
+
         # Prepare the request payload
         payload = {
-            "model": "google/gemini-2.5-flash-image-preview",
+            "model": model_name,
             "messages": [{"role": "user", "content": prompt}],
             "modalities": ["image", "text"],  # Required for image generation
             "image_config": {"aspect_ratio": aspect_ratio},
