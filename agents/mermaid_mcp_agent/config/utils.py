@@ -192,14 +192,26 @@ async def render_tools_context_async(agent: Agent) -> str:
 async def before_agent_callback_update_tools(callback_context: "CallbackContext") -> None:
     """
     Callback to dynamically update agent instruction with MCP tool descriptions at runtime.
-    
+
     This runs before the agent starts processing, when MCP tools should be loaded and available.
     Extracts tool information and updates the agent's instruction dynamically.
-    
+
+    Also initializes state variables required by the prompt template.
+
     Args:
         callback_context: The CallbackContext from ADK.
     """
     try:
+        # Initialize state variables for error recovery if they don't exist
+        # ADK requires all template variables to exist in state
+        if "mermaid_retry_count" not in callback_context.state:
+            callback_context.state["mermaid_retry_count"] = 0
+            logger.info("  🔧 Initialized mermaid_retry_count = 0")
+
+        if "mermaid_last_error" not in callback_context.state:
+            callback_context.state["mermaid_last_error"] = ""
+            logger.info("  🔧 Initialized mermaid_last_error = ''")
+
         agent = callback_context._invocation_context.agent
         logger.info(f"\n{'#'*60}")
         logger.info(f"🔄 Runtime callback: Updating instruction with MCP tools")

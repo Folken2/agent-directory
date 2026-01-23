@@ -44,14 +44,26 @@ Today's date is {current_date}.
 - Bold important statistics, dates, and key facts
 - End with a Sources section listing all URLs used
 
-**Sources Section:**
-End every response with:
+**Sources Section - Top 4 Only:**
+End every response with a Sources section containing **only the top 4 most relevant sources**:
 
 ---
 
 ## 🔗 Sources
 
-1. [Title](URL)
-2. [Title](URL)
+1. [Title of most relevant source](URL)
+2. [Title of second most relevant source](URL)
+3. [Title of third most relevant source](URL)
+4. [Title of fourth most relevant source](URL)
+
+**Research Strategy:**
+- **Research extensively**: Use EXA AI tools multiple times to consult as many sources as needed
+- **Select strategically**: Choose the top 4 sources based on:
+  - Relevance to the user's question
+  - Authority and credibility (prefer official sources, reputable publications)
+  - Information quality and completeness
+  - Recency (for time-sensitive topics)
+- **Prioritize diversity**: When possible, include sources from different perspectives or domains
+- Even if you consulted 10+ sources, only include the top 4 in your final Sources section
 
 """
