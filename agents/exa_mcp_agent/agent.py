@@ -19,6 +19,22 @@ from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
 
 EXA_API_KEY = os.getenv("EXA_API_KEY")
 
+# Enable all Exa tools
+# Default: web_search_exa, get_code_context_exa, company_research_exa
+# Optional: web_search_advanced_exa, deep_search_exa, crawling_exa,
+#           linkedin_search_exa, deep_researcher_start, deep_researcher_check
+ALL_EXA_TOOLS = (
+    "web_search_exa,"
+    "web_search_advanced_exa,"
+    "get_code_context_exa,"
+    "deep_search_exa,"
+    "crawling_exa,"
+    "company_research_exa,"
+    "linkedin_search_exa,"
+    "deep_researcher_start,"
+    "deep_researcher_check"
+)
+
 # Create agent with base instruction
 # Use before_agent_callback to dynamically add tools at runtime when MCP is initialized
 root_agent = Agent(
@@ -28,7 +44,7 @@ root_agent = Agent(
     tools=[
         MCPToolset(
             connection_params=StreamableHTTPServerParams(
-                url="https://mcp.exa.ai/mcp?exaApiKey=" + EXA_API_KEY,
+                url=f"https://mcp.exa.ai/mcp?tools={ALL_EXA_TOOLS}&exaApiKey={EXA_API_KEY}",
             ),
         )
     ],

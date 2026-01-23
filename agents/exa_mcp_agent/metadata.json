@@ -1,24 +1,94 @@
 {
   "name": "exa_mcp_agent",
-  "displayName": "EXA AI Research Agent",
+  "displayName": "Exa AI - Powered Research & Code Assistant",
   "logo": "/exa-logo.svg",
-  "description": "AI assistant that conducts deep research using advanced search tools to gather company intelligence, find key decision-makers, and analyze market trends with comprehensive citations",
+  "description": "Advanced AI research assistant with 9 specialized tools: web search, code search (exa-code for GitHub/docs/StackOverflow), company research, LinkedIn search, URL crawling, deep research reports, and advanced filtering. Perfect for developers, researchers, and business intelligence.",
   "tools": [
     "web_search_exa",
-    "get_code_context_exa"
+    "web_search_advanced_exa",
+    "get_code_context_exa",
+    "deep_search_exa",
+    "crawling_exa",
+    "company_research_exa",
+    "linkedin_search_exa",
+    "deep_researcher_start",
+    "deep_researcher_check"
   ],
-  "tags": ["research", "competitive-intelligence", "company-research", "citations"],
+  "tags": [
+    "research",
+    "web-search",
+    "code-search",
+    "exa-code",
+    "company-research",
+    "competitive-intelligence",
+    "linkedin",
+    "deep-research",
+    "url-crawling",
+    "citations",
+    "documentation",
+    "github",
+    "stackoverflow",
+    "business-intelligence"
+  ],
   "useCases": [
-    "Research companies and people for general knowledge",
-    "Build detailed competitive intelligence reports with company financials and strategy",
-    "Find and profile key decision-makers at target accounts for sales outreach",
-    "Conduct market research on emerging trends affecting your industry"
+    "General Web Research - Search the web for news, articles, and current information",
+    "Code & Documentation Search - Find GitHub repos, API docs, and StackOverflow answers with exa-code",
+    "Company Intelligence - Research companies, pricing, products, and business strategies",
+    "Professional Networking - Find LinkedIn profiles, executives, and industry experts",
+    "URL Analysis - Extract and summarize content from any article, blog post, or PDF",
+    "Deep Research Reports - Generate comprehensive AI-powered research reports on complex topics",
+    "Advanced Filtered Search - Search with category, domain, and date filters for precision",
+    "Competitive Analysis - Compare companies, products, and market positions with citations",
+    "Technical How-Tos - Get step-by-step coding guides from official docs and real examples"
   ],
   "samplePrompts": [
-    "Find the latest funding rounds and valuation data for Anthropic in 2024-2025. Include details about their Series C and any strategic partnerships.",
-    "Search for technical architecture documentation on LangChain's RAG implementation. Focus on their vector store integration patterns and retrieval strategies.",
-    "Analyze the authentication flow in the Next.js App Router. Find code examples from the official Next.js repository showing middleware and route protection patterns.",
-    "Compare the pricing models of OpenAI GPT-5, Anthropic Claude 4 Sonnet, and Google Gemini 3 Pro. Include API rate limits and token costs."
+    "Show me how to implement authentication in Next.js 14 App Router with code examples from GitHub",
+    "Research Anthropic's company profile, pricing tiers, and recent product launches",
+    "Find AI researchers and engineers who work at OpenAI on LinkedIn",
+    "Start a comprehensive deep research report on the impact of AI on healthcare in 2025"
   ],
-  "author": "Albert Folch"
+  "author": "Albert Folch",
+  "capabilities": {
+    "webSearch": {
+      "enabled": true,
+      "tools": ["web_search_exa", "web_search_advanced_exa", "deep_search_exa"],
+      "description": "Search the web with basic, advanced, or deep search modes"
+    },
+    "codeSearch": {
+      "enabled": true,
+      "tools": ["get_code_context_exa"],
+      "description": "Search GitHub, docs, StackOverflow for code and technical content (exa-code)"
+    },
+    "companyResearch": {
+      "enabled": true,
+      "tools": ["company_research_exa"],
+      "description": "Research companies by crawling their websites for business intelligence"
+    },
+    "linkedinSearch": {
+      "enabled": true,
+      "tools": ["linkedin_search_exa"],
+      "description": "Find professionals, executives, and contacts on LinkedIn"
+    },
+    "urlCrawling": {
+      "enabled": true,
+      "tools": ["crawling_exa"],
+      "description": "Extract and analyze content from specific URLs (articles, PDFs, pages)"
+    },
+    "deepResearch": {
+      "enabled": true,
+      "tools": ["deep_researcher_start", "deep_researcher_check"],
+      "description": "Generate comprehensive AI-powered research reports on complex topics"
+    }
+  },
+  "features": [
+    "9 specialized research tools for different use cases",
+    "exa-code: Fast access to GitHub repos, docs, and StackOverflow",
+    "Advanced filtering: category, domain, date range, highlights, summaries",
+    "LinkedIn integration for professional networking and recruitment",
+    "URL crawling for article summarization and content extraction",
+    "Deep research AI for comprehensive multi-source reports",
+    "Company research with website crawling and business intelligence",
+    "Always includes citations with top 4 sources",
+    "Multi-tool workflows for comprehensive answers"
+  ]
 }
