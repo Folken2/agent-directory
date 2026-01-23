@@ -3,15 +3,7 @@
   "displayName": "Exa AI Research & Code Assistant",
   "description": "Advanced AI research assistant with 9 specialized tools: web search, code search (exa-code for GitHub/docs/StackOverflow), company research, LinkedIn search, URL crawling, deep research reports, and advanced filtering. Perfect for developers, researchers, and business intelligence.",
   "tools": [
-    "web_search_exa",
-    "web_search_advanced_exa",
-    "get_code_context_exa",
-    "deep_search_exa",
-    "crawling_exa",
-    "company_research_exa",
-    "linkedin_search_exa",
-    "deep_researcher_start",
-    "deep_researcher_check"
+    "web_search_exa", "web_search_advanced_exa", "get_code_context_exa", "deep_search_exa", "crawling_exa", "company_research_exa", "linkedin_search_exa", "deep_researcher_start", "deep_researcher_check"
   ],
   "tags": [
     "research",
@@ -39,5 +31,8 @@
     "Find AI researchers and engineers who work at OpenAI on LinkedIn",
     "Start a comprehensive deep research report on the impact of AI on healthcare in 2025"
   ],
-  "author": "Albert Folch"
+  "author": "Albert Folch",
+  "githubUrl": "",
+  "documentation": "",
+  "version": "1.0.0"
 }
