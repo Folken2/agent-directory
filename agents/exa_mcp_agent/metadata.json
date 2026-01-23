@@ -1,7 +1,6 @@
 {
   "name": "exa_mcp_agent",
-  "displayName": "Exa AI - Powered Research & Code Assistant",
-  "logo": "/exa-logo.svg",
+  "displayName": "Exa AI Research & Code Assistant",
   "description": "Advanced AI research assistant with 9 specialized tools: web search, code search (exa-code for GitHub/docs/StackOverflow), company research, LinkedIn search, URL crawling, deep research reports, and advanced filtering. Perfect for developers, researchers, and business intelligence.",
   "tools": [
     "web_search_exa",
@@ -18,17 +17,10 @@
     "research",
     "web-search",
     "code-search",
-    "exa-code",
     "company-research",
     "competitive-intelligence",
     "linkedin",
-    "deep-research",
-    "url-crawling",
-    "citations",
-    "documentation",
-    "github",
-    "stackoverflow",
-    "business-intelligence"
+    "deep-research"
   ],
   "useCases": [
     "General Web Research - Search the web for news, articles, and current information",
@@ -47,48 +39,5 @@
     "Find AI researchers and engineers who work at OpenAI on LinkedIn",
     "Start a comprehensive deep research report on the impact of AI on healthcare in 2025"
   ],
-  "author": "Albert Folch",
-  "capabilities": {
-    "webSearch": {
-      "enabled": true,
-      "tools": ["web_search_exa", "web_search_advanced_exa", "deep_search_exa"],
-      "description": "Search the web with basic, advanced, or deep search modes"
-    },
-    "codeSearch": {
-      "enabled": true,
-      "tools": ["get_code_context_exa"],
-      "description": "Search GitHub, docs, StackOverflow for code and technical content (exa-code)"
-    },
-    "companyResearch": {
-      "enabled": true,
-      "tools": ["company_research_exa"],
-      "description": "Research companies by crawling their websites for business intelligence"
-    },
-    "linkedinSearch": {
-      "enabled": true,
-      "tools": ["linkedin_search_exa"],
-      "description": "Find professionals, executives, and contacts on LinkedIn"
-    },
-    "urlCrawling": {
-      "enabled": true,
-      "tools": ["crawling_exa"],
-      "description": "Extract and analyze content from specific URLs (articles, PDFs, pages)"
-    },
-    "deepResearch": {
-      "enabled": true,
-      "tools": ["deep_researcher_start", "deep_researcher_check"],
-      "description": "Generate comprehensive AI-powered research reports on complex topics"
-    }
-  },
-  "features": [
-    "9 specialized research tools for different use cases",
-    "exa-code: Fast access to GitHub repos, docs, and StackOverflow",
-    "Advanced filtering: category, domain, date range, highlights, summaries",
-    "LinkedIn integration for professional networking and recruitment",
-    "URL crawling for article summarization and content extraction",
-    "Deep research AI for comprehensive multi-source reports",
-    "Company research with website crawling and business intelligence",
-    "Always includes citations with top 4 sources",
-    "Multi-tool workflows for comprehensive answers"
-  ]
+  "author": "Albert Folch"
 }
