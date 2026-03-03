@@ -5,6 +5,7 @@ Welcome to the **Agent Directory** repository! This collection provides producti
 ## What's Inside
 
 - 🤖 **Production-Ready Agents**: Battle-tested agents covering web search, research, image generation, and more
+- 🌐 **Next.js Web UI**: Full-featured frontend with agent chat, community posts, Google OAuth, and more
 - 🧩 **Plugin System**: Server-level plugins for logging, error recovery, and more — applied globally to every agent run
 - 🔌 **Standard API**: All agents expose a consistent HTTP API for easy integration
 - 🌐 **Live Testing**: All agents are live and testable at **[agentdirectory.folch.ai](https://agentdirectory.folch.ai)**
@@ -45,30 +46,64 @@ The Agent Directory includes a **plugin system** that applies cross-cutting conc
 
 That's it — your plugin will automatically apply to all agents on the next deploy.
 
+## Frontend (adk-web-ui)
+
+The `adk-web-ui/` directory contains the **Next.js frontend** that powers [agentdirectory.folch.ai](https://agentdirectory.folch.ai).
+
+**Tech stack:** Next.js 16, React 19, Tailwind CSS 4, Drizzle ORM, NextAuth (Google OAuth), Zustand, Neon (PostgreSQL)
+
+**Key features:**
+- Agent discovery and chat interface with SSE streaming
+- Google OAuth authentication
+- Community trending posts with likes
+- Rate limiting for anonymous and authenticated users
+- Mermaid diagram rendering, artifact display, and more
+
+**Running locally:**
+
+```bash
+cd adk-web-ui
+npm install
+cp .env.example .env.local  # Configure your environment variables
+npm run dev                  # Starts on http://localhost:3000
+```
+
+The frontend connects to the backend via `NEXT_PUBLIC_ADK_SERVER_URL` (defaults to `http://localhost:8000`).
+
 ## Repository Structure
+
+This is a **monorepo** containing both the Python backend (ADK agents) and the Next.js frontend.
 
 ```
 .
-├── agents/                      # Agent directory
+├── agents/                      # Python backend — ADK agents
 │   ├── adk_agent_builder/      # Meta-agent for building agents
+│   ├── data_analyst_agent/     # Code execution & data analysis
 │   ├── exa_mcp_agent/          # EXA AI research agent
 │   ├── image_generation_agent/ # Image generation agent
-│   ├── resume_screener/        # Multi-agent resume screener
-│   ├── simple_agent_web_search/ # Basic web search agent
 │   ├── mermaid_mcp_agent/      # Mermaid diagram generator
-│   ├── tavily_mcp_agent/       # Tavily research agent
+│   ├── resume_screener/        # Multi-agent resume screener
 │   ├── simple_agent_maps_grounded/ # Maps-integrated agent
-│   ├── pyproject.toml           # Dependencies
+│   ├── simple_agent_web_search/ # Basic web search agent
+│   ├── tavily_mcp_agent/       # Tavily research agent
+│   ├── pyproject.toml          # Python dependencies
 │   └── uv.lock                 # Lock file
+├── adk-web-ui/                  # Next.js frontend
+│   ├── app/                    # App router pages & API routes
+│   ├── components/             # React components
+│   ├── lib/                    # Utilities, auth, DB, state
+│   ├── drizzle/                # Database migrations
+│   ├── package.json            # Node dependencies
+│   └── next.config.ts          # Next.js configuration
 ├── plugins/                     # Server-level plugins
 │   ├── __init__.py             # Plugin registry
 │   ├── console_logger.py      # Terminal logging plugin
 │   └── circuit_breaker.py     # Self-healing error recovery
-├── run_adk.py                  # Server entrypoint
-├── README.md                   # This file
+├── run_adk.py                  # Backend server entrypoint
+├── Dockerfile                  # Backend Docker configuration
+├── railway.json                # Railway deployment config
 ├── AGENT_METADATA.md           # Metadata specification
 ├── metadata.json.template      # Metadata template
-├── Dockerfile                  # Docker configuration
 └── LICENSE                     # License file
 ```
 
