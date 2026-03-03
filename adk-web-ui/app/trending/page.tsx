@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { TrendingUp, Plus, ArrowUp, MessageCircle, Heart, User, Clock, X } from 'lucide-react';
+import { TrendingUp, Plus, ArrowUp, MessageCircle, Heart, User, Clock, X, Send } from 'lucide-react';
 
 interface Post {
   id: string;
@@ -17,11 +17,22 @@ interface Post {
   likedBy: string[];
 }
 
+interface Comment {
+  id: string;
+  postId: string;
+  userId: string;
+  author: string;
+  content: string;
+  createdAt: string;
+}
+
 export default function TrendingPage() {
   const { data: session, status } = useSession();
   const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [expandedComments, setExpandedComments] = useState<Record<string, Comment[]>>({});
+  const [loadingComments, setLoadingComments] = useState<Set<string>>(new Set());
 
   const isAuthenticated = status === 'authenticated' && !!session?.user;
   const currentUser = session?.user
@@ -65,6 +76,65 @@ export default function TrendingPage() {
       }
     } catch (error) {
       console.error('Error liking post:', error);
+    }
+  };
+
+  const toggleComments = async (postId: string) => {
+    if (postId in expandedComments) {
+      setExpandedComments((prev) => {
+        const next = { ...prev };
+        delete next[postId];
+        return next;
+      });
+      return;
+    }
+
+    setLoadingComments((prev) => new Set(prev).add(postId));
+    try {
+      const response = await fetch(`/api/posts/${postId}/comments`);
+      if (response.ok) {
+        const data = await response.json();
+        setExpandedComments((prev) => ({ ...prev, [postId]: data.comments || [] }));
+      }
+    } catch (error) {
+      console.error('Error loading comments:', error);
+    } finally {
+      setLoadingComments((prev) => {
+        const next = new Set(prev);
+        next.delete(postId);
+        return next;
+      });
+    }
+  };
+
+  const handleAddComment = async (postId: string, content: string) => {
+    if (!isAuthenticated || !currentUser) return;
+
+    try {
+      const response = await fetch(`/api/posts/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          userId: currentUser.id,
+          author: currentUser.name || 'Anonymous',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setExpandedComments((prev) => ({
+          ...prev,
+          [postId]: [...(prev[postId] || []), data.comment],
+        }));
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId ? { ...p, comments: p.comments + 1 } : p
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error adding comment:', error);
     }
   };
 
@@ -187,13 +257,35 @@ export default function TrendingPage() {
                           <Clock className="w-4 h-4" />
                           <span>{formatDate(post.createdAt)}</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => toggleComments(post.id)}
+                          className="flex items-center gap-1.5 hover:text-md-on-surface transition-colors"
+                        >
                           <MessageCircle className="w-4 h-4" />
                           <span>{post.comments} comments</span>
-                        </div>
+                        </button>
                       </div>
                     </div>
                   </div>
+
+                  {/* Comments Section */}
+                  {loadingComments.has(post.id) && (
+                    <div className="mt-4 pt-4 border-t border-md-outline/30">
+                      <div className="animate-pulse space-y-3">
+                        <div className="h-4 bg-md-surface-container rounded w-1/2"></div>
+                        <div className="h-4 bg-md-surface-container rounded w-3/4"></div>
+                      </div>
+                    </div>
+                  )}
+                  {post.id in expandedComments && !loadingComments.has(post.id) && (
+                    <CommentsSection
+                      comments={expandedComments[post.id]}
+                      postId={post.id}
+                      isAuthenticated={isAuthenticated}
+                      onAddComment={handleAddComment}
+                      formatDate={formatDate}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -325,6 +417,88 @@ function CreatePostModal({
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CommentsSection({
+  comments,
+  postId,
+  isAuthenticated,
+  onAddComment,
+  formatDate,
+}: {
+  comments: Comment[];
+  postId: string;
+  isAuthenticated: boolean;
+  onAddComment: (postId: string, content: string) => Promise<void>;
+  formatDate: (dateString: string) => string;
+}) {
+  const [newComment, setNewComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newComment.trim() || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      await onAddComment(postId, newComment.trim());
+      setNewComment('');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-4 pt-4 border-t border-md-outline/30">
+      {comments.length === 0 ? (
+        <p className="text-body-small text-md-on-surface-variant">
+          No comments yet.{isAuthenticated ? ' Be the first to comment!' : ''}
+        </p>
+      ) : (
+        <div className="space-y-3 mb-4">
+          {comments.map((comment) => (
+            <div key={comment.id} className="flex gap-3">
+              <div className="w-7 h-7 rounded-full bg-md-primary-container flex items-center justify-center shrink-0">
+                <span className="text-label-small text-md-on-primary-container">
+                  {comment.author.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-label-medium text-md-on-surface">{comment.author}</span>
+                  <span className="text-label-small text-md-on-surface-variant">{formatDate(comment.createdAt)}</span>
+                </div>
+                <p className="text-body-small text-md-on-surface-variant mt-0.5 whitespace-pre-wrap">{comment.content}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {isAuthenticated ? (
+        <form onSubmit={handleSubmit} className="flex gap-2 mt-3">
+          <input
+            type="text"
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Write a comment..."
+            className="flex-1 px-3 py-2 rounded-lg bg-md-surface-container text-body-small text-md-on-surface border border-md-outline placeholder:text-md-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-md-primary transition-all"
+          />
+          <button
+            type="submit"
+            disabled={isSubmitting || !newComment.trim()}
+            className="px-3 py-2 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </form>
+      ) : (
+        <p className="text-body-small text-md-on-surface-variant mt-3">
+          <a href="/auth/signin" className="text-md-primary hover:underline">Sign in</a> to comment.
+        </p>
+      )}
     </div>
   );
 }
