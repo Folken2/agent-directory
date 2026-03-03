@@ -1,0 +1,21 @@
+{
+  "name": "data_analyst_agent",
+  "displayName": "Data Analyst",
+  "description": "Analyze datasets with Python code execution. Paste CSV data or upload files, get statistical insights, visualizations, and ML analysis powered by pandas, matplotlib, and scikit-learn.",
+  "tools": ["code_execution"],
+  "tags": ["data", "analysis", "visualization", "python", "pandas", "charts"],
+  "useCases": [
+    "Exploratory data analysis on CSV datasets",
+    "Statistical summaries and hypothesis testing",
+    "Chart and visualization generation (bar, scatter, heatmap, histogram)",
+    "Basic ML analysis (clustering, regression, classification)",
+    "Data cleaning: find nulls, duplicates, and outliers"
+  ],
+  "samplePrompts": [
+    "Here's a CSV of monthly sales data. Show me the trend over time and highlight any seasonality patterns.",
+    "Analyze this dataset: find correlations between columns and create a heatmap visualization.",
+    "I have customer data with age, income, and spending. Segment them into clusters and describe each group.",
+    "Clean this dataset: check for missing values, duplicates, and outliers. Recommend what to fix."
+  ],
+  "author": "Albert Folch"
+}
