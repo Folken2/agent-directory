@@ -1,0 +1,176 @@
+'use client';
+
+import { useEffect, useState, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import ChatInterface from '@/components/ChatInterface';
+import ChatHistory from '@/components/ChatHistory';
+import AgentModal from '@/components/AgentModal';
+import { useAppStore } from '@/lib/store';
+import { Menu, ArrowLeft, AlertCircle, X, Bot } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+function ChatContent() {
+  const { error, setError, agents, setSelectedAgent, setCurrentConversation, selectedAgent } = useAppStore();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [agentModalOpen, setAgentModalOpen] = useState(false);
+  const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+
+  // Initialize sidebar state based on screen size (mobile-first: closed by default)
+  useEffect(() => {
+    // Check if we're on desktop (≥1024px)
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
+    
+    // Set initial state based on screen size
+    const handleInitialState = () => {
+      setSidebarOpen(mediaQuery.matches);
+    };
+    
+    // Check immediately
+    handleInitialState();
+    
+    // Listen for changes (for orientation changes, window resizing, etc.)
+    mediaQuery.addEventListener('change', handleInitialState);
+    return () => mediaQuery.removeEventListener('change', handleInitialState);
+  }, []);
+
+  useEffect(() => {
+    // Load user preferences (selectedAgent, starredAgents) but not conversations
+    // Conversations are session-only and start empty
+    useAppStore.getState().loadConversations();
+
+    // Check if agent is specified in URL
+    const agentName = searchParams.get('agent');
+    if (agentName && agents.length > 0) {
+      const agent = agents.find(a => a.name === agentName);
+      if (agent) {
+        setSelectedAgent(agent);
+        // Clear current conversation when testing from main page
+        setCurrentConversation(null);
+      }
+    }
+
+    const promptParam = searchParams.get('prompt');
+    setInitialPrompt(promptParam || null);
+  }, [searchParams, agents, setSelectedAgent, setCurrentConversation]);
+
+  return (
+    <div className="flex h-screen bg-linear-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low text-foreground">
+      {/* Sidebar */}
+      <div
+        className={cn(
+          "transition-all duration-300 overflow-hidden border-r border-border lg:block hidden bg-card",
+          sidebarOpen ? 'w-64' : 'w-0'
+        )}
+      >
+        <div className="h-full w-64">
+          <ChatHistory />
+        </div>
+      </div>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-0 z-40">
+          <div
+            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            onClick={() => setSidebarOpen(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-0 w-64 bg-card border-r border-border shadow-xl">
+            <ChatHistory />
+          </div>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col overflow-hidden bg-background">
+        {/* Header */}
+        <header className="bg-card border-b border-border px-4 h-[61px] flex items-center z-10">
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors lg:hidden"
+                aria-label="Toggle sidebar"
+              >
+                <Menu className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button
+                onClick={() => selectedAgent && setAgentModalOpen(true)}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                disabled={!selectedAgent}
+              >
+                <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
+                  <Bot className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-semibold text-foreground leading-none">
+                    ADK Chat
+                  </span>
+                  {selectedAgent && (
+                    <span className="text-xs text-muted-foreground mt-0.5">
+                      {selectedAgent.name}
+                    </span>
+                  )}
+                </div>
+              </button>
+            </div>
+            <Link
+              href={selectedAgent ? `/agents/${encodeURIComponent(selectedAgent.name)}` : "/"}
+              className="px-3 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Back</span>
+            </Link>
+          </div>
+        </header>
+
+        {/* Error Banner */}
+        {error && (
+          <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-5 h-5 text-destructive" />
+                <span className="text-sm font-medium text-destructive">{error}</span>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-destructive hover:text-destructive/80 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Main Content Area */}
+        <div className="flex-1 flex overflow-hidden relative">
+          {/* Chat Area */}
+          <div className="flex-1 flex flex-col overflow-hidden bg-background">
+            <ChatInterface initialPrompt={initialPrompt || undefined} />
+          </div>
+        </div>
+      </div>
+
+      {/* Agent Modal */}
+      {selectedAgent && (
+        <AgentModal
+          agent={selectedAgent}
+          isOpen={agentModalOpen}
+          onClose={() => setAgentModalOpen(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-linear-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    }>
+      <ChatContent />
+    </Suspense>
+  );
+}

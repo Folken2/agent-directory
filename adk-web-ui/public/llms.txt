@@ -1,0 +1,116 @@
+# llms.txt for ADK Agent Directory
+
+## Site Overview
+
+ADK Agent Directory is a platform for discovering and interacting with AI agents built on Google's Agent Development Kit (ADK). The site showcases specialized Google AI agents powered by Gemini 2.5 Flash, allowing users to explore, test, and contribute AI agents.
+
+**Base URL:** https://agentdirectory.folch.ai
+**Purpose:** Discover, interact with, and contribute AI agents built on Google's Agent Development Kit
+
+## Key Pages
+
+### Public Pages
+- `/` - Homepage with agent directory and featured agents
+- `/about` - About page with information about the ADK Agent Directory
+- `/learn` - Learning resources and documentation
+- `/contribute` - Information on how to contribute agents
+- `/trending` - Trending and popular agents
+- `/chat` - Interactive chat interface for agents
+- `/agents/[name]` - Individual agent detail pages (dynamic)
+
+### Authentication
+- `/auth/signin` - Sign in page (Google OAuth)
+
+## API Endpoints
+
+### Agent Discovery
+- `GET /api/agents` - List all available agents
+  - Returns: JSON array of agent objects with metadata
+  - Response format: `{ success: boolean, data: Agent[] }`
+  - Each agent includes: name, displayName, description, tools, tags, useCases, samplePrompts, author, githubUrl, documentation, version, lastUpdated
+
+### Agent Interaction
+- `POST /api/run` - Run an agent with a prompt (synchronous)
+- `POST /api/run_sse` - Run an agent with Server-Sent Events streaming
+- `POST /api/run_live` - Run an agent with live streaming updates
+
+### Sessions & History
+- `GET /api/sessions` - Get user's chat sessions
+- `POST /api/sessions` - Create a new session
+
+### Artifacts
+- `GET /api/artifacts` - Retrieve agent-generated artifacts
+
+### Authentication
+- `GET /api/auth/*` - NextAuth.js authentication endpoints
+
+### Additional APIs
+- `GET /api/posts` - Blog posts or announcements
+- `GET /api/youtube` - YouTube integration endpoints
+
+## Agent Information
+
+Agents are AI assistants built using Google's Agent Development Kit (ADK). Each agent:
+- Has a unique name (used in URLs as `/agents/{name}`)
+- Includes metadata: description, tools, tags, use cases, sample prompts
+- Can be interacted with via the chat interface
+- May have GitHub repositories and documentation links
+
+### Agent Structure
+- **Name**: Unique identifier (e.g., `image_agent`, `resume_screener`)
+- **Display Name**: Human-readable name
+- **Description**: What the agent does
+- **Tools**: List of capabilities/tools the agent uses
+- **Tags**: Categorization tags
+- **Use Cases**: Example use cases for the agent
+- **Sample Prompts**: Example prompts to try with the agent
+
+## Usage Examples
+
+### Discovering Agents
+1. Visit `/` to see all available agents
+2. Browse by category using tags
+3. View trending agents at `/trending`
+4. Search and filter agents
+
+### Interacting with Agents
+1. Navigate to `/agents/{agent-name}` to view agent details
+2. Click "Start Chat" to begin interacting
+3. Use sample prompts or create your own
+4. View agent-generated artifacts
+
+### Contributing Agents
+1. Visit `/contribute` for contribution guidelines
+2. Follow ADK agent development standards
+3. Submit agents via the contribution flow
+
+## Technical Details
+
+- **Framework**: Next.js 16 (App Router)
+- **AI Platform**: Google Agent Development Kit (ADK)
+- **LLM**: Gemini 2.5 Flash
+- **Authentication**: NextAuth.js with Google OAuth
+- **Database**: Drizzle ORM (PostgreSQL/Neon)
+- **Deployment**: Vercel
+
+## Sitemap & SEO
+
+- **Sitemap**: `/sitemap.xml` - Includes all static and dynamic agent pages
+- **Robots**: `/robots.txt` - Standard robots.txt configuration
+- **Structured Data**: JSON-LD schema.org markup included in pages
+
+## Contact & Contribution
+
+- **Contribution**: Visit `/contribute` for guidelines
+- **GitHub**: Check individual agent pages for GitHub links
+- **Documentation**: See `/learn` for learning resources
+
+## Notes for LLMs
+
+When interacting with this site:
+- Agent names are URL-encoded in paths (e.g., `/agents/simple_agent_web_search`)
+- All API endpoints return JSON
+- Authentication may be required for some endpoints
+- Agent metadata is available via `/api/agents`
+- Use the chat interface at `/chat` for interactive agent conversations
+

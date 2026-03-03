@@ -1,0 +1,663 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================================
+   Material Design 3 - Google ADK Theme (Refined for Minimalism)
+   ============================================================================ */
+
+:root {
+  /* Primary - Vivid Blue */
+  --md-primary: 221 83% 53%;
+  /* #2563EB */
+  --md-primary-container: 214 95% 93%;
+  /* #DBEAFE */
+  --md-on-primary: 0 0% 100%;
+  /* White */
+  --md-on-primary-container: 214 100% 20%;
+  /* #172554 */
+
+  /* Secondary - Clean Green */
+  --md-secondary: 142 71% 45%;
+  /* #22C55E */
+  --md-secondary-container: 142 76% 95%;
+  /* #DCFCE7 */
+  --md-on-secondary: 0 0% 100%;
+  /* White */
+  --md-on-secondary-container: 145 80% 10%;
+  /* #052E16 */
+
+  /* Tertiary - Warn/Accent */
+  --md-tertiary: 35 92% 50%;
+  /* #F59E0B */
+  --md-tertiary-container: 45 93% 94%;
+  /* #FEF3C7 */
+  --md-on-tertiary: 0 0% 100%;
+  /* White */
+  --md-on-tertiary-container: 30 80% 20%;
+  /* #451A03 */
+
+  /* Error */
+  --md-error: 0 84% 60%;
+  /* #EF4444 */
+  --md-error-container: 0 86% 97%;
+  /* #FEF2F2 */
+  --md-on-error: 0 0% 100%;
+  /* White */
+  --md-on-error-container: 0 74% 42%;
+  /* #991B1B */
+
+  /* Surface - Extremely Clean White/Grey */
+  --md-surface: 0 0% 100%;
+  /* #FFFFFF */
+  --md-surface-dim: 220 14% 96%;
+  /* #F1F5F9 */
+  --md-surface-bright: 0 0% 100%;
+  /* #FFFFFF */
+
+  --md-surface-container-lowest: 0 0% 100%;
+  /* #FFFFFF */
+  --md-surface-container-low: 210 20% 98%;
+  /* #F8FAFC */
+  --md-surface-container: 220 14% 96%;
+  /* #F1F5F9 */
+  --md-surface-container-high: 220 13% 91%;
+  /* #E2E8F0 */
+  --md-surface-container-highest: 220 13% 90%;
+  /* #CBD5E1 */
+
+  --md-surface-variant: 220 14% 96%;
+  /* #F1F5F9 */
+
+  /* Text Colors - High Contrast */
+  --md-on-surface: 222 47% 11%;
+  /* #0F172A */
+  --md-on-surface-variant: 215 16% 47%;
+  /* #64748B */
+
+  /* Outline - Delicate borders */
+  --md-outline: 214 32% 91%;
+  /* #E2E8F0 */
+  --md-outline-variant: 214 32% 96%;
+  /* #F1F5F9 */
+
+  /* Spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 40px;
+
+  /* Radius */
+  --radius-small: 8px;
+  --radius-medium: 12px;
+  --radius-large: 16px;
+  --radius-xlarge: 28px;
+  --radius-full: 9999px;
+
+  /* Elevation (Soft Shadows) */
+  --shadow-elevation-0: none;
+  --shadow-elevation-1: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
+  --shadow-elevation-2: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+  --shadow-elevation-3: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+  --shadow-elevation-4: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+  --shadow-elevation-5: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+
+  /* Legacy Mapping */
+  --background: var(--md-surface-container-low);
+  --foreground: var(--md-on-surface);
+  --card: var(--md-surface);
+  --card-foreground: var(--md-on-surface);
+  --popover: var(--md-surface);
+  --popover-foreground: var(--md-on-surface);
+  --primary: var(--md-primary);
+  --primary-foreground: var(--md-on-primary);
+  --secondary: var(--md-secondary);
+  --secondary-foreground: var(--md-on-secondary);
+  --muted: var(--md-surface-container);
+  --muted-foreground: var(--md-on-surface-variant);
+  --accent: var(--md-primary-container);
+  --accent-foreground: var(--md-on-primary-container);
+  --destructive: var(--md-error);
+  --destructive-foreground: var(--md-on-error);
+  --border: var(--md-outline);
+  --input: var(--md-outline);
+  --ring: var(--md-primary);
+}
+
+.dark {
+  /* Dark Mode - Deep Slate Theme */
+  --md-primary: 217 91% 60%;
+  /* #60A5FA */
+  --md-primary-container: 215 80% 20%;
+  /* #1E3A8A */
+  --md-on-primary: 215 100% 10%;
+  /* #0F172A */
+  --md-on-primary-container: 217 91% 85%;
+  /* #DBEAFE */
+
+  --md-secondary: 142 70% 50%;
+  --md-secondary-container: 145 80% 10%;
+  --md-on-secondary: 210 40% 98%;
+  --md-on-secondary-container: 142 70% 90%;
+
+  /* Dark Surface - Not pitch black, but very dark slate */
+  --md-surface: 222 47% 4%;
+  /* #020617 */
+  --md-surface-dim: 222 47% 2%;
+  /* #020410 */
+  --md-surface-bright: 217 33% 17%;
+  /* #1E293B */
+
+  --md-surface-container-lowest: 222 47% 2%;
+  --md-surface-container-low: 222 47% 4%;
+  --md-surface-container: 222 47% 11%;
+  /* #0F172A */
+  --md-surface-container-high: 217 33% 17%;
+  /* #1E293B */
+  --md-surface-container-highest: 215 25% 27%;
+  /* #334155 */
+
+  --md-surface-variant: 217 33% 17%;
+
+  --md-on-surface: 210 40% 98%;
+  /* #F8FAFC */
+  --md-on-surface-variant: 215 20% 65%;
+  /* #94A3B8 */
+
+  --md-outline: 217 33% 17%;
+  /* #1E293B - Very subtle borders */
+  --md-outline-variant: 217 33% 20%;
+
+  /* Legacy Mapping for Dark */
+  --background: var(--md-surface-container-low);
+  --foreground: var(--md-on-surface);
+  --card: var(--md-surface-container);
+  --card-foreground: var(--md-on-surface);
+  --popover: var(--md-surface-container);
+  --popover-foreground: var(--md-on-surface);
+  --primary: var(--md-primary);
+  --primary-foreground: var(--md-on-primary);
+  --secondary: var(--md-secondary);
+  --secondary-foreground: var(--md-on-secondary);
+  --muted: var(--md-surface-container-high);
+  --muted-foreground: var(--md-on-surface-variant);
+  --accent: var(--md-primary-container);
+  --accent-foreground: var(--md-on-primary-container);
+  --destructive: var(--md-error);
+  --destructive-foreground: var(--md-on-error);
+  --border: var(--md-outline);
+  --input: var(--md-outline);
+  --ring: var(--md-primary);
+}
+
+@theme inline {
+  --color-md-primary: hsl(var(--md-primary));
+  --color-md-primary-container: hsl(var(--md-primary-container));
+  --color-md-on-primary: hsl(var(--md-on-primary));
+  --color-md-on-primary-container: hsl(var(--md-on-primary-container));
+
+  --color-md-secondary: hsl(var(--md-secondary));
+  --color-md-secondary-container: hsl(var(--md-secondary-container));
+  --color-md-on-secondary: hsl(var(--md-on-secondary));
+  --color-md-on-secondary-container: hsl(var(--md-on-secondary-container));
+
+  --color-md-tertiary: hsl(var(--md-tertiary));
+  --color-md-tertiary-container: hsl(var(--md-tertiary-container));
+  --color-md-on-tertiary: hsl(var(--md-on-tertiary));
+  --color-md-on-tertiary-container: hsl(var(--md-on-tertiary-container));
+
+  --color-md-error: hsl(var(--md-error));
+  --color-md-error-container: hsl(var(--md-error-container));
+  --color-md-on-error: hsl(var(--md-on-error));
+  --color-md-on-error-container: hsl(var(--md-on-error-container));
+
+  --color-md-surface: hsl(var(--md-surface));
+  --color-md-surface-dim: hsl(var(--md-surface-dim));
+  --color-md-surface-bright: hsl(var(--md-surface-bright));
+  --color-md-surface-container-lowest: hsl(var(--md-surface-container-lowest));
+  --color-md-surface-container-low: hsl(var(--md-surface-container-low));
+  --color-md-surface-container: hsl(var(--md-surface-container));
+  --color-md-surface-container-high: hsl(var(--md-surface-container-high));
+  --color-md-surface-container-highest: hsl(var(--md-surface-container-highest));
+  --color-md-surface-variant: hsl(var(--md-surface-variant));
+  --color-md-on-surface: hsl(var(--md-on-surface));
+  --color-md-on-surface-variant: hsl(var(--md-on-surface-variant));
+
+  --color-md-outline: hsl(var(--md-outline));
+  --color-md-outline-variant: hsl(var(--md-outline-variant));
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: var(--radius-small);
+  --radius-md: var(--radius-medium);
+  --radius-lg: var(--radius-large);
+  --radius-xl: var(--radius-xlarge);
+
+  --shadow-elevation-0: var(--shadow-elevation-0);
+  --shadow-elevation-1: var(--shadow-elevation-1);
+  --shadow-elevation-2: var(--shadow-elevation-2);
+  --shadow-elevation-3: var(--shadow-elevation-3);
+  --shadow-elevation-4: var(--shadow-elevation-4);
+  --shadow-elevation-5: var(--shadow-elevation-5);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-google-sans, var(--font-geist-sans, system-ui, sans-serif));
+    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+  }
+
+  /* Typography - Clean & Minimal */
+  .text-display-large {
+    @apply text-6xl font-normal tracking-tight;
+    line-height: 1.1;
+  }
+
+  .text-display-medium {
+    @apply text-5xl font-normal tracking-tight;
+    line-height: 1.15;
+  }
+
+  .text-display-small {
+    @apply text-4xl font-normal tracking-tight;
+    line-height: 1.2;
+  }
+
+  .text-headline-large {
+    @apply text-3xl font-normal tracking-tight;
+    line-height: 1.25;
+  }
+
+  .text-headline-medium {
+    @apply text-2xl font-normal tracking-tight;
+    line-height: 1.3;
+  }
+
+  .text-headline-small {
+    @apply text-xl font-medium tracking-tight;
+    line-height: 1.4;
+  }
+
+  .text-title-large {
+    @apply text-lg font-medium tracking-normal;
+    line-height: 1.5;
+  }
+
+  .text-title-medium {
+    @apply text-base font-medium tracking-normal;
+    line-height: 1.5;
+  }
+
+  .text-title-small {
+    @apply text-sm font-medium tracking-normal;
+    line-height: 1.5;
+  }
+
+  .text-body-large {
+    @apply text-base font-normal tracking-normal;
+    line-height: 1.6;
+  }
+
+  .text-body-medium {
+    @apply text-sm font-normal tracking-normal;
+    line-height: 1.6;
+  }
+
+  .text-body-small {
+    @apply text-xs font-normal tracking-normal;
+    line-height: 1.6;
+  }
+
+  .text-label-large {
+    @apply text-sm font-medium tracking-tight;
+  }
+
+  .text-label-medium {
+    @apply text-xs font-medium tracking-tight;
+  }
+
+  .text-label-small {
+    @apply text-[11px] font-medium tracking-tight uppercase;
+  }
+
+  /* Utilities */
+  .elevation-1 {
+    box-shadow: var(--shadow-elevation-1);
+  }
+
+  .elevation-2 {
+    box-shadow: var(--shadow-elevation-2);
+  }
+
+  .elevation-3 {
+    box-shadow: var(--shadow-elevation-3);
+  }
+
+  .elevation-4 {
+    box-shadow: var(--shadow-elevation-4);
+  }
+
+  button,
+  [role="button"] {
+    @apply cursor-pointer transition-all duration-200 outline-none;
+  }
+
+  button:active,
+  [role="button"]:active {
+    @apply scale-[0.98];
+  }
+}
+
+/* ============================================================================
+   Markdown Content Styling
+   ============================================================================ */
+
+.markdown-content {
+  @apply text-sm font-normal tracking-normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  line-height: 1.7;
+}
+
+/* Paragraphs */
+.markdown-content p {
+  @apply mb-4 text-foreground;
+  line-height: 1.7;
+}
+
+.markdown-content p:last-child {
+  @apply mb-0;
+}
+
+/* Headings */
+.markdown-content h1 {
+  @apply text-3xl font-semibold mt-6 mb-4 text-foreground tracking-tight;
+  line-height: 1.3;
+}
+
+.markdown-content h2 {
+  @apply text-2xl font-semibold mt-6 mb-3 text-foreground tracking-tight;
+  line-height: 1.3;
+}
+
+.markdown-content h3 {
+  @apply text-xl font-semibold mt-5 mb-2 text-foreground tracking-tight;
+  line-height: 1.4;
+}
+
+.markdown-content h4 {
+  @apply text-lg font-semibold mt-4 mb-2 text-foreground tracking-normal;
+  line-height: 1.4;
+}
+
+.markdown-content h5 {
+  @apply text-base font-semibold mt-4 mb-2 text-foreground tracking-normal;
+  line-height: 1.5;
+}
+
+.markdown-content h6 {
+  @apply text-sm font-semibold mt-3 mb-2 text-foreground tracking-normal;
+  line-height: 1.5;
+}
+
+.markdown-content h1:first-child,
+.markdown-content h2:first-child,
+.markdown-content h3:first-child,
+.markdown-content h4:first-child,
+.markdown-content h5:first-child,
+.markdown-content h6:first-child {
+  @apply mt-0;
+}
+
+/* Lists */
+.markdown-content ul,
+.markdown-content ol {
+  @apply mb-4 ml-6 text-foreground;
+  line-height: 1.7;
+}
+
+.markdown-content ul {
+  list-style-type: disc;
+}
+
+.markdown-content ol {
+  list-style-type: decimal;
+}
+
+.markdown-content li {
+  @apply mb-2;
+  line-height: 1.7;
+}
+
+.markdown-content li > p {
+  @apply mb-2;
+}
+
+.markdown-content li:last-child {
+  @apply mb-0;
+}
+
+.markdown-content ul ul,
+.markdown-content ol ol,
+.markdown-content ul ol,
+.markdown-content ol ul {
+  @apply mt-2 mb-0;
+}
+
+/* Code blocks */
+.markdown-content pre {
+  @apply mb-4 rounded-lg p-4 overflow-x-auto;
+  background-color: hsl(var(--md-surface-container-high));
+  border: 1px solid hsl(var(--md-outline));
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  max-width: 100%;
+}
+
+/* Code blocks - code inside pre */
+.markdown-content pre code {
+  @apply p-0 bg-transparent border-0 block;
+  font-family: inherit;
+  font-size: inherit;
+  color: hsl(var(--md-on-surface));
+  word-wrap: normal;
+  white-space: pre;
+  overflow-x: auto;
+}
+
+/* Syntax Highlighter Integration */
+.markdown-content pre[class*="language-"] {
+  @apply mb-4;
+}
+
+/* Ensure syntax highlighter respects theme colors */
+.markdown-content .syntax-highlighter-wrapper {
+  @apply rounded-lg overflow-hidden border border-border;
+  background-color: hsl(var(--md-surface-container-high));
+}
+
+/* Override syntax highlighter background to match theme */
+.markdown-content pre[class*="language-"] code {
+  background: transparent !important;
+}
+
+/* Inline code - only apply when NOT inside a pre block */
+.markdown-content > code,
+.markdown-content p > code,
+.markdown-content li > code,
+.markdown-content td > code,
+.markdown-content th > code {
+  @apply px-1.5 py-0.5 rounded text-sm;
+  background-color: hsl(var(--md-surface-container-high));
+  border: 1px solid hsl(var(--md-outline));
+  color: hsl(var(--md-on-surface));
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  word-wrap: break-word;
+}
+
+/* Links */
+.markdown-content a {
+  @apply text-primary underline underline-offset-2;
+  transition: color 0.2s ease;
+}
+
+.markdown-content a:hover {
+  @apply text-primary;
+  opacity: 0.8;
+}
+
+/* Blockquotes */
+.markdown-content blockquote {
+  @apply border-l-4 pl-4 py-2 my-4 italic;
+  border-color: hsl(var(--md-primary));
+  background-color: hsl(var(--md-surface-container-low));
+  color: hsl(var(--md-on-surface-variant));
+}
+
+.markdown-content blockquote p {
+  @apply mb-0;
+}
+
+/* Tables */
+.markdown-content table {
+  @apply w-full mb-4 border-collapse;
+  border: 1px solid hsl(var(--md-outline));
+  border-radius: var(--radius-medium);
+  overflow: hidden;
+}
+
+.markdown-content thead {
+  background-color: hsl(var(--md-surface-container-high));
+}
+
+.markdown-content th {
+  @apply px-4 py-3 text-left font-semibold;
+  border-bottom: 2px solid hsl(var(--md-outline));
+  color: hsl(var(--md-on-surface));
+}
+
+.markdown-content td {
+  @apply px-4 py-3;
+  border-bottom: 1px solid hsl(var(--md-outline));
+  color: hsl(var(--md-on-surface));
+}
+
+.markdown-content tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.markdown-content tbody tr:hover {
+  background-color: hsl(var(--md-surface-container-low));
+}
+
+/* Horizontal rules */
+.markdown-content hr {
+  @apply my-6 border-0;
+  border-top: 1px solid hsl(var(--md-outline));
+}
+
+/* Images */
+.markdown-content img {
+  @apply max-w-full h-auto rounded-lg my-4;
+}
+
+/* Mermaid diagrams */
+.mermaid-diagram {
+  @apply my-4;
+}
+
+.mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-diagram .nodeLabel,
+.mermaid-diagram .edgeLabel {
+  font-family: inherit;
+}
+
+/* Ensure mermaid diagrams are responsive */
+.mermaid-diagram {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* Strong and emphasis */
+.markdown-content strong {
+  @apply font-semibold text-foreground;
+}
+
+.markdown-content em {
+  @apply italic;
+}
+
+/* Dark mode adjustments */
+.dark .markdown-content pre {
+  background-color: hsl(var(--md-surface-container-high));
+  border-color: hsl(var(--md-outline));
+}
+
+.dark .markdown-content code {
+  background-color: hsl(var(--md-surface-container-high));
+  border-color: hsl(var(--md-outline));
+}
+
+.dark .markdown-content blockquote {
+  background-color: hsl(var(--md-surface-container-high));
+  border-color: hsl(var(--md-primary));
+}
+
+.dark .markdown-content thead {
+  background-color: hsl(var(--md-surface-container-high));
+}
+
+/* Hide footer on chat page */
+body.chat-page footer {
+  display: none;
+}
+
+/* Remove top border/margin on chat page */
+body.chat-page {
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+body.chat-page html {
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+body.chat-page main {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
