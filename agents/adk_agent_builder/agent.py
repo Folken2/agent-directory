@@ -11,7 +11,7 @@ from .prompt.prompt import prompt_v0
 
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from mcp import StdioServerParameters
 
 # The ADK docs MCP server uses stdio transport, so we use StdioConnectionParams
@@ -23,7 +23,7 @@ root_agent = Agent(
     name="adk_agent_builder",
     instruction=prompt_v0,
     tools=[
-        MCPToolset(
+        McpToolset(
             connection_params=StdioConnectionParams(
                 server_params=StdioServerParameters(
                     command="uvx",

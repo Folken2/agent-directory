@@ -12,8 +12,8 @@ from .config.utils import before_agent_callback_update_tools
 ## prompt imports
 from .prompt.prompt import prompt_v0
 
-from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPServerParams
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 import os
 
 # Get API key from environment
@@ -24,8 +24,8 @@ root_agent = LlmAgent(
     name="tavily_mcp_agent",
     instruction=prompt_v0,
     tools=[
-        MCPToolset(
-            connection_params=StreamableHTTPServerParams(
+        McpToolset(
+            connection_params=StreamableHTTPConnectionParams(
                 url="https://mcp.tavily.com/mcp/",
                 headers={
                     "Authorization": f"Bearer {TAVILY_API_KEY}",

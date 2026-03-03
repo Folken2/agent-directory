@@ -12,6 +12,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import uvicorn
 from google.adk.cli.fast_api import get_fast_api_app
+from plugins import PLUGIN_QUALIFIED_NAMES
 
 # Optional: load .env automatically if python-dotenv is installed.
 try:
@@ -43,6 +44,7 @@ def main() -> None:
         port=port,
         url_prefix=None,
         reload_agents=False,  # set True in dev for hot reload of agents
+        extra_plugins=PLUGIN_QUALIFIED_NAMES,
     )
 
     uvicorn.run(app, host="0.0.0.0", port=port)

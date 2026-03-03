@@ -124,7 +124,7 @@ async def render_tools_context_async(agent: Agent) -> str:
         logger.info(f"  Class: {tool.__class__.__name__}")
         
         # Check if this is an MCPToolset
-        is_mcp_toolset = tool.__class__.__name__ == "MCPToolset"
+        is_mcp_toolset = tool.__class__.__name__ in ("McpToolset", "MCPToolset")
         
         if is_mcp_toolset:
             logger.info(f"  🔌 Detected MCPToolset - extracting internal tools at runtime...")

@@ -5,7 +5,7 @@ description = "Repository of different ADK (Agent Development Kit) agents"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "google-adk",
+    "google-adk[extensions]>=1.26.0",
     "opik",
     "exa-py",
     "pydantic>=2.0.0",

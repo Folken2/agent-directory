@@ -13,8 +13,8 @@ from .prompt.prompt import prompt_v0
 from .callbacks import after_tool_validation_callback
 
 from google.adk.agents import Agent
-from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPServerParams
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset
+from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 
 
 root_agent = Agent(
@@ -22,8 +22,8 @@ root_agent = Agent(
     name="mermaid_mcp_agent",
     instruction=prompt_v0,
     tools=[
-        MCPToolset(
-            connection_params=StreamableHTTPServerParams(
+        McpToolset(
+            connection_params=StreamableHTTPConnectionParams(
                 url="https://mcp.mermaidchart.com/mcp",
             ),
         )
