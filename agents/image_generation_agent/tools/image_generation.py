@@ -64,8 +64,8 @@ async def generate_image_tool(
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://github.com/google/adk",  # Optional but recommended
-            "X-Title": "ADK Image Agent",  # Optional but recommended
+            "HTTP-Referer": "https://agentdirectory.folch.ai",  # OpenRouter app attribution
+            "X-Title": "Google ADK Directory",  # OpenRouter app attribution
         }
 
         logger.info(f"Calling OpenRouter API for image generation: {prompt[:50]}...")
