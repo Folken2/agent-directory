@@ -6,6 +6,10 @@ import os
 
 from google.adk.models.lite_llm import LiteLlm
 
+# OpenRouter app attribution
+os.environ.setdefault("OR_SITE_URL", "https://agentdirectory.folch.ai")
+os.environ.setdefault("OR_APP_NAME", "Google ADK Directory")
+
 # Google AI Studio configuration - uses GOOGLE_API_KEY and direct Gemini model names
 FAST_MODEL = LiteLlm(
     model="gemini-2.5-flash",
