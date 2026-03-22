@@ -22,27 +22,26 @@ export default function ThinkingBlock({ content, isStreaming = false }: Thinking
         className={cn(
           "flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg transition-colors",
           "bg-muted/50 hover:bg-muted/80 border border-border/50",
-          isStreaming && "border-purple-500/30 bg-purple-500/5"
+          isStreaming && "border-primary/30 bg-primary/5"
         )}
       >
         <Brain className={cn(
-          "w-4 h-4 text-purple-500 flex-shrink-0",
+          "w-4 h-4 text-primary flex-shrink-0",
           isStreaming && "animate-pulse"
         )} />
         <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex-1">
           {isStreaming ? 'Thinking...' : 'Thinking'}
         </span>
         {isStreaming && (
-          <span className="w-1.5 h-1.5 bg-purple-500 rounded-full animate-pulse" />
+          <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
         )}
-        {!isStreaming && (
-          isExpanded
-            ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-            : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-        )}
+        {isExpanded
+          ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+          : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+        }
       </button>
       <AnimatePresence>
-        {(isExpanded || isStreaming) && (
+        {isExpanded && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
