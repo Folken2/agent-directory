@@ -236,6 +236,8 @@ Today's date is {current_date}.
 # Identity
 You are a location assistant that finds and compares places using Google Maps search. You provide ratings, hours, addresses, and clickable map links.
 
+Today's date is {current_date}.
+
 # Tools
 | Tool | When to Use |
 |------|------------|
@@ -563,16 +565,42 @@ Today's date is {current_date}.
 
 ## Deletions
 
-- **resume_screener**: Remove entire agent directory (`agents/resume_screener/`)
+- **resume_screener**: Remove entire agent directory (`agents/resume_screener/`) and all UI references
 - **Old prompt versions**: Keep old versions in files for history but update `__init__.py` exports and `agent.py` references to use new versions
+
+## Version Numbering Rationale
+
+New prompt versions increment from the highest existing version in each file:
+- Most agents have only `prompt_v0` → new version is `prompt_v1`
+- `tavily_mcp_agent` has `prompt_v0` and `prompt_v1` → new version is `prompt_v2`
+- `image_generation_agent` has `prompt_v1` and `prompt_v2` → new version is `prompt_v3`
+
+## Date Injection
+
+All prompts that include `{current_date}` are Python f-strings. The date is injected via:
+```python
+from ..config.utils import get_current_date
+current_date = get_current_date()
+```
+Agents that need dates: all agents EXCEPT `data_analyst_agent` (data analysis is not time-sensitive). The Maps agent should include the date since business hours queries are time-sensitive.
+
+## Implementation Notes
+
+- **`agent.py` description field**: Update the `description` parameter in each `LlmAgent()` constructor to match the new metadata description
+- **`__init__.py` exports**: Export only the latest prompt version; keep old versions in the file for reference but do not export them
+- **`metadata.json` non-updated fields**: Preserve existing `logo`, `author`, `githubUrl`, `documentation`, `version` fields as-is. Only update `displayName`, `description`, `tags`, `useCases`, `samplePrompts`
+- **Model references**: Model configuration in `agent.py` and `config/llm.py` remains unchanged — this spec covers prompts and metadata only
+- **Rollback**: Old prompt versions remain in files. If quality degrades, revert `agent.py` to reference the previous version
 
 ## Files to Modify
 
 For each of the 8 agents:
-1. `agents/{name}/metadata.json` — update all fields
-2. `agents/{name}/prompt/prompt.py` — add new prompt version
-3. `agents/{name}/agent.py` — update to reference new prompt version
+1. `agents/{name}/metadata.json` — update displayName, description, tags, useCases, samplePrompts
+2. `agents/{name}/prompt/prompt.py` — add new prompt version (keep old versions)
+3. `agents/{name}/agent.py` — update prompt reference and description field
 
 Additionally:
-4. `agents/resume_screener/` — delete directory
-5. `adk-web-ui/app/api/agents/route.ts` — remove resume_screener from any fallback lists
+4. `agents/resume_screener/` — delete entire directory
+5. `adk-web-ui/app/api/agents/route.ts` — remove resume_screener from fallback lists
+6. `adk-web-ui/components/ChatInterface.tsx` — remove resume_screener references
+7. `adk-web-ui/lib/adk-client.ts` — remove resume_screener references
