@@ -471,50 +471,8 @@
   @apply mt-2 mb-0;
 }
 
-/* Code blocks */
-.markdown-content pre {
-  @apply mb-4 rounded-lg p-4 overflow-x-auto;
-  background-color: hsl(var(--md-surface-container-high));
-  border: 1px solid hsl(var(--md-outline));
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-  font-size: 0.875rem;
-  line-height: 1.6;
-  max-width: 100%;
-}
-
-/* Code blocks - code inside pre */
-.markdown-content pre code {
-  @apply p-0 bg-transparent border-0 block;
-  font-family: inherit;
-  font-size: inherit;
-  color: hsl(var(--md-on-surface));
-  word-wrap: normal;
-  white-space: pre;
-  overflow-x: auto;
-}
-
-/* Syntax Highlighter Integration */
-.markdown-content pre[class*="language-"] {
-  @apply mb-4;
-}
-
-/* Ensure syntax highlighter respects theme colors */
-.markdown-content .syntax-highlighter-wrapper {
-  @apply rounded-lg overflow-hidden border border-border;
-  background-color: hsl(var(--md-surface-container-high));
-}
-
-/* Override syntax highlighter background to match theme */
-.markdown-content pre[class*="language-"] code {
-  background: transparent !important;
-}
-
-/* Inline code - only apply when NOT inside a pre block */
-.markdown-content > code,
-.markdown-content p > code,
-.markdown-content li > code,
-.markdown-content td > code,
-.markdown-content th > code {
+/* Inline code - styled via .inline-code class added by ReactMarkdown component */
+.markdown-content .inline-code {
   @apply px-1.5 py-0.5 rounded text-sm;
   background-color: hsl(var(--md-surface-container-high));
   border: 1px solid hsl(var(--md-outline));
@@ -620,12 +578,7 @@
 }
 
 /* Dark mode adjustments */
-.dark .markdown-content pre {
-  background-color: hsl(var(--md-surface-container-high));
-  border-color: hsl(var(--md-outline));
-}
-
-.dark .markdown-content code {
+.dark .markdown-content .inline-code {
   background-color: hsl(var(--md-surface-container-high));
   border-color: hsl(var(--md-outline));
 }
@@ -637,6 +590,36 @@
 
 .dark .markdown-content thead {
   background-color: hsl(var(--md-surface-container-high));
+}
+
+/* User message markdown - inherit colors from parent bubble */
+.markdown-content.user-message p,
+.markdown-content.user-message h1,
+.markdown-content.user-message h2,
+.markdown-content.user-message h3,
+.markdown-content.user-message h4,
+.markdown-content.user-message h5,
+.markdown-content.user-message h6,
+.markdown-content.user-message li,
+.markdown-content.user-message strong {
+  color: inherit;
+}
+
+.markdown-content.user-message .inline-code {
+  background-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: inherit;
+}
+
+.markdown-content.user-message a {
+  color: inherit;
+  text-decoration-color: rgba(255, 255, 255, 0.5);
+}
+
+.markdown-content.user-message blockquote {
+  border-color: rgba(255, 255, 255, 0.4);
+  background-color: rgba(255, 255, 255, 0.1);
+  color: inherit;
 }
 
 /* Hide footer on chat page */

@@ -249,7 +249,6 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
       codeString = codeString.trim();
       if (codeString) {
         // Debug: log what we're extracting
-        console.log('Extracted Mermaid code:', codeString);
         // While streaming, Mermaid code can be partial and cause parse errors / spam.
         // Defer rendering until the assistant message is finalized.
         if (isStreaming) {
@@ -329,7 +328,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     // Inline code
     code: ({ className, children, ...props }: any) => {
       return (
-        <code className={className} {...props}>
+        <code className={`inline-code ${className || ''}`} {...props}>
           {children}
         </code>
       );
@@ -1103,7 +1102,14 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
                   <div
                     className="max-w-3xl rounded-2xl px-6 py-4 shadow-sm bg-primary text-primary-foreground"
                   >
-                    <p className="whitespace-pre-wrap">{typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}</p>
+                    <div className="markdown-content user-message">
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={markdownComponents}
+                      >
+                        {typeof message.content === 'string' ? message.content : JSON.stringify(message.content)}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </motion.div>
