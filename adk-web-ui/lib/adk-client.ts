@@ -787,8 +787,12 @@ class ADKClient {
                     if (part.text) {
                       // Ensure text is a string
                       const text = typeof part.text === 'string' ? part.text : JSON.stringify(part.text);
-                      // Check if this is a thinking/reasoning part (thinking models set thought: true)
-                      if (part.thought === true) {
+                      // Check if this is a thinking/reasoning part
+                      // Models flag thinking via: thought (Gemini), thinking, is_thought
+                      // Parts with thoughtSignature are also thinking markers
+                      const isThought = part.thought === true || part.thinking === true
+                        || part.is_thought === true || 'thoughtSignature' in part;
+                      if (isThought) {
                         console.log(`[ADK Client] Yielding thinking from content.parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
                         yield { type: 'thinking', content: text };
                       } else {
@@ -837,7 +841,9 @@ class ADKClient {
                       // Ensure text is a string
                       const text = typeof part.text === 'string' ? part.text : JSON.stringify(part.text);
                       // Check if this is a thinking/reasoning part
-                      if (part.thought === true) {
+                      const isThought = part.thought === true || part.thinking === true
+                        || part.is_thought === true || 'thoughtSignature' in part;
+                      if (isThought) {
                         console.log(`[ADK Client] Yielding thinking from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
                         yield { type: 'thinking', content: text };
                       } else {

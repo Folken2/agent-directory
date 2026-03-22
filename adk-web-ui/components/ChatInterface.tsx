@@ -622,6 +622,19 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
               continue;
             }
 
+            // If new content shares the same opening as what we have, it's a cleaner
+            // replacement (common with thinking models where garbled thinking precedes
+            // the clean response). Use the longer/newer version.
+            if (fullResponse.length > 50 && newContent.length > 50) {
+              const prefixLen = Math.min(50, fullResponse.length, newContent.length);
+              if (newContent.substring(0, prefixLen) === fullResponse.substring(0, prefixLen)) {
+                console.log('[ChatInterface] Detected replacement with shared prefix, using newer content');
+                fullResponse = newContent.length >= fullResponse.length ? newContent : fullResponse;
+                setStreamingContent(fullResponse);
+                continue;
+              }
+            }
+
             // If new content is already contained in what we have, skip it
             if (fullResponse.length > 0 && fullResponse.includes(newContent)) {
               console.log('[ChatInterface] Skipping already contained content');
