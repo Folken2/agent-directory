@@ -2,20 +2,20 @@
   "name": "simple_agent_web_search",
   "displayName": "Google Search Agent",
   "logo": "https://www.google.com/favicon.ico",
-  "description": "AI assistant that grounds answers using Google search and always cites sources",
+  "description": "Get accurate, sourced answers grounded in live web search. Every response is backed by real-time Google Search results with the top 4 most relevant sources cited.",
   "tools": ["google search"],
-  "tags": ["research", "grounded", "citations"],
+  "tags": ["research", "web-search", "fact-checking", "citations", "grounded"],
   "useCases": [
-    "Get quick answers to general questions with reliable sources",
-    "Research market trends and competitor activities with citations",
-    "Track industry news and regulatory changes affecting your business",
-    "Gather data for executive briefings and board presentations"
+    "Get current facts and figures with reliable source citations",
+    "Research market trends, competitor moves, and industry news",
+    "Find official documentation, guides, and technical references",
+    "Verify claims with real-time web data"
   ],
   "samplePrompts": [
-    "What is the current market cap and stock price of NVIDIA as of today? Include recent earnings highlights and analyst price targets.",
-    "Find the official documentation on React Server Components. Show me the latest best practices and migration guides from the React team.",
-    "Compare the security features of AWS S3 vs Google Cloud Storage. Focus on encryption at rest, access controls, and compliance certifications.",
-    "What are the recent news about OpenAI's GPT-5 updates? Find the latest feature announcements and API changes from the last 2 weeks."
+    "What's NVIDIA's current market cap and latest earnings highlights? Include analyst consensus.",
+    "Find the official Next.js 15 App Router docs — latest patterns for server components and data fetching.",
+    "Compare security features of AWS S3 vs Google Cloud Storage vs Azure Blob — encryption, access controls, compliance.",
+    "Latest news on Claude 4.6 capabilities and what's new in the March 2026 release."
   ],
   "author": "Albert Folch"
 }
