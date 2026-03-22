@@ -7,7 +7,7 @@ from .config.llm import FAST_MODEL
 from .config.utils import before_agent_callback_update_tools
 
 ## prompt imports
-from .prompt.prompt import prompt_v0
+from .prompt.prompt import prompt_v1
 
 ## callback imports
 from .callbacks import after_tool_validation_callback
@@ -20,7 +20,8 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 root_agent = Agent(
     model=FAST_MODEL,
     name="mermaid_mcp_agent",
-    instruction=prompt_v0,
+    description="Create professional diagrams from plain language. Supports flowcharts, sequence diagrams, architecture maps, Gantt charts, C4 models, mindmaps, and more — rendered as high-quality images with editable code.",
+    instruction=prompt_v1,
     tools=[
         McpToolset(
             connection_params=StreamableHTTPConnectionParams(

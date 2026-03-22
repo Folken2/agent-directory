@@ -1,21 +1,21 @@
 {
   "name": "mermaid_mcp_agent",
-  "displayName": "Mermaid Diagram Creator",
+  "displayName": "Diagram Creator",
   "logo": "https://mermaid.js.org/favicon.svg",
-  "description": "AI assistant specialized in creating professional diagrams and flowcharts for business processes, org charts, timelines, and workflows",
+  "description": "Create professional diagrams from plain language. Supports flowcharts, sequence diagrams, architecture maps, Gantt charts, C4 models, mindmaps, and more — rendered as high-quality images with editable code.",
   "tools": ["mermaid-create", "mermaid-render", "mermaid-validate"],
-  "tags": ["diagrams", "visualization", "flowcharts", "org-charts"],
+  "tags": ["diagrams", "visualization", "flowcharts", "architecture", "documentation"],
   "useCases": [
-    "Create simple flowcharts for personal projects or presentations",
-    "Map out business processes for training and documentation",
-    "Design customer journey flows for marketing and sales teams",
-    "Build org charts and project timelines for stakeholder updates"
+    "Map business processes and decision trees for documentation",
+    "Design system architecture and microservice interactions",
+    "Build project timelines and roadmap Gantt charts",
+    "Create org charts, user journeys, and state machines"
   ],
   "samplePrompts": [
-    "Visualize a high-conversion SaaS landing page flow: from Google Ad click → hero section → feature demo → pricing table → checkout → success page with referral loop.",
-    "Architect a microservices system for an e-commerce platform: include Auth, Product Catalog, Cart, Payment Gateway (Stripe), and Order Fulfillment services with their data connections.",
-    "Generate an incident response decision tree for a security operations center: Tier 1 triage → threat detection → containment steps → stakeholder notification → post-mortem analysis.",
-    "Design a Gantt chart for a 6-month AI product roadmap: model selection (Month 1), fine-tuning (Month 2-3), beta testing (Month 4), marketing campaign (Month 5), and global launch (Month 6)."
+    "Flowchart for a SaaS signup: landing page → pricing → checkout → onboarding → activation loop.",
+    "Microservices architecture for an e-commerce platform: Auth, Catalog, Cart, Payments (Stripe), Fulfillment.",
+    "Gantt chart for a 6-month AI product roadmap: model selection, fine-tuning, beta, marketing, launch.",
+    "Sequence diagram showing OAuth 2.1 authorization code flow with PKCE between client, auth server, and API."
   ],
   "author": "Albert Folch"
 }
