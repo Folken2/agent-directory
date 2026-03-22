@@ -2,19 +2,19 @@
   "name": "simple_agent_maps_grounded",
   "displayName": "Google Maps Agent",
   "logo": "https://www.google.com/maps/favicon.ico",
-  "description": "AI assistant that grounds answers using Google Maps search and always cites sources",
+  "description": "Find and compare places using Google Maps. Get ratings, hours, addresses, and directions for restaurants, venues, services, and landmarks — with clickable map links.",
   "tools": ["google maps"],
-  "tags": ["maps", "location", "places", "local-search"],
+  "tags": ["maps", "location", "local-search", "places", "directions"],
   "useCases": [
-    "Find nearby restaurants and services for personal errands",
-    "Scout locations for client meetings and company events",
-    "Research office locations when expanding to new cities",
-    "Find vendors and service providers near your business locations"
+    "Find nearby restaurants, cafes, or services with ratings and hours",
+    "Scout venues for meetings, events, or office expansion",
+    "Compare businesses by location, rating, and availability",
+    "Get directions and proximity info between locations"
   ],
   "samplePrompts": [
-    "Find Italian restaurants in Manhattan, New York with outdoor seating and ratings above 4.0 stars. Show me their locations, hours, addresses, and reservation options.",
-    "Search for the best-rated coffee shops in Barcelona's Gothic Quarter. Include their addresses, hours, ratings, and what makes them special.",
-    "Find event venues in Tokyo's Shibuya district that can accommodate 100+ people, have parking, and are rated 4.5 stars or higher. Include addresses and contact information."
+    "Find top-rated Italian restaurants in Manhattan with outdoor seating and 4+ stars.",
+    "Coffee shops in Barcelona's Gothic Quarter — addresses, hours, ratings, and what makes each special.",
+    "Event venues in Tokyo Shibuya for 100+ people with parking and 4.5+ stars."
   ],
   "author": "Albert Folch"
 }
