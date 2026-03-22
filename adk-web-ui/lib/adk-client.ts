@@ -787,9 +787,15 @@ class ADKClient {
                     if (part.text) {
                       // Ensure text is a string
                       const text = typeof part.text === 'string' ? part.text : JSON.stringify(part.text);
-                      textChunkCount++;
-                      console.log(`[ADK Client] Yielding text #${textChunkCount} from content.parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
-                      yield { type: 'text', content: text };
+                      // Check if this is a thinking/reasoning part (thinking models set thought: true)
+                      if (part.thought === true) {
+                        console.log(`[ADK Client] Yielding thinking from content.parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        yield { type: 'thinking', content: text };
+                      } else {
+                        textChunkCount++;
+                        console.log(`[ADK Client] Yielding text #${textChunkCount} from content.parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        yield { type: 'text', content: text };
+                      }
                     } else {
                       const inlineData = extractInlineDataFromPart(part);
                       if (inlineData && inlineData.data) {
@@ -830,9 +836,15 @@ class ADKClient {
                     if (part.text) {
                       // Ensure text is a string
                       const text = typeof part.text === 'string' ? part.text : JSON.stringify(part.text);
-                      textChunkCount++;
-                      console.log(`[ADK Client] Yielding text #${textChunkCount} from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
-                      yield { type: 'text', content: text };
+                      // Check if this is a thinking/reasoning part
+                      if (part.thought === true) {
+                        console.log(`[ADK Client] Yielding thinking from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        yield { type: 'thinking', content: text };
+                      } else {
+                        textChunkCount++;
+                        console.log(`[ADK Client] Yielding text #${textChunkCount} from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        yield { type: 'text', content: text };
+                      }
                     } else {
                       const inlineData = extractInlineDataFromPart(part);
                       if (inlineData && inlineData.data) {

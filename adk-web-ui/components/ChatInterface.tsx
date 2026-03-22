@@ -9,6 +9,7 @@ import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
 import { Message, Artifact } from '@/lib/types';
 import ToolStatusDisplay from './ToolStatusDisplay';
+import ThinkingBlock from './ThinkingBlock';
 import InlineArtifact from './InlineArtifact';
 import MermaidDiagram from './MermaidDiagram';
 import RateLimitBanner from './RateLimitBanner';
@@ -152,7 +153,9 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
   const [input, setInput] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
+  const [streamingThinking, setStreamingThinking] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
   const [attachments, setAttachments] = useState<File[]>([]);
   const [currentAssistantMessageId, setCurrentAssistantMessageId] = useState<string | null>(null);
@@ -359,7 +362,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [currentConversation?.messages, streamingContent]);
+  }, [currentConversation?.messages, streamingContent, streamingThinking]);
 
   useEffect(() => {
     if (!isStreaming && inputRef.current) {
@@ -524,6 +527,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
       const assistantMessageId = `msg-${Date.now() + 1}`;
       setCurrentAssistantMessageId(assistantMessageId);
       let fullResponse = '';
+      let fullThinking = '';
       let hasReceivedFirstChunk = false;
 
       // Get or create session ID for this conversation
@@ -573,22 +577,44 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             setIsInitializing(false);
             setIsStreaming(true);
           }
-          if (chunk.type === 'text' && chunk.content) {
+          if (chunk.type === 'thinking' && chunk.content) {
+            // Handle thinking/reasoning content from thinking models
+            const newThinking = chunk.content;
+            setIsThinking(true);
+
+            // Same dedup logic as text chunks
+            if (newThinking === fullThinking && fullThinking.length > 0) {
+              continue;
+            }
+            if (newThinking.length > fullThinking.length && newThinking.startsWith(fullThinking)) {
+              fullThinking = newThinking;
+            } else if (fullThinking.length > 0 && fullThinking.includes(newThinking)) {
+              continue;
+            } else {
+              fullThinking += newThinking;
+            }
+            setStreamingThinking(fullThinking);
+          } else if (chunk.type === 'text' && chunk.content) {
+            // Once we get text, thinking phase is done
+            if (isThinking) {
+              setIsThinking(false);
+            }
+
             const newContent = chunk.content;
-            
+
             // Debug logging to understand ADK streaming behavior
             console.log('[ChatInterface] Text chunk received:', {
               newContentLength: newContent.length,
               newContentPreview: newContent.substring(0, 100),
               fullResponseLength: fullResponse.length,
             });
-            
+
             // Skip exact duplicates
             if (newContent === fullResponse && fullResponse.length > 0) {
               console.log('[ChatInterface] Skipping exact duplicate');
               continue;
             }
-            
+
             // If new content is longer and starts with what we have, it's accumulated - use it directly
             if (newContent.length > fullResponse.length && newContent.startsWith(fullResponse)) {
               console.log('[ChatInterface] Received accumulated content, replacing');
@@ -596,13 +622,13 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
               setStreamingContent(fullResponse);
               continue;
             }
-            
+
             // If new content is already contained in what we have, skip it
             if (fullResponse.length > 0 && fullResponse.includes(newContent)) {
               console.log('[ChatInterface] Skipping already contained content');
               continue;
             }
-            
+
             // Otherwise append as incremental delta
             console.log('[ChatInterface] Appending incremental delta');
             fullResponse += newContent;
@@ -641,8 +667,10 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
         // Only add message after stream is completely done (no more data)
         // Stop streaming and clear streaming content BEFORE adding message to avoid duplicate display
         setIsStreaming(false);
+        setIsThinking(false);
         setIsInitializing(false);
         setStreamingContent('');
+        setStreamingThinking('');
         setCurrentAssistantMessageId(null);
 
         if (fullResponse && streamDone) {
@@ -676,6 +704,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             id: assistantMessageId,
             role: 'assistant',
             content: fullResponse,
+            thinking: fullThinking || undefined,
             timestamp: new Date(),
             agentName: selectedAgent.name,
             artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
@@ -711,9 +740,11 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           }
         }
         
-        // Clear any artifacts that might have been added during failed streaming attempt
+        // Clear any artifacts and thinking state that might have been added during failed streaming attempt
         setArtifacts([]);
         setIsInitializing(false);
+        setIsThinking(false);
+        setStreamingThinking('');
 
         // Fallback to non-streaming
         console.log('Streaming failed, falling back to regular request');
@@ -814,9 +845,11 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     } finally {
       setLoading(false);
       setIsStreaming(false);
+      setIsThinking(false);
       setIsInitializing(false);
       // Clear streaming content - message has been added if there was content
       setStreamingContent('');
+      setStreamingThinking('');
       setCurrentAssistantMessageId(null);
     }
   };
@@ -1003,6 +1036,10 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
                     {getToolsForMessage(message.id).length > 0 && (
                       <ToolStatusDisplay messageId={message.id} />
                     )}
+                    {/* Thinking Block - Rendered above message content */}
+                    {message.thinking && (
+                      <ThinkingBlock content={message.thinking} />
+                    )}
                     {/* Message Content */}
                     {(() => {
                       const displayContent = getDisplayContent(message.content);
@@ -1084,6 +1121,10 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
                 {getToolsForMessage(currentAssistantMessageId).length > 0 && (
                   <ToolStatusDisplay messageId={currentAssistantMessageId} />
                 )}
+                {/* Thinking Block - Rendered above message during streaming */}
+                {streamingThinking && (
+                  <ThinkingBlock content={streamingThinking} isStreaming={isThinking} />
+                )}
                 {/* Message Content */}
                 <div className="bg-card text-card-foreground border border-border rounded-2xl px-6 py-4 shadow-sm">
                   {(() => {
@@ -1092,8 +1133,8 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
                       return (
                         <>
                           <div className="markdown-content">
-                            <ReactMarkdown 
-                              remarkPlugins={[remarkGfm]} 
+                            <ReactMarkdown
+                              remarkPlugins={[remarkGfm]}
                               components={markdownComponents}
                             >
                               {displayContent}
@@ -1105,6 +1146,10 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
                           </div>
                         </>
                       );
+                    }
+                    // If we're in thinking phase, show the thinking indicator instead of generic "Thinking..."
+                    if (isThinking && streamingThinking) {
+                      return null; // ThinkingBlock above handles the display
                     }
                     return (
                       <div className="flex items-center gap-2">

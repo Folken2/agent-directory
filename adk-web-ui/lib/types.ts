@@ -23,6 +23,7 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  thinking?: string;
   timestamp: Date;
   agentName?: string;
   artifacts?: Artifact[];
@@ -94,7 +95,7 @@ export interface ToolStatus {
 }
 
 export interface StreamChunk {
-  type: 'text' | 'artifact' | 'done' | 'error' | 'toolCall' | 'toolResponse';
+  type: 'text' | 'thinking' | 'artifact' | 'done' | 'error' | 'toolCall' | 'toolResponse';
   content?: string;
   artifact?: Artifact;
   error?: string;
