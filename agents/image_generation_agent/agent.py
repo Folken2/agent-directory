@@ -13,13 +13,13 @@ from .config.llm import FAST_MODEL
 from .tools.image_generation import generate_image
 
 ## prompt imports
-from .prompt.prompt import prompt_v2
+from .prompt.prompt import prompt_v3
 
 
 root_agent = LlmAgent(
     name="image_generation_agent",
     model=FAST_MODEL,
-    description="AI assistant that generates images based on a prompt",
-    instruction=prompt_v2,
+    description="Generate studio-quality images from natural language. Handles e-commerce product shots, editorial covers, social media visuals, and architectural renders with precise control over lighting, composition, and style.",
+    instruction=prompt_v3,
     tools=[generate_image, load_artifacts],
 )

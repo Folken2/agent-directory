@@ -1,22 +1,21 @@
 {
   "name": "image_generation_agent",
-  "displayName": "Image Generation Agent",
+  "displayName": "Image Architect",
   "logo": "https://www.google.com/favicon.ico",
-  "description": "AI assistant that generates custom images for presentations, marketing materials, and business communications",
+  "description": "Generate studio-quality images from natural language. Handles e-commerce product shots, editorial covers, social media visuals, and architectural renders with precise control over lighting, composition, and style.",
   "tools": ["generate_image"],
-  "tags": ["vision", "creative", "marketing", "design"],
+  "tags": ["image-generation", "creative", "design", "marketing", "visual-content"],
   "useCases": [
-    "Create images for personal projects and social media posts",
-    "Generate visuals for presentations and pitch decks quickly",
-    "Design marketing graphics without waiting for design team availability",
-    "Visualize product concepts for stakeholder feedback"
+    "Create product photography for e-commerce listings",
+    "Design hero images for landing pages and presentations",
+    "Generate social media visuals with scroll-stopping compositions",
+    "Visualize interior design, architecture, and product concepts"
   ],
   "samplePrompts": [
-    "Professional e-commerce hero shot of a minimalist titanium water bottle on a textured white marble surface, studio key lighting with soft rim-light, macro focus on material detail, 85mm lens, 1:1 aspect ratio.",
-    "A high-end editorial magazine cover featuring a futuristic organic chair in a brutalist concrete hall, cinematic blue hour lighting, wide-angle 24mm perspective, sharp architectural textures, 3:4 aspect ratio.",
-    "A scroll-stopping social media visual for a healthy snack brand: vibrant split-screen composition showing fresh tropical fruits on one side and the packaged product on the other, hyper-saturated colors, energetic top-down lighting, 9:16 aspect ratio.",
-    "A serene Scandinavian interior visualization of a sun-drenched reading nook, realistic wood and linen textures, soft window light with dust motes, 35mm lens, eye-level perspective, peaceful atmosphere.",
-    "A technical exploded-view diagram of a vintage mechanical camera, clean isometric perspective, high-key neutral lighting, precise component detail on a slate grey background."
+    "Product hero shot of a matte black wireless earbud case on dark marble, studio rim lighting, 85mm lens, 1:1.",
+    "Editorial magazine cover: futuristic organic chair in a brutalist concrete hall, cinematic blue hour, 24mm wide-angle, 3:4.",
+    "Social media visual for a healthy snack brand: split-screen of fresh fruit vs packaged product, hyper-saturated, 9:16.",
+    "Scandinavian reading nook, sun-drenched, realistic wood and linen textures, soft window light, 35mm, eye-level."
   ],
   "author": "Albert Folch"
 }
