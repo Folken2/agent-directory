@@ -2,23 +2,20 @@
   "name": "adk_agent_builder",
   "displayName": "ADK Agent Builder",
   "logo": "https://www.google.com/favicon.ico",
-  "description": "A specialist AI assistant that helps users build agents using the Google Agent Development Kit (ADK). Provides expert guidance, code examples, and architectural advice based on the complete ADK documentation.",
+  "description": "Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in the latest ADK documentation.",
   "tools": ["adk-docs-mcp", "fetch_docs", "list_doc_sources"],
-  "tags": ["adk", "agent-development", "documentation", "consultant", "mentor"],
+  "tags": ["adk", "agent-development", "multi-agent", "orchestration", "documentation"],
   "useCases": [
-    "Get help designing and building ADK agents",
-    "Understand ADK concepts, patterns, and best practices",
-    "Receive code examples and architectural guidance",
-    "Troubleshoot agent implementation issues",
-    "Learn about multi-agent systems and orchestration",
-    "Get guidance on tool integration and distribution"
+    "Design and build ADK agents from scratch",
+    "Choose the right agent architecture (LlmAgent, Sequential, Parallel, Loop)",
+    "Integrate tools — built-in, function tools, and MCP servers",
+    "Debug agent issues with doc-grounded solutions"
   ],
   "samplePrompts": [
-    "Help me build a simple agent that searches the web and summarizes results",
-    "What's the difference between LlmAgent, SequentialAgent, and ParallelAgent?",
-    "Show me how to integrate a custom tool with my ADK agent",
-    "Explain how session state works in ADK multi-agent systems"
+    "Build me a simple agent that searches the web and summarizes results.",
+    "What's the best architecture for an agent that needs both code execution and web search?",
+    "Show me how to set up an MCP tool integration in ADK.",
+    "How does session state work for communication between agents in a multi-agent system?"
   ],
   "author": "Albert Folch"
 }
-

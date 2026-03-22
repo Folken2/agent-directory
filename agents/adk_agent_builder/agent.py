@@ -7,7 +7,7 @@ from .config.llm import FAST_MODEL
 from .config.utils import before_agent_callback_update_tools
 
 ## prompt imports
-from .prompt.prompt import prompt_v0
+from .prompt.prompt import prompt_v1
 
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
@@ -21,7 +21,8 @@ from mcp import StdioServerParameters
 root_agent = Agent(
     model=FAST_MODEL,
     name="adk_agent_builder",
-    instruction=prompt_v0,
+    description="Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in the latest ADK documentation.",
+    instruction=prompt_v1,
     tools=[
         McpToolset(
             connection_params=StdioConnectionParams(
