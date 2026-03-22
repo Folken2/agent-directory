@@ -1,21 +1,20 @@
 {
   "name": "data_analyst_agent",
   "displayName": "Data Analyst",
-  "description": "Analyze datasets with Python code execution. Paste CSV data or upload files, get statistical insights, visualizations, and ML analysis powered by pandas, matplotlib, and scikit-learn.",
+  "description": "Turn raw data into insights. Upload a CSV, get statistical analysis, visualizations, and ML-powered patterns — all executed in a sandboxed Python environment.",
   "tools": ["code_execution"],
-  "tags": ["data", "analysis", "visualization", "python", "pandas", "charts"],
+  "tags": ["data", "analytics", "visualization", "python", "machine-learning", "charts"],
   "useCases": [
-    "Exploratory data analysis on CSV datasets",
-    "Statistical summaries and hypothesis testing",
-    "Chart and visualization generation (bar, scatter, heatmap, histogram)",
-    "Basic ML analysis (clustering, regression, classification)",
-    "Data cleaning: find nulls, duplicates, and outliers"
+    "Explore and profile datasets — distributions, correlations, outliers",
+    "Generate publication-ready charts (bar, scatter, heatmap, time series)",
+    "Segment customers or records with clustering and classification",
+    "Clean messy data — nulls, duplicates, type mismatches"
   ],
   "samplePrompts": [
-    "Here's a CSV of monthly sales data. Show me the trend over time and highlight any seasonality patterns.",
-    "Analyze this dataset: find correlations between columns and create a heatmap visualization.",
-    "I have customer data with age, income, and spending. Segment them into clusters and describe each group.",
-    "Clean this dataset: check for missing values, duplicates, and outliers. Recommend what to fix."
+    "Here's our Q1 sales CSV. Show me revenue trends by region and flag any anomalies.",
+    "Analyze this dataset: find the strongest predictors of churn and visualize the top 5.",
+    "Segment these 10K customers by behavior and describe each cluster.",
+    "Profile this dataset — show me data quality issues, distributions, and correlations."
   ],
   "author": "Albert Folch"
 }
