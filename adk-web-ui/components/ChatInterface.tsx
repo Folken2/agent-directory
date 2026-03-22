@@ -16,7 +16,7 @@ import RateLimitBanner from './RateLimitBanner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { filterInternalInstructions } from '@/lib/instruction-filter';
-import { Send, Paperclip, X, Loader2, Info, Copy, Check, Sparkles, Tag, Lightbulb, Wrench, AlertCircle } from 'lucide-react';
+import { Send, Paperclip, X, Loader2, Info, Copy, Check, Sparkles, Tag, Lightbulb, Wrench } from 'lucide-react';
 import { Components } from 'react-markdown';
 
 interface ChatInterfaceProps {
@@ -352,11 +352,6 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [jobFile, setJobFile] = useState<File | null>(null);
-  const [resumeLink, setResumeLink] = useState('');
-  const [jobLink, setJobLink] = useState('');
-  const [intakeError, setIntakeError] = useState<string | null>(null);
   const activeToolsList = Object.values(activeTools || {});
 
   useEffect(() => {
@@ -874,36 +869,6 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   };
 
   const messages = currentConversation?.messages || [];
-  const isResumeScreener = selectedAgent?.name === 'resume_screener';
-  const shouldHideComposer = isResumeScreener && messages.length === 0 && !isStreaming && !isInitializing;
-
-  const handleResumeStart = () => {
-    if (!selectedAgent) return;
-    const hasResume = resumeFile || resumeLink.trim();
-    const hasJob = jobFile || jobLink.trim();
-    if (!hasResume || !hasJob) {
-      setIntakeError('Please provide both a resume (file or link) and a job description (file or link).');
-      return;
-    }
-    setIntakeError(null);
-
-    const summaryLines = [
-      'Resume screening request:',
-      `Resume: ${resumeFile ? resumeFile.name : resumeLink.trim()}`,
-      `Job: ${jobFile ? jobFile.name : jobLink.trim()}`,
-    ];
-    const composedMessage = summaryLines.join('\n');
-
-    const newAttachments: File[] = [];
-    if (resumeFile) newAttachments.push(resumeFile);
-    if (jobFile) newAttachments.push(jobFile);
-
-    setInput(composedMessage);
-    setAttachments(newAttachments);
-    setTimeout(() => {
-      handleSend();
-    }, 0);
-  };
 
   const gridColsClass = infoOpen ? "grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]" : "grid-cols-1";
 
@@ -935,75 +900,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
               <h2 className="text-3xl font-light tracking-tight text-foreground">
                 How can I help you today?
               </h2>
-              {isResumeScreener && (
-                <div className="w-full max-w-3xl text-left space-y-4">
-                  <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Lightbulb className="w-4 h-4 text-primary" />
-                      <h3 className="text-base font-semibold text-foreground">Resume intake</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      Provide a resume and the job description (file or link), then click Start to begin screening.
-                    </p>
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Resume file</label>
-                        <input
-                          type="file"
-                          accept=".pdf,.doc,.docx,.txt"
-                          onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
-                          className="block w-full h-[52px] text-sm text-foreground file:h-full file:mr-3 file:px-3 file:py-2 file:border file:border-border file:rounded-lg file:bg-muted file:text-foreground file:text-sm file:cursor-pointer bg-card border border-border rounded-lg px-3 py-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Resume link</label>
-                        <input
-                          type="url"
-                          value={resumeLink}
-                          onChange={(e) => setResumeLink(e.target.value)}
-                          placeholder="https://..."
-                          className="w-full h-[52px] rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Job file</label>
-                        <input
-                          type="file"
-                          accept=".pdf,.doc,.docx,.txt"
-                          onChange={(e) => setJobFile(e.target.files?.[0] || null)}
-                          className="block w-full h-[52px] text-sm text-foreground file:h-full file:mr-3 file:px-3 file:py-2 file:border file:border-border file:rounded-lg file:bg-muted file:text-foreground file:text-sm file:cursor-pointer bg-card border border-border rounded-lg px-3 py-2"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Job link</label>
-                        <input
-                          type="url"
-                          value={jobLink}
-                          onChange={(e) => setJobLink(e.target.value)}
-                          placeholder="https://..."
-                          className="w-full h-[52px] rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                        />
-                      </div>
-                    </div>
-                    {intakeError && (
-                      <div className="mt-3 text-sm text-destructive flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4" />
-                        {intakeError}
-                      </div>
-                    )}
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={handleResumeStart}
-                        disabled={isLoading || isStreaming || isInitializing}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-colors disabled:opacity-50"
-                      >
-                        Start
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {!isResumeScreener && selectedAgent?.samplePrompts && selectedAgent.samplePrompts.length > 0 && (
+              {selectedAgent?.samplePrompts && selectedAgent.samplePrompts.length > 0 && (
                 <div className="flex flex-col gap-3 items-center">
                   <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                     <Sparkles className="w-3 h-3" />
@@ -1205,8 +1102,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {!shouldHideComposer && (
-          <div className="p-4 pt-6 bg-background/90 backdrop-blur-lg sticky bottom-0 z-10">
+        <div className="p-4 pt-6 bg-background/90 backdrop-blur-lg sticky bottom-0 z-10">
             <div className="pointer-events-none absolute inset-x-0 -top-4 h-6 bg-linear-to-t from-background to-transparent" />
             <div className="max-w-4xl mx-auto relative space-y-3">
 
@@ -1295,7 +1191,6 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             </div>
             </div>
           </div>
-        )}
       </div>
 
       <div

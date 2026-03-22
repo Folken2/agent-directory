@@ -206,14 +206,6 @@ class ADKClient {
           samplePrompts: [],
         },
         {
-          name: 'resume_screener',
-          description: 'AI assistant that coordinates the resume screening process and provides candidate evaluation insights',
-          tools: ['doc_parser_agent', 'job_requirements_agent'],
-          tags: [],
-          useCases: [],
-          samplePrompts: [],
-        },
-        {
           name: 'simple_agent_web_search',
           description: 'AI assistant that grounds answers using web search and always cites sources',
           tools: ['google_search'],
