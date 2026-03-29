@@ -95,7 +95,7 @@ export default function AgentCard({ agent, onToggleStar, isStarred }: AgentCardP
         )}
 
         {/* Description */}
-        <p className="text-body-medium text-md-on-surface-variant line-clamp-3 leading-relaxed mb-5 flex-1">
+        <p className="text-body-medium text-md-on-surface-variant line-clamp-5 leading-relaxed mb-5 flex-1 min-h-[100px]">
           {agent.description || 'No description available'}
         </p>
 

@@ -57,6 +57,7 @@ function loadAgentMetadata(agentName: string): {
       const version = metadata.version || undefined;
       const lastUpdated = metadata.lastUpdated || metadata.last_updated || undefined;
       const logo = metadata.logo || undefined;
+      const category = metadata.category || undefined;
 
       return {
         name: agentName,
@@ -72,6 +73,7 @@ function loadAgentMetadata(agentName: string): {
         version,
         lastUpdated,
         logo,
+        category,
       };
     }
   } catch (error) {
