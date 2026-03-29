@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
 import ChatHistory from '@/components/ChatHistory';
-import AgentModal from '@/components/AgentModal';
 import { useAppStore } from '@/lib/store';
 import { Menu, ArrowLeft, AlertCircle, X, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,7 +12,6 @@ import { cn } from '@/lib/utils';
 function ChatContent() {
   const { error, setError, agents, setSelectedAgent, setCurrentConversation, selectedAgent } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [agentModalOpen, setAgentModalOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
@@ -94,25 +92,33 @@ function ChatContent() {
               >
                 <Menu className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button
-                onClick={() => selectedAgent && setAgentModalOpen(true)}
-                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
-                disabled={!selectedAgent}
-              >
-                <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
-                  <Bot className="w-4 h-4" />
-                </div>
-                <div className="flex flex-col text-left">
-                  <span className="text-sm font-semibold text-foreground leading-none">
-                    ADK Chat
-                  </span>
-                  {selectedAgent && (
+              {selectedAgent ? (
+                <Link
+                  href={`/agents/${encodeURIComponent(selectedAgent.name)}`}
+                  className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                >
+                  <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-semibold text-foreground leading-none">
+                      ADK Chat
+                    </span>
                     <span className="text-xs text-muted-foreground mt-0.5">
                       {selectedAgent.name}
                     </span>
-                  )}
+                  </div>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 bg-primary text-primary-foreground rounded-lg">
+                    <Bot className="w-4 h-4" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground leading-none">
+                    ADK Chat
+                  </span>
                 </div>
-              </button>
+              )}
             </div>
             <Link
               href={selectedAgent ? `/agents/${encodeURIComponent(selectedAgent.name)}` : "/"}
@@ -151,14 +157,6 @@ function ChatContent() {
         </div>
       </div>
 
-      {/* Agent Modal */}
-      {selectedAgent && (
-        <AgentModal
-          agent={selectedAgent}
-          isOpen={agentModalOpen}
-          onClose={() => setAgentModalOpen(false)}
-        />
-      )}
     </div>
   );
 }

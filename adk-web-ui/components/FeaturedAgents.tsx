@@ -78,7 +78,6 @@ export default function FeaturedAgents() {
             agent={agent}
             isStarred={isAgentStarred(agent.name)}
             onToggleStar={() => toggleStarAgent(agent.name)}
-            onClick={() => {}}
           />
         ))}
       </div>

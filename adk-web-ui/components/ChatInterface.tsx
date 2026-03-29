@@ -1270,7 +1270,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
                       className="flex items-center gap-3 text-sm text-foreground leading-relaxed bg-muted/30 border border-border/60 rounded-lg px-3 py-2"
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 inline-flex" />
-                      <span>{useCase}</span>
+                      <span>{useCase.description}</span>
                     </div>
                   ))}
                 </div>
