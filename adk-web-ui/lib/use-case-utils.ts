@@ -1,57 +1,14 @@
-import { Agent } from './types';
-
-export interface UseCase {
-  name: string;
-  agents: Agent[];
-  description?: string;
-}
+import { Agent, UseCase } from './types';
 
 /**
- * Groups agents by their use cases
- */
-export function groupAgentsByUseCase(agents: Agent[]): UseCase[] {
-  const useCaseMap = new Map<string, Agent[]>();
-
-  agents.forEach((agent) => {
-    if (agent.useCases && agent.useCases.length > 0) {
-      agent.useCases.forEach((useCase) => {
-        if (!useCaseMap.has(useCase)) {
-          useCaseMap.set(useCase, []);
-        }
-        useCaseMap.get(useCase)!.push(agent);
-      });
-    } else {
-      // Agents without use cases go into "General" category
-      if (!useCaseMap.has('General')) {
-        useCaseMap.set('General', []);
-      }
-      useCaseMap.get('General')!.push(agent);
-    }
-  });
-
-  return Array.from(useCaseMap.entries())
-    .map(([name, agents]) => ({
-      name,
-      agents,
-    }))
-    .sort((a, b) => {
-      // Sort by number of agents (descending), then alphabetically
-      if (b.agents.length !== a.agents.length) {
-        return b.agents.length - a.agents.length;
-      }
-      return a.name.localeCompare(b.name);
-    });
-}
-
-/**
- * Gets all unique use cases from agents
+ * Gets all unique use case descriptions from agents (for filters)
  */
 export function getAllUseCases(agents: Agent[]): string[] {
   const useCasesSet = new Set<string>();
-  
+
   agents.forEach((agent) => {
     if (agent.useCases) {
-      agent.useCases.forEach((useCase) => useCasesSet.add(useCase));
+      agent.useCases.forEach((uc) => useCasesSet.add(uc.description));
     }
   });
 
@@ -59,15 +16,14 @@ export function getAllUseCases(agents: Agent[]): string[] {
 }
 
 /**
- * Filters agents by use case
+ * Filters agents by use case description
  */
 export function filterAgentsByUseCase(agents: Agent[], useCase: string): Agent[] {
   if (useCase === 'All' || useCase === '') {
     return agents;
   }
-  
-  return agents.filter((agent) => 
-    agent.useCases && agent.useCases.includes(useCase)
+
+  return agents.filter((agent) =>
+    agent.useCases && agent.useCases.some((uc) => uc.description === useCase)
   );
 }
-
