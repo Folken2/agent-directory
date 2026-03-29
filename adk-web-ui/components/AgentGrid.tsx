@@ -7,7 +7,7 @@ import { adkClient } from '@/lib/adk-client';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import AgentCard from './AgentCard';
-import AdvancedFilters, { FilterState } from './AdvancedFilters';
+import { FilterState } from './AdvancedFilters';
 import {
   AlertCircle,
   Search,

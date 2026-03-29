@@ -13,7 +13,7 @@ function loadAgentMetadata(agentName: string): {
   description: string;
   tools: string[];
   tags?: string[];
-  useCases?: string[];
+  useCases?: Array<{ title: string; description: string }>;
   samplePrompts?: string[];
   author?: string;
   githubUrl?: string;
@@ -21,6 +21,7 @@ function loadAgentMetadata(agentName: string): {
   version?: string;
   lastUpdated?: string;
   logo?: string;
+  category?: string;
 } | null {
   try {
     // Path from API route to agent directories: go up one level from adk-web-ui to adk-samples, then into agents/
@@ -236,8 +237,9 @@ async function enrichWithStats(
     description: string;
     tools?: string[];
     tags?: string[];
-    useCases?: string[];
+    useCases?: Array<{ title: string; description: string }>;
     samplePrompts?: string[];
+    category?: string;
   }>
 ) {
   if (!isDbEnabled()) {

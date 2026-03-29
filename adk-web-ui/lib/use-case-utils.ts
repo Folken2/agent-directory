@@ -1,4 +1,4 @@
-import { Agent, UseCase } from './types';
+import { Agent } from './types';
 
 /**
  * Gets all unique use case descriptions from agents (for filters)
