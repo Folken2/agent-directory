@@ -7,7 +7,6 @@ import { adkClient } from '@/lib/adk-client';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import AgentCard from './AgentCard';
-import AgentModal from './AgentModal';
 import AdvancedFilters, { FilterState } from './AdvancedFilters';
 import {
   AlertCircle,
@@ -25,8 +24,6 @@ type SortOption = 'featured' | 'mostStarred' | 'name';
 export default function AgentGrid() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('featured');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -97,16 +94,6 @@ export default function AgentGrid() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  const handleCardClick = (agent: Agent) => {
-    setSelectedAgent(agent);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedAgent(null);
-  };
-
   const getStarSessionId = () => {
     if (starSessionIdRef.current) return starSessionIdRef.current;
     if (typeof window === 'undefined') return '';
@@ -130,7 +117,6 @@ export default function AgentGrid() {
     const action = currentlyStarred ? 'unstar' : 'star';
     const sessionId = getStarSessionId();
 
-    // Optimistic updates
     toggleStarAgent(agent.name);
     setAgents((prev) =>
       prev.map((item) =>
@@ -166,7 +152,6 @@ export default function AgentGrid() {
       }
     } catch (error) {
       console.warn('Star update failed, reverting local state.', error);
-      // Revert optimistic updates
       toggleStarAgent(agent.name);
       setAgents((prev) =>
         prev.map((item) =>
@@ -192,18 +177,21 @@ export default function AgentGrid() {
   const filteredAgents = useMemo(() => {
     let filtered = agents;
 
-    // Apply search filter
     const term = searchTerm.trim().toLowerCase();
     if (term) {
       filtered = filtered.filter((agent) => {
+        const useCaseStrings = (agent.useCases || []).map(
+          (uc) => `${uc.title} ${uc.description}`
+        );
         const haystack = [
           agent.name,
           agent.displayName,
           agent.description,
           agent.author,
+          agent.category,
           ...(agent.tools || []),
           ...(agent.tags || []),
-          ...(agent.useCases || []),
+          ...useCaseStrings,
         ]
           .filter(Boolean)
           .join(' ')
@@ -213,22 +201,21 @@ export default function AgentGrid() {
       });
     }
 
-    // Apply advanced filters
     if (filters.useCases.length > 0) {
       filtered = filtered.filter((agent) =>
-        agent.useCases && agent.useCases.some(uc => filters.useCases.includes(uc))
+        agent.useCases && agent.useCases.some((uc) => filters.useCases.includes(uc.description))
       );
     }
 
     if (filters.tags.length > 0) {
       filtered = filtered.filter((agent) =>
-        agent.tags && agent.tags.some(tag => filters.tags.includes(tag))
+        agent.tags && agent.tags.some((tag) => filters.tags.includes(tag))
       );
     }
 
     if (filters.tools.length > 0) {
       filtered = filtered.filter((agent) =>
-        agent.tools && agent.tools.some(tool => filters.tools.includes(tool))
+        agent.tools && agent.tools.some((tool) => filters.tools.includes(tool))
       );
     }
 
@@ -252,7 +239,6 @@ export default function AgentGrid() {
         return a.displayName?.localeCompare(b.displayName || b.name) ?? a.name.localeCompare(b.name);
       }
 
-      // featured: starred first, then by stars, then name
       if (aStarred && !bStarred) return -1;
       if (!aStarred && bStarred) return 1;
       if (bStars !== aStars) return bStars - aStars;
@@ -389,16 +375,9 @@ export default function AgentGrid() {
             agent={agent}
             isStarred={isAgentStarred(agent.name)}
             onToggleStar={() => handleToggleStar(agent)}
-            onClick={() => { }}
           />
         ))}
       </div>
-      <AgentModal
-        agent={selectedAgent}
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-      />
     </>
   );
 }
-
