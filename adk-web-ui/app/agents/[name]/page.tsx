@@ -6,23 +6,23 @@ import Link from 'next/link';
 import { adkClient } from '@/lib/adk-client';
 import { Agent } from '@/lib/types';
 import { useAppStore } from '@/lib/store';
-import { 
-  ArrowLeft, 
-  Star, 
-  Play, 
-  Wrench, 
-  Tag, 
-  Sparkles, 
-  Lightbulb,
+import {
+  ArrowLeft,
+  Star,
+  Play,
+  Wrench,
+  Tag,
+  Sparkles,
   Share2,
   ExternalLink,
   Github,
   FileText,
   Calendar,
-  User
+  User,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import AgentModal from '@/components/AgentModal';
+import { getCategoryColors } from '@/lib/category-colors';
 
 export default function AgentDetailPage() {
   const params = useParams();
@@ -30,7 +30,6 @@ export default function AgentDetailPage() {
   const agentName = params?.name as string;
   const [agent, setAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const { toggleStarAgent, isAgentStarred, setSelectedAgent, setCurrentConversation } = useAppStore();
 
   useEffect(() => {
@@ -38,7 +37,7 @@ export default function AgentDetailPage() {
       setIsLoading(true);
       try {
         const agents = await adkClient.listAgents();
-        const foundAgent = agents.find(a => a.name === agentName);
+        const foundAgent = agents.find((a) => a.name === agentName);
         if (foundAgent) {
           setAgent(foundAgent);
         }
@@ -63,11 +62,10 @@ export default function AgentDetailPage() {
           text: agent?.description || '',
           url,
         });
-      } catch (error) {
-        // User cancelled or error occurred
+      } catch {
+        // User cancelled
       }
     } else {
-      // Fallback: copy to clipboard
       await navigator.clipboard.writeText(url);
       alert('Link copied to clipboard!');
     }
@@ -115,6 +113,7 @@ export default function AgentDetailPage() {
   }
 
   const isStarred = isAgentStarred(agent.name);
+  const categoryColors = getCategoryColors(agent.category);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low">
@@ -122,237 +121,238 @@ export default function AgentDetailPage() {
         {/* Back Button */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Agents
         </Link>
 
-        {/* Header */}
-        <div className="mb-8">
+        {/* ZONE 1: HERO */}
+        <section className="mb-12">
           <div className="flex items-start justify-between mb-4">
             <div className="flex-1">
-              <h1 className="text-4xl font-bold text-foreground mb-3 tracking-tight">
-                {agent.displayName || agent.name}
-              </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
+              <div className="flex items-center gap-3 mb-3">
+                {agent.logo && (
+                  <div className="shrink-0 w-12 h-12 rounded-lg bg-md-surface-container border border-md-outline-variant/50 flex items-center justify-center overflow-hidden p-2">
+                    <img
+                      src={agent.logo}
+                      alt={`${agent.displayName || agent.name} logo`}
+                      className="object-contain w-full h-full"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-4xl font-bold text-foreground tracking-tight">
+                    {agent.displayName || agent.name}
+                  </h1>
+                  <div className="flex items-center gap-3 mt-1.5">
+                    {agent.category && (
+                      <span className={cn(
+                        "inline-flex px-2.5 py-0.5 rounded-md text-xs font-semibold border",
+                        categoryColors.bg, categoryColors.text, categoryColors.border
+                      )}>
+                        {agent.category}
+                      </span>
+                    )}
+                    {agent.author && (
+                      <span className="text-sm text-muted-foreground flex items-center gap-1">
+                        <User className="w-3.5 h-3.5" />
+                        {agent.author}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <p className="text-lg text-muted-foreground leading-relaxed mt-4">
                 {agent.description}
               </p>
             </div>
-            <div className="flex items-center gap-2 ml-4">
-              <button
-                onClick={() => toggleStarAgent(agent.name)}
-                className="p-2 hover:bg-muted rounded-lg transition-colors"
-                aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
-              >
-                <Star
-                  className={cn(
-                    "w-6 h-6 transition-all duration-300",
-                    isStarred
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                />
-              </button>
-              <button
-                onClick={handleShare}
-                className="p-2 hover:bg-muted rounded-lg transition-colors"
-                aria-label="Share agent"
-              >
-                <Share2 className="w-5 h-5 text-muted-foreground hover:text-foreground" />
-              </button>
-            </div>
           </div>
 
-          {/* Stats */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-              {agent.starsCount !== undefined && (
-                <div className="flex items-center gap-1">
-                  <Star className="w-4 h-4 text-yellow-400" />
-                  <span>{agent.starsCount} stars</span>
-                </div>
-              )}
-              {agent.runs !== undefined && (
-                <div className="flex items-center gap-1">
-                  <Play className="w-4 h-4" />
-                  <span>{agent.runs} runs</span>
-                </div>
-              )}
-              {agent.author && (
-                <div className="flex items-center gap-1">
-                  <User className="w-4 h-4" />
-                  <span>{agent.author}</span>
-                </div>
-              )}
-              {agent.version && (
-                <div className="flex items-center gap-1">
-                  <span>v{agent.version}</span>
-                </div>
-              )}
-              {agent.lastUpdated && (
-                <div className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  <span>Updated {new Date(agent.lastUpdated).toLocaleDateString()}</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Top Play Button */}
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-3 mt-6">
             <button
               onClick={handleStartChat}
-              className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-medium transition-all shadow-sm hover:shadow flex items-center gap-2 shrink-0"
+              className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-medium transition-all shadow-sm hover:shadow flex items-center gap-2"
             >
               <Play className="w-4 h-4 fill-current" />
               Start Chat
             </button>
+            <button
+              onClick={() => toggleStarAgent(agent.name)}
+              className={cn(
+                "px-4 py-3 rounded-xl font-medium border flex items-center gap-2 transition-all",
+                isStarred
+                  ? "bg-md-tertiary-container/30 border-md-tertiary/40 text-md-on-tertiary-container"
+                  : "bg-md-surface border-md-outline hover:bg-muted text-foreground"
+              )}
+              aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
+            >
+              <Star
+                className={cn(
+                  "w-4 h-4",
+                  isStarred ? "fill-md-tertiary text-md-tertiary" : "text-muted-foreground"
+                )}
+              />
+              {isStarred ? 'Starred' : 'Star'}
+              {agent.starsCount !== undefined && (
+                <span className="text-sm text-muted-foreground ml-1">({agent.starsCount})</span>
+              )}
+            </button>
+            <button
+              onClick={handleShare}
+              className="px-4 py-3 rounded-xl font-medium border border-md-outline bg-md-surface hover:bg-muted text-foreground flex items-center gap-2 transition-all"
+              aria-label="Share agent"
+            >
+              <Share2 className="w-4 h-4 text-muted-foreground" />
+              Share
+            </button>
           </div>
-        </div>
+        </section>
 
-        {/* Links */}
-        {(agent.githubUrl || agent.documentation) && (
-          <div className="flex flex-wrap gap-3 mb-8">
-            {agent.githubUrl && (
-              <a
-                href={agent.githubUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors text-sm font-medium"
-              >
-                <Github className="w-4 h-4" />
-                View on GitHub
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-            {agent.documentation && (
-              <a
-                href={agent.documentation}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-card hover:bg-muted/50 transition-colors text-sm font-medium"
-              >
-                <FileText className="w-4 h-4" />
-                Documentation
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-        )}
-
-        {/* Tags */}
-        {agent.tags && agent.tags.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Tag className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Tags
-              </h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {agent.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="px-3 py-1.5 text-sm font-medium bg-primary/5 text-primary rounded-lg border border-primary/20"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tools */}
-        {agent.tools && agent.tools.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Wrench className="w-4 h-4 text-muted-foreground" />
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Tools
-              </h2>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {agent.tools.map((tool) => (
-                <span
-                  key={tool}
-                  className="px-3 py-1.5 text-sm font-medium bg-muted text-foreground rounded-lg border border-border/50"
-                >
-                  {tool}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Use Cases */}
+        {/* ZONE 2: STORY */}
         {agent.useCases && agent.useCases.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
-              <Lightbulb className="w-4 h-4 text-amber-500" />
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Use Cases
-              </h2>
-            </div>
-            <div className="space-y-2">
+          <section className="mb-12 bg-md-surface-container-low/50 border border-md-outline-variant/40 rounded-2xl p-8">
+            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
+              What this agent excels at
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {agent.useCases.map((useCase, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center gap-3 text-sm text-foreground leading-relaxed bg-muted/40 border border-border/60 rounded-lg px-4 py-3"
+                  className="bg-md-surface rounded-xl border border-md-outline-variant/50 p-5 hover:shadow-elevation-2 transition-all"
                 >
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                  <span>{useCase}</span>
+                  <h3 className="text-base font-semibold text-foreground mb-1.5">
+                    {useCase.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {useCase.description}
+                  </p>
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* Sample Prompts */}
+        {/* ZONE 3: ACTION */}
         {agent.samplePrompts && agent.samplePrompts.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-3">
+          <section className="mb-12">
+            <div className="flex items-center gap-2 mb-6">
               <Sparkles className="w-4 h-4 text-primary" />
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                Try This
+                Try it out
               </h2>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-3">
               {agent.samplePrompts.map((prompt, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleTryPrompt(prompt)}
-                  className="flex items-start gap-3 text-left px-4 py-3 rounded-xl border border-border/70 hover:border-primary/40 hover:shadow-sm bg-muted/30 transition-all"
+                  className="group/prompt flex items-center gap-4 text-left px-5 py-4 rounded-xl border border-md-outline-variant/60 hover:border-md-primary/40 hover:shadow-elevation-2 bg-md-surface transition-all"
                 >
-                  <span className="shrink-0 text-primary mt-0.5 inline-flex">
+                  <span className="shrink-0 text-primary">
                     <Sparkles className="w-4 h-4" />
                   </span>
-                  <span className="text-sm text-foreground leading-relaxed">{prompt}</span>
+                  <span className="text-sm text-foreground leading-relaxed flex-1">
+                    {prompt}
+                  </span>
+                  <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover/prompt:opacity-100 transition-opacity shrink-0" />
                 </button>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* CTA */}
-        <div className="flex justify-end gap-3 pt-6 border-t border-border">
-          <button
-            onClick={handleStartChat}
-            className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-medium transition-all shadow-sm hover:shadow flex items-center gap-2"
-          >
-            <Play className="w-4 h-4 fill-current" />
-            Start Chat
-          </button>
-        </div>
-      </div>
+        {/* ZONE 4: METADATA FOOTER */}
+        <section className="border-t border-md-outline-variant/40 pt-8 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-muted-foreground">
+            {/* Tools */}
+            {agent.tools && agent.tools.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Wrench className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Tools</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {agent.tools.map((tool) => (
+                    <span
+                      key={tool}
+                      className="px-2 py-0.5 text-xs font-mono bg-muted rounded border border-border/50"
+                    >
+                      {tool}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {/* Modal for quick view */}
-      {agent && (
-        <AgentModal
-          agent={agent}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-        />
-      )}
+            {/* Tags */}
+            {agent.tags && agent.tags.length > 0 && (
+              <div>
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Tag className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold uppercase tracking-wider">Tags</span>
+                </div>
+                <p className="text-sm">
+                  {agent.tags.join(' · ')}
+                </p>
+              </div>
+            )}
+
+            {/* Links */}
+            {(agent.githubUrl || agent.documentation) && (
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wider block mb-2">Links</span>
+                <div className="flex flex-wrap gap-3">
+                  {agent.githubUrl && (
+                    <a
+                      href={agent.githubUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+                    >
+                      <Github className="w-3.5 h-3.5" />
+                      GitHub
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                  {agent.documentation && (
+                    <a
+                      href={agent.documentation}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Docs
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Version & Updated */}
+            {(agent.version || agent.lastUpdated) && (
+              <div>
+                <span className="text-xs font-semibold uppercase tracking-wider block mb-2">Info</span>
+                <div className="flex items-center gap-3">
+                  {agent.version && <span>v{agent.version}</span>}
+                  {agent.lastUpdated && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      Updated {new Date(agent.lastUpdated).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
-
