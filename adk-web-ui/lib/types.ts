@@ -1,5 +1,10 @@
 // TypeScript types for ADK Web UI
 
+export interface UseCase {
+  title: string;
+  description: string;
+}
+
 export interface Agent {
   name: string; // Filesystem-safe name (e.g., "image_generation_agent")
   displayName?: string; // Optional display name (e.g., "Image Generation Agent")
@@ -9,7 +14,7 @@ export interface Agent {
   runs?: number;
   lastRunAt?: string;
   tags?: string[];
-  useCases?: string[];
+  useCases?: UseCase[];
   samplePrompts?: string[];
   author?: string; // Agent creator
   githubUrl?: string; // Link to agent repository
@@ -17,6 +22,7 @@ export interface Agent {
   version?: string; // Agent version
   lastUpdated?: string; // Last update date
   logo?: string; // Logo/thumbnail URL for the agent
+  category?: string;
 }
 
 export interface Message {
