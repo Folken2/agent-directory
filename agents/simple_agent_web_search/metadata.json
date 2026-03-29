@@ -2,14 +2,15 @@
   "name": "simple_agent_web_search",
   "displayName": "Google Search Agent",
   "logo": "https://www.google.com/favicon.ico",
+  "category": "Research",
   "description": "Get accurate, sourced answers grounded in live web search. Every response is backed by real-time Google Search results with the top 4 most relevant sources cited.",
   "tools": ["google search"],
   "tags": ["research", "web-search", "fact-checking", "citations", "grounded"],
   "useCases": [
-    "Get current facts and figures with reliable source citations",
-    "Research market trends, competitor moves, and industry news",
-    "Find official documentation, guides, and technical references",
-    "Verify claims with real-time web data"
+    { "title": "Live Facts", "description": "Get current facts and figures with reliable source citations" },
+    { "title": "Market Research", "description": "Research market trends, competitor moves, and industry news" },
+    { "title": "Find Documentation", "description": "Find official documentation, guides, and technical references" },
+    { "title": "Fact-Check Claims", "description": "Verify claims with real-time web data" }
   ],
   "samplePrompts": [
     "What's NVIDIA's current market cap and latest earnings highlights? Include analyst consensus.",

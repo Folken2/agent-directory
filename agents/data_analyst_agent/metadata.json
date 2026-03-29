@@ -1,14 +1,15 @@
 {
   "name": "data_analyst_agent",
   "displayName": "Data Analyst",
+  "category": "Data",
   "description": "Turn raw data into insights. Upload a CSV, get statistical analysis, visualizations, and ML-powered patterns — all executed in a sandboxed Python environment.",
   "tools": ["code_execution"],
   "tags": ["data", "analytics", "visualization", "python", "machine-learning", "charts"],
   "useCases": [
-    "Explore and profile datasets — distributions, correlations, outliers",
-    "Generate publication-ready charts (bar, scatter, heatmap, time series)",
-    "Segment customers or records with clustering and classification",
-    "Clean messy data — nulls, duplicates, type mismatches"
+    { "title": "Data Profiling", "description": "Explore and profile datasets — distributions, correlations, outliers" },
+    { "title": "Visualizations", "description": "Generate publication-ready charts (bar, scatter, heatmap, time series)" },
+    { "title": "Segmentation", "description": "Segment customers or records with clustering and classification" },
+    { "title": "Data Cleaning", "description": "Clean messy data — nulls, duplicates, type mismatches" }
   ],
   "samplePrompts": [
     "Here's our Q1 sales CSV. Show me revenue trends by region and flag any anomalies.",

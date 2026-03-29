@@ -2,14 +2,15 @@
   "name": "simple_agent_maps_grounded",
   "displayName": "Google Maps Agent",
   "logo": "https://www.google.com/maps/favicon.ico",
+  "category": "Productivity",
   "description": "Find and compare places using Google Maps. Get ratings, hours, addresses, and directions for restaurants, venues, services, and landmarks — with clickable map links.",
   "tools": ["google maps"],
   "tags": ["maps", "location", "local-search", "places", "directions"],
   "useCases": [
-    "Find nearby restaurants, cafes, or services with ratings and hours",
-    "Scout venues for meetings, events, or office expansion",
-    "Compare businesses by location, rating, and availability",
-    "Get directions and proximity info between locations"
+    { "title": "Local Discovery", "description": "Find nearby restaurants, cafes, or services with ratings and hours" },
+    { "title": "Venue Scouting", "description": "Scout venues for meetings, events, or office expansion" },
+    { "title": "Business Comparison", "description": "Compare businesses by location, rating, and availability" },
+    { "title": "Directions & Proximity", "description": "Get directions and proximity info between locations" }
   ],
   "samplePrompts": [
     "Find top-rated Italian restaurants in Manhattan with outdoor seating and 4+ stars.",

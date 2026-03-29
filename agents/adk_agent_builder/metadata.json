@@ -2,14 +2,15 @@
   "name": "adk_agent_builder",
   "displayName": "ADK Agent Builder",
   "logo": "https://www.google.com/favicon.ico",
+  "category": "Code",
   "description": "Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in the latest ADK documentation.",
   "tools": ["adk-docs-mcp", "fetch_docs", "list_doc_sources"],
   "tags": ["adk", "agent-development", "multi-agent", "orchestration", "documentation"],
   "useCases": [
-    "Design and build ADK agents from scratch",
-    "Choose the right agent architecture (LlmAgent, Sequential, Parallel, Loop)",
-    "Integrate tools — built-in, function tools, and MCP servers",
-    "Debug agent issues with doc-grounded solutions"
+    { "title": "Build From Scratch", "description": "Design and build ADK agents from scratch" },
+    { "title": "Architecture Advice", "description": "Choose the right agent architecture (LlmAgent, Sequential, Parallel, Loop)" },
+    { "title": "Tool Integration", "description": "Integrate tools — built-in, function tools, and MCP servers" },
+    { "title": "Debug Issues", "description": "Debug agent issues with doc-grounded solutions" }
   ],
   "samplePrompts": [
     "Build me a simple agent that searches the web and summarizes results.",

@@ -2,14 +2,15 @@
   "name": "tavily_mcp_agent",
   "displayName": "Tavily Research Agent",
   "logo": "https://tavily.com/favicon.ico",
+  "category": "Research",
   "description": "Extract and analyze live web content with precision. Search, crawl, and map websites to gather competitive intelligence, monitor pricing, and compile market research — always with source citations.",
   "tools": ["tavily-search", "tavily-extract", "tavily-map", "tavily-crawl"],
   "tags": ["research", "web-intelligence", "data-extraction", "competitive-analysis", "citations"],
   "useCases": [
-    "Monitor competitor pricing and product changes",
-    "Extract structured data from any public webpage",
-    "Compile market research from multiple industry sources",
-    "Fact-check claims with real-time web verification"
+    { "title": "Price Monitoring", "description": "Monitor competitor pricing and product changes" },
+    { "title": "Data Extraction", "description": "Extract structured data from any public webpage" },
+    { "title": "Market Intelligence", "description": "Compile market research from multiple industry sources" },
+    { "title": "Fact Verification", "description": "Fact-check claims with real-time web verification" }
   ],
   "samplePrompts": [
     "Extract the full pricing table from Anthropic's pricing page — all tiers, features, and per-token rates.",

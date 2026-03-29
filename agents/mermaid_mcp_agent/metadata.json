@@ -2,14 +2,15 @@
   "name": "mermaid_mcp_agent",
   "displayName": "Diagram Creator",
   "logo": "https://mermaid.js.org/favicon.svg",
+  "category": "Creative",
   "description": "Create professional diagrams from plain language. Supports flowcharts, sequence diagrams, architecture maps, Gantt charts, C4 models, mindmaps, and more — rendered as high-quality images with editable code.",
   "tools": ["mermaid-create", "mermaid-render", "mermaid-validate"],
   "tags": ["diagrams", "visualization", "flowcharts", "architecture", "documentation"],
   "useCases": [
-    "Map business processes and decision trees for documentation",
-    "Design system architecture and microservice interactions",
-    "Build project timelines and roadmap Gantt charts",
-    "Create org charts, user journeys, and state machines"
+    { "title": "Process Mapping", "description": "Map business processes and decision trees for documentation" },
+    { "title": "System Architecture", "description": "Design system architecture and microservice interactions" },
+    { "title": "Project Timelines", "description": "Build project timelines and roadmap Gantt charts" },
+    { "title": "Visual Models", "description": "Create org charts, user journeys, and state machines" }
   ],
   "samplePrompts": [
     "Flowchart for a SaaS signup: landing page → pricing → checkout → onboarding → activation loop.",

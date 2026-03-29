@@ -2,14 +2,15 @@
   "name": "image_generation_agent",
   "displayName": "Image Architect",
   "logo": "https://www.google.com/favicon.ico",
+  "category": "Creative",
   "description": "Generate studio-quality images from natural language. Handles e-commerce product shots, editorial covers, social media visuals, and architectural renders with precise control over lighting, composition, and style.",
   "tools": ["generate_image"],
   "tags": ["image-generation", "creative", "design", "marketing", "visual-content"],
   "useCases": [
-    "Create product photography for e-commerce listings",
-    "Design hero images for landing pages and presentations",
-    "Generate social media visuals with scroll-stopping compositions",
-    "Visualize interior design, architecture, and product concepts"
+    { "title": "Product Photography", "description": "Create product photography for e-commerce listings" },
+    { "title": "Hero Images", "description": "Design hero images for landing pages and presentations" },
+    { "title": "Social Media Visuals", "description": "Generate social media visuals with scroll-stopping compositions" },
+    { "title": "Concept Visualization", "description": "Visualize interior design, architecture, and product concepts" }
   ],
   "samplePrompts": [
     "Product hero shot of a matte black wireless earbud case on dark marble, studio rim lighting, 85mm lens, 1:1.",

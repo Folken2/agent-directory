@@ -1,16 +1,15 @@
 {
   "name": "exa_mcp_agent",
   "displayName": "Exa Research Assistant",
+  "category": "Research",
   "description": "Deep research across the web, code, companies, and people. Searches GitHub repos, crawls URLs, finds LinkedIn profiles, and generates comprehensive research reports with citations.",
-  "tools": [
-    "web_search_exa", "web_search_advanced_exa", "get_code_context_exa", "deep_search_exa", "crawling_exa", "company_research_exa", "linkedin_search_exa", "deep_researcher_start", "deep_researcher_check"
-  ],
+  "tools": ["web_search_exa", "web_search_advanced_exa", "get_code_context_exa", "deep_search_exa", "crawling_exa", "company_research_exa", "linkedin_search_exa", "deep_researcher_start", "deep_researcher_check"],
   "tags": ["research", "web-search", "code-search", "competitive-intelligence", "deep-research", "citations"],
   "useCases": [
-    "Research companies — pricing, products, market position, leadership",
-    "Find code examples and documentation across GitHub and StackOverflow",
-    "Generate multi-source research reports on complex topics",
-    "Discover professionals and experts on LinkedIn"
+    { "title": "Company Research", "description": "Research companies — pricing, products, market position, leadership" },
+    { "title": "Code Examples", "description": "Find code examples and documentation across GitHub and StackOverflow" },
+    { "title": "Research Reports", "description": "Generate multi-source research reports on complex topics" },
+    { "title": "People Search", "description": "Discover professionals and experts on LinkedIn" }
   ],
   "samplePrompts": [
     "Research Anthropic's current pricing, products, and recent launches — cite everything.",
