@@ -98,6 +98,25 @@ export default function AgentCard({ agent, onToggleStar, isStarred }: AgentCardP
         <p className="text-body-medium text-md-on-surface-variant line-clamp-3 leading-relaxed mb-5 flex-1">
           {agent.description || 'No description available'}
         </p>
+
+        {/* Tags */}
+        {agent.tags && agent.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mb-1">
+            {agent.tags.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-md-surface-container text-md-on-surface-variant/70 border border-md-outline-variant/40"
+              >
+                {tag}
+              </span>
+            ))}
+            {agent.tags.length > 3 && (
+              <span className="px-2 py-0.5 text-[10px] text-md-on-surface-variant/50">
+                +{agent.tags.length - 3}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Footer: Author */}
