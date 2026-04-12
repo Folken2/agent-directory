@@ -15,8 +15,8 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from mcp import StdioServerParameters
 
 # The ADK docs MCP server uses stdio transport, so we use StdioConnectionParams.
-# llms.txt is hosted on google.github.io; entries inside it point at adk.dev, but
-# fetch_docs typically only allows google.github.io — see prompt_v1 for the URL rewrite rule.
+# Do NOT use https://google.github.io/adk-docs/llms.txt — it 301-redirects to adk.dev and
+# fetch_clients that disallow redirects fail. Raw GitHub serves the same file with HTTP 200.
 root_agent = Agent(
     model=FAST_MODEL,
     name="adk_agent_builder",
@@ -32,7 +32,7 @@ root_agent = Agent(
                         "mcpdoc",
                         "mcpdoc",
                         "--urls",
-                        "AgentDevelopmentKit:https://google.github.io/adk-docs/llms.txt",
+                        "AgentDevelopmentKit:https://raw.githubusercontent.com/google/adk-docs/main/llms.txt",
                         "--transport",
                         "stdio",
                     ],

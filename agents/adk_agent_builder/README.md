@@ -132,13 +132,15 @@ adk_agent_builder/
 
 ## MCP Integration
 
-This agent uses [mcpdoc](https://github.com/modelcontextprotocol/servers) (via `uvx`) with the official ADK `llms.txt` index: `https://google.github.io/adk-docs/llms.txt`.
+This agent uses [mcpdoc](https://github.com/modelcontextprotocol/servers) (via `uvx`) with the ADK `llms.txt` index from **`https://raw.githubusercontent.com/google/adk-docs/main/llms.txt`**.
 
-**Important:** That index lists page URLs under `https://adk.dev/`, but the docs fetcher only allows `https://google.github.io/`. The agent prompt instructs the model to rewrite URLs by replacing `https://adk.dev/` with `https://google.github.io/adk-docs/` before calling `fetch_docs`. Without that rewrite, doc fetches fail and the model may hallucinate APIs.
+**Why not `google.github.io/adk-docs/llms.txt`?** That URL returns **301** to `https://adk.dev/llms.txt`. HTTP clients that do not follow redirects (common in locked-down doc fetchers) fail before any content loads. The raw GitHub URL serves the same file with **200** and no redirect. Fallback if your environment blocks `raw.githubusercontent.com`: `https://adk.dev/llms.txt` (also **200**, no redirect).
+
+Doc pages linked from the index use **`https://adk.dev/...`** (HTTP 200). Rewriting those links to `google.github.io/adk-docs/...` is wrong: GitHub Pages **also** 301-redirects to `adk.dev`, so the same redirect failure can occur.
 
 The MCP connection allows the agent to:
 
-- Fetch specific documentation pages (after URL rewrite as above)
+- Fetch the index and specific documentation pages (prefer `adk.dev` URLs as listed in the index)
 - Provide accurate, up-to-date guidance
 - Reference official ADK patterns and APIs
 
