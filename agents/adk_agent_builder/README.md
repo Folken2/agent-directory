@@ -132,10 +132,13 @@ adk_agent_builder/
 
 ## MCP Integration
 
-This agent uses the ADK Documentation MCP server to access the complete ADK documentation. The MCP connection allows the agent to:
+This agent uses [mcpdoc](https://github.com/modelcontextprotocol/servers) (via `uvx`) with the official ADK `llms.txt` index: `https://google.github.io/adk-docs/llms.txt`.
 
-- Fetch specific documentation pages
-- Search for relevant information
+**Important:** That index lists page URLs under `https://adk.dev/`, but the docs fetcher only allows `https://google.github.io/`. The agent prompt instructs the model to rewrite URLs by replacing `https://adk.dev/` with `https://google.github.io/adk-docs/` before calling `fetch_docs`. Without that rewrite, doc fetches fail and the model may hallucinate APIs.
+
+The MCP connection allows the agent to:
+
+- Fetch specific documentation pages (after URL rewrite as above)
 - Provide accurate, up-to-date guidance
 - Reference official ADK patterns and APIs
 

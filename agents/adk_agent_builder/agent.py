@@ -14,10 +14,9 @@ from google.adk.tools.mcp_tool.mcp_session_manager import StdioConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from mcp import StdioServerParameters
 
-# The ADK docs MCP server uses stdio transport, so we use StdioConnectionParams
-# This matches the configuration in mcp.json which uses:
-# command: "uvx"
-# args: ["--from", "mcpdoc", "mcpdoc", "--urls", "AgentDevelopmentKit:https://google.github.io/adk-docs/llms.txt", "--transport", "stdio"]
+# The ADK docs MCP server uses stdio transport, so we use StdioConnectionParams.
+# llms.txt is hosted on google.github.io; entries inside it point at adk.dev, but
+# fetch_docs typically only allows google.github.io — see prompt_v1 for the URL rewrite rule.
 root_agent = Agent(
     model=FAST_MODEL,
     name="adk_agent_builder",
