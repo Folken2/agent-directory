@@ -6,6 +6,89 @@ import { getAgentStatsMap, isDbEnabled } from '@/lib/db';
 
 const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
 
+/** Cold / sleeping hosts (e.g. Railway) often need >30s before /list-apps responds. */
+const LIST_APPS_TIMEOUT_MS = Math.max(
+  5000,
+  parseInt(process.env.ADK_LIST_APPS_TIMEOUT_MS || '120000', 10)
+);
+const LIST_APPS_MAX_ATTEMPTS = Math.max(1, parseInt(process.env.ADK_LIST_APPS_MAX_ATTEMPTS || '3', 10));
+const LIST_APPS_RETRY_DELAY_MS = Math.max(0, parseInt(process.env.ADK_LIST_APPS_RETRY_DELAY_MS || '2500', 10));
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * GET /list-apps with long timeout and retries for gateway / connection failures.
+ */
+async function fetchAdkListApps(): Promise<Response> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= LIST_APPS_MAX_ATTEMPTS; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), LIST_APPS_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(`${ADK_SERVER_URL}/list-apps`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      if (response.ok) {
+        return response;
+      }
+
+      const retryableStatus = response.status === 502 || response.status === 503 || response.status === 504;
+      if (retryableStatus && attempt < LIST_APPS_MAX_ATTEMPTS) {
+        console.warn(
+          `[api/agents] list-apps attempt ${attempt}/${LIST_APPS_MAX_ATTEMPTS} HTTP ${response.status}, retrying in ${LIST_APPS_RETRY_DELAY_MS}ms`
+        );
+        await sleep(LIST_APPS_RETRY_DELAY_MS);
+        continue;
+      }
+
+      return response;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      lastError = err;
+
+      const msg = err instanceof Error ? err.message : String(err);
+      const causeCode =
+        typeof err === 'object' &&
+        err !== null &&
+        'cause' in err &&
+        typeof (err as { cause?: { code?: string } }).cause === 'object' &&
+        (err as { cause?: { code?: string } }).cause !== null
+          ? (err as { cause: { code?: string } }).cause.code
+          : undefined;
+      const isAbort = err instanceof Error && err.name === 'AbortError';
+      const isNetwork =
+        msg.includes('fetch failed') ||
+        msg.includes('ECONNREFUSED') ||
+        msg.includes('ECONNRESET') ||
+        msg.includes('ETIMEDOUT') ||
+        ['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT'].includes(causeCode || '');
+
+      if ((isAbort || isNetwork) && attempt < LIST_APPS_MAX_ATTEMPTS) {
+        console.warn(
+          `[api/agents] list-apps attempt ${attempt}/${LIST_APPS_MAX_ATTEMPTS} failed (${isAbort ? 'timeout' : 'network'}), retrying in ${LIST_APPS_RETRY_DELAY_MS}ms`,
+          err
+        );
+        await sleep(LIST_APPS_RETRY_DELAY_MS);
+        continue;
+      }
+
+      throw err;
+    }
+  }
+
+  throw lastError ?? new Error('list-apps failed after retries');
+}
+
 // Helper function to load metadata from agent directory
 function loadAgentMetadata(agentName: string): {
   name: string;
@@ -103,22 +186,10 @@ const FALLBACK_AGENTS = [
 ];
 
 export async function GET(_request: NextRequest) {
-  // Create an AbortController for timeout handling
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
   void _request;
 
   try {
-    // Use correct ADK endpoint: GET /list-apps
-    const response = await fetch(`${ADK_SERVER_URL}/list-apps`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
+    const response = await fetchAdkListApps();
 
     if (response.ok) {
       const data = await response.json();
@@ -183,8 +254,6 @@ export async function GET(_request: NextRequest) {
       data: agentsWithStats,
     });
   } catch (error: unknown) {
-    clearTimeout(timeoutId);
-
     const isError = error instanceof Error;
     const message = isError ? error.message : '';
     const name = isError ? error.name : '';
@@ -200,7 +269,7 @@ export async function GET(_request: NextRequest) {
 
     // Provide more specific error messages
     if (name === 'AbortError') {
-      errorMessage = 'Request timeout - ADK server did not respond within 5 seconds';
+      errorMessage = `Request timeout - ADK server did not respond within ${LIST_APPS_TIMEOUT_MS / 1000}s (after ${LIST_APPS_MAX_ATTEMPTS} attempt(s))`;
     } else if (message?.includes('fetch failed') || message?.includes('ECONNREFUSED') || causeCode === 'ECONNREFUSED') {
       errorMessage = `Cannot connect to ADK server at ${ADK_SERVER_URL}. Make sure the ADK server is running. Start it with: adk api_server`;
     } else if (message?.includes('ENOTFOUND') || causeCode === 'ENOTFOUND') {

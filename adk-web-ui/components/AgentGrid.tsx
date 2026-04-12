@@ -249,18 +249,23 @@ export default function AgentGrid() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className="bg-card rounded-2xl border border-border p-6 animate-pulse"
-          >
-            <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-            <div className="h-4 bg-muted rounded w-full mb-2"></div>
-            <div className="h-4 bg-muted rounded w-5/6 mb-6"></div>
-            <div className="h-4 bg-muted rounded w-1/2 mt-auto"></div>
-          </div>
-        ))}
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Loading agents… If the directory backend was cold, this may take a few minutes.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-card rounded-2xl border border-border p-6 animate-pulse"
+            >
+              <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
+              <div className="h-4 bg-muted rounded w-full mb-2"></div>
+              <div className="h-4 bg-muted rounded w-5/6 mb-6"></div>
+              <div className="h-4 bg-muted rounded w-1/2 mt-auto"></div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }

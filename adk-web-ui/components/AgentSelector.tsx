@@ -50,11 +50,14 @@ export default function AgentSelector() {
 
   if (isLoading && agents.length === 0) {
     return (
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md space-y-2">
         <div className="px-4 py-3 bg-muted/50 rounded-xl animate-pulse flex items-center gap-3">
           <div className="w-8 h-8 bg-muted rounded-full"></div>
           <div className="h-4 bg-muted rounded w-32"></div>
         </div>
+        <p className="text-xs text-muted-foreground px-1">
+          Loading agents… If the backend was sleeping, this can take up to a few minutes.
+        </p>
       </div>
     );
   }

@@ -4,6 +4,12 @@ import { Agent, AgentRun, Artifact, StreamChunk, ToolCall, ToolResponse } from '
 
 const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
 
+/** Must exceed Next.js /api/agents cold-start wait (see ADK_LIST_APPS_* env on server). */
+const LIST_AGENTS_CLIENT_TIMEOUT_MS = Math.max(
+  30000,
+  parseInt(process.env.NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS || '180000', 10)
+);
+
 // Use Next.js API routes as proxy when running in browser
 const USE_API_PROXY = typeof window !== 'undefined';
 const API_BASE_URL = USE_API_PROXY ? '' : ADK_SERVER_URL;
@@ -156,7 +162,9 @@ class ADKClient {
     try {
       // Use Next.js API route as proxy when in browser
       const endpoint = USE_API_PROXY ? '/api/agents' : '/list-apps';
-      const response = await this.client.get(endpoint);
+      const response = await this.client.get(endpoint, {
+        timeout: LIST_AGENTS_CLIENT_TIMEOUT_MS,
+      });
 
       // If using proxy, extract data from response
       const data = USE_API_PROXY && response.data?.data ? response.data.data : response.data;

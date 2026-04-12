@@ -92,6 +92,15 @@ adk-web-ui/
 ### Environment Variables
 
 - `NEXT_PUBLIC_ADK_SERVER_URL`: URL of the ADK server (default: `http://localhost:8000`)
+- `NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS` (optional): Milliseconds the browser waits for `GET /api/agents` (default **180000**). Must stay above cold-start duration when the ADK API is on a sleeping host.
+
+**Server-only (Next.js API route `app/api/agents`, not exposed to the browser):**
+
+- `ADK_LIST_APPS_TIMEOUT_MS` (default **120000**): Per-attempt timeout when calling the ADK server `GET /list-apps`.
+- `ADK_LIST_APPS_MAX_ATTEMPTS` (default **3**): Retries after timeout, 502, 503, 504, or connection errors.
+- `ADK_LIST_APPS_RETRY_DELAY_MS` (default **2500**): Pause between retries.
+
+Previously the route used a **5s** timeout, which returned stale fallback agents when Railway (or similar) was waking up.
 
 The application uses Next.js API routes to proxy requests to the ADK server, eliminating the need for CORS configuration.
 
@@ -135,6 +144,8 @@ The application uses Next.js API routes as a proxy layer, so all requests from t
 ### Agents not loading
 - Verify the ADK server is running
 - Check `NEXT_PUBLIC_ADK_SERVER_URL` is correct
+- If the API host sleeps (e.g. Railway free tier), wait for cold start or raise `ADK_LIST_APPS_TIMEOUT_MS` / `NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS`
+- On Vercel, ensure the **API route max duration** allows long `list-apps` waits (Pro: increase in `vercel.json` if needed)
 - Verify `/list-apps` endpoint returns data
 - Check browser console for errors
 
