@@ -132,15 +132,29 @@ adk_agent_builder/
 
 ## MCP Integration
 
-This agent uses [mcpdoc](https://github.com/modelcontextprotocol/servers) (via `uvx`) with the ADK `llms.txt` index from **`https://raw.githubusercontent.com/google/adk-docs/main/llms.txt`**.
+This agent uses **[mcpdoc](https://github.com/langchain-ai/mcpdoc)** (`uvx --from mcpdoc mcpdoc`) with the ADK `llms.txt` index from **`https://raw.githubusercontent.com/google/adk-docs/main/llms.txt`**.
 
-**Why not `google.github.io/adk-docs/llms.txt`?** That URL returns **301** to `https://adk.dev/llms.txt`. HTTP clients that do not follow redirects (common in locked-down doc fetchers) fail before any content loads. The raw GitHub URL serves the same file with **200** and no redirect. Fallback if your environment blocks `raw.githubusercontent.com`: `https://adk.dev/llms.txt` (also **200**, no redirect).
+### Domain allowlist (this is not a Google ADK change)
 
-Doc pages linked from the index use **`https://adk.dev/...`** (HTTP 200). Rewriting those links to `google.github.io/adk-docs/...` is wrong: GitHub Pages **also** 301-redirects to `adk.dev`, so the same redirect failure can occur.
+[mcpdoc documents](https://github.com/langchain-ai/mcpdoc#note-security-and-domain-access-control) that **only the host of your `llms.txt` URL is allowed by default** for `fetch_docs`. The index lives on `raw.githubusercontent.com`, but **every documentation page link in that file points at `https://adk.dev/...`**. Without extra configuration, `fetch_docs` returns “URL not allowed” for those pages.
+
+**Fix:** pass **`--allowed-domains https://adk.dev/`** (see `agent.py`). That is [official mcpdoc CLI behavior](https://github.com/langchain-ai/mcpdoc), not something the ADK team changed in their MCP server.
+
+Optional flags from upstream: `--follow-redirects` (default off) if you must use a `llms.txt` URL that HTTP-redirects; `--allowed-domains '*'` only if you accept fetching any domain.
+
+### Cursor / global MCP
+
+If you register the same server in **`~/.cursor/mcp.json`**, mirror the args from `agent.py` (including `--allowed-domains https://adk.dev/`).
+
+### URLs
+
+**Why not `google.github.io/adk-docs/llms.txt`?** That URL returns **301** to `https://adk.dev/llms.txt`. mcpdoc defaults to **not** following redirects, so the request can fail before any content loads. The raw GitHub URL serves the same file with **200** and no redirect. Fallback if needed: `https://adk.dev/llms.txt` (**200**).
+
+Doc pages in the index use **`https://adk.dev/...`** (HTTP 200). GitHub Pages copies under `google.github.io/adk-docs/...` often **301** to `adk.dev` as well.
 
 The MCP connection allows the agent to:
 
-- Fetch the index and specific documentation pages (prefer `adk.dev` URLs as listed in the index)
+- Fetch the index (`llms.txt`) and linked pages on `adk.dev` when `--allowed-domains` is set
 - Provide accurate, up-to-date guidance
 - Reference official ADK patterns and APIs
 
