@@ -8,7 +8,7 @@ import RateLimitBanner from './RateLimitBanner';
 import MessageList from './chat/MessageList';
 import Composer from './chat/Composer';
 import { cn } from '@/lib/utils';
-import { Info, Tag, Lightbulb, Wrench } from 'lucide-react';
+import { Info } from 'lucide-react';
 
 interface ChatInterfaceProps {
   initialPrompt?: string;
@@ -52,14 +52,8 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
 
-  // Info panel default state by viewport
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    const apply = () => setInfoOpen(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
+  // Info panel is closed by default — users open it on demand instead of
+  // drowning the chat in agent metadata on first paint.
 
   // Detect dark mode via .dark class on <html>
   useEffect(() => {
@@ -466,19 +460,19 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
   const messages = currentConversation?.messages || [];
   const busy = isLoading || isStreaming || isInitializing;
-  const gridColsClass = infoOpen ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]' : 'grid-cols-1';
+  const gridColsClass = infoOpen ? 'grid-cols-1 xl:grid-cols-[minmax(0,1fr)_300px]' : 'grid-cols-1';
 
   return (
-    <div className={cn('grid gap-4 h-full', gridColsClass)}>
+    <div className={cn('grid h-full', gridColsClass)}>
       <div className="flex flex-col h-full min-h-0 bg-background relative">
         <div className="px-4 pt-3 flex items-center justify-end gap-3">
           <button
             onClick={() => setInfoOpen((open) => !open)}
-            className="inline-flex items-center justify-center rounded-full border border-border bg-card hover:border-primary/40 p-2 text-muted-foreground hover:text-foreground transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
             aria-label={infoOpen ? 'Hide agent info' : 'Show agent info'}
-            title={infoOpen ? 'Hide agent info' : 'Show agent info'}
           >
-            <Info className="w-4 h-4" />
+            <Info className="w-3.5 h-3.5" />
+            <span>{infoOpen ? 'Hide details' : 'Agent details'}</span>
           </button>
         </div>
 
@@ -527,91 +521,78 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
       <div
         className={cn(
-          'bg-card rounded-2xl border border-border shadow-sm overflow-y-auto p-4 xl:p-6',
+          'border-l border-border/40 overflow-y-auto bg-background',
           infoOpen ? 'block' : 'hidden',
         )}
       >
         {selectedAgent ? (
-          <div className="space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-1 text-[11px] font-semibold bg-primary/10 text-primary rounded-md border border-primary/20">
-                    Agent
-                  </span>
-                  <span className="text-xs text-muted-foreground">{selectedAgent.name}</span>
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mt-1 leading-tight">
-                  {selectedAgent.displayName || selectedAgent.name}
-                </h3>
-              </div>
-            </div>
-
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {selectedAgent.description || 'No description available'}
-            </p>
+          <div className="px-5 py-6 space-y-7">
+            <section>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+                About
+              </p>
+              <p className="mt-2 text-[13px] text-foreground/90 leading-relaxed">
+                {selectedAgent.description || 'No description available'}
+              </p>
+            </section>
 
             {selectedAgent.tags && selectedAgent.tags.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <Tag className="w-3 h-3" />
-                  <span>Tags</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+                  Tags
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {selectedAgent.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-3 py-1.5 text-xs font-medium bg-primary/5 text-primary rounded-lg border border-primary/20"
+                      className="px-2 py-0.5 text-[11px] font-medium text-muted-foreground bg-muted/60 rounded"
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
 
             {selectedAgent.tools && selectedAgent.tools.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <Wrench className="w-3 h-3" />
-                  <span>Tools</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+                  Tools
+                </p>
+                <ul className="mt-2 space-y-1">
                   {selectedAgent.tools.map((tool) => (
-                    <span
+                    <li
                       key={tool}
-                      className="px-2.5 py-1 text-xs font-medium bg-muted text-muted-foreground rounded-md border border-border/50"
+                      className="text-[12px] font-mono text-muted-foreground"
                     >
                       {tool}
-                    </span>
+                    </li>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </section>
             )}
 
             {selectedAgent.useCases && selectedAgent.useCases.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <Lightbulb className="w-3 h-3 text-amber-500" />
-                  <span>Use cases</span>
-                </div>
-                <div className="space-y-2">
+              <section>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+                  Use cases
+                </p>
+                <ul className="mt-2 space-y-1.5">
                   {selectedAgent.useCases.map((useCase, idx) => (
-                    <div
+                    <li
                       key={idx}
-                      className="flex items-center gap-3 text-sm text-foreground leading-relaxed bg-muted/30 border border-border/60 rounded-lg px-3 py-2"
+                      className="text-[13px] text-foreground/85 leading-relaxed"
                     >
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 inline-flex" />
-                      <span>{useCase.description}</span>
-                    </div>
+                      {useCase.description}
+                    </li>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </section>
             )}
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">
-            Select an agent to view details and quick prompts.
+          <div className="px-5 py-6 text-sm text-muted-foreground">
+            Select an agent to view details.
           </div>
         )}
       </div>

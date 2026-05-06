@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useAppStore } from '@/lib/store';
 import { ChatConversation } from '@/lib/types';
-import { Plus, MessageSquare, Clock } from 'lucide-react';
+import { Plus, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function ChatHistory() {
@@ -42,71 +41,82 @@ export default function ChatHistory() {
 
     if (days === 0) return 'Today';
     if (days === 1) return 'Yesterday';
-    if (days < 7) return `${days} days ago`;
-    return date.toLocaleDateString();
+    if (days < 7) return `${days}d ago`;
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
-  // Filter conversations by selected agent
   const filteredConversations = selectedAgent
     ? conversations.filter((conv) => conv.agentName === selectedAgent.name)
     : conversations;
 
   return (
     <div className="h-full flex flex-col bg-background">
-      <div className="h-[57px] px-4 flex items-center border-b border-border/40 shrink-0">
+      {/* Header — quieter "new chat" affordance */}
+      <div className="h-16 px-3 flex items-center border-b border-border/40 shrink-0">
         <button
           onClick={handleNewConversation}
           disabled={!selectedAgent}
           className={cn(
-            "w-full px-4 py-2 rounded-xl transition-colors font-medium flex items-center justify-center gap-2 text-sm shadow-sm",
+            'w-full px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium',
             !selectedAgent
-              ? "bg-muted text-muted-foreground cursor-not-allowed"
-              : "bg-primary hover:bg-primary/90 text-primary-foreground"
+              ? 'text-muted-foreground/60 cursor-not-allowed'
+              : 'text-foreground hover:bg-muted',
           )}
         >
           <Plus className="w-4 h-4" />
-          New Conversation
+          New chat
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      {/* List */}
+      <div className="flex-1 overflow-y-auto px-2 pt-3 pb-4">
         {filteredConversations.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground">
-            <MessageSquare className="w-8 h-8 mx-auto mb-3 opacity-20" />
-            <p className="text-sm font-medium">No conversations</p>
-            <p className="text-xs mt-1 opacity-70">Start a new chat to begin</p>
+          <div className="px-2 py-10 text-center">
+            <MessageSquare className="w-7 h-7 mx-auto mb-3 text-muted-foreground/40" />
+            <p className="text-[13px] font-medium text-muted-foreground">No conversations yet</p>
+            <p className="text-[11px] mt-1 text-muted-foreground/70">
+              Start a new chat to begin
+            </p>
           </div>
         ) : (
-          <div className="space-y-1">
-            {filteredConversations
-              .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
-              .map((conversation) => (
-                <button
-                  key={conversation.id}
-                  onClick={() => handleSelectConversation(conversation)}
-                  className={cn(
-                    "w-full px-3 py-3 text-left rounded-lg transition-all group",
-                    currentConversation?.id === conversation.id
-                      ? "bg-muted text-foreground"
-                      : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <div className="font-medium text-sm truncate pr-2">
-                    {conversation.title || 'Untitled'}
-                  </div>
-                  <div className="flex items-center gap-3 mt-1.5">
-                    <div className="flex items-center gap-1 text-[10px] opacity-70">
-                      <MessageSquare className="w-3 h-3" />
-                      {conversation.messages.length}
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] opacity-70">
-                      <Clock className="w-3 h-3" />
-                      {formatDate(conversation.updatedAt)}
-                    </div>
-                  </div>
-                </button>
-              ))}
-          </div>
+          <>
+            <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+              Recent{selectedAgent ? ` · ${selectedAgent.displayName || selectedAgent.name}` : ''}
+            </div>
+            <div className="space-y-0.5">
+              {filteredConversations
+                .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+                .map((conversation) => {
+                  const isActive = currentConversation?.id === conversation.id;
+                  return (
+                    <button
+                      key={conversation.id}
+                      onClick={() => handleSelectConversation(conversation)}
+                      className={cn(
+                        'group w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2',
+                        isActive
+                          ? 'bg-muted text-foreground'
+                          : 'hover:bg-muted/60 text-muted-foreground hover:text-foreground',
+                      )}
+                    >
+                      <span className="flex-1 text-[13px] leading-snug truncate">
+                        {conversation.title || 'Untitled'}
+                      </span>
+                      <span
+                        className={cn(
+                          'shrink-0 text-[10px] tabular-nums transition-opacity',
+                          isActive
+                            ? 'text-muted-foreground'
+                            : 'text-muted-foreground/60 opacity-0 group-hover:opacity-100',
+                        )}
+                      >
+                        {formatDate(conversation.updatedAt)}
+                      </span>
+                    </button>
+                  );
+                })}
+            </div>
+          </>
         )}
       </div>
     </div>
