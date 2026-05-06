@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Paperclip, X, Loader2, ArrowUp } from 'lucide-react';
+import { Paperclip, X, ArrowUp, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const MAX_HEIGHT = 220;
@@ -19,6 +19,7 @@ interface ComposerProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onStop?: () => void;
   attachments: File[];
   onAttachFiles: (files: File[]) => void;
   onRemoveAttachment: (index: number) => void;
@@ -31,6 +32,7 @@ export default function Composer({
   value,
   onChange,
   onSend,
+  onStop,
   attachments,
   onAttachFiles,
   onRemoveAttachment,
@@ -174,24 +176,31 @@ export default function Composer({
               >
                 <kbd className="font-mono">Enter</kbd> to send · <kbd className="font-mono">Shift+Enter</kbd> for new line
               </span>
-              <button
-                onClick={onSend}
-                disabled={!canSend}
-                className={cn(
-                  'inline-flex items-center justify-center h-9 w-9 rounded-full transition-all duration-150',
-                  canSend
-                    ? 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm active:scale-95'
-                    : 'bg-muted text-muted-foreground cursor-not-allowed',
-                )}
-                title={busy ? 'Generating…' : 'Send message'}
-                aria-label="Send message"
-              >
-                {busy ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
+              {busy && onStop ? (
+                <button
+                  onClick={onStop}
+                  className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-foreground text-background hover:opacity-90 shadow-sm active:scale-95 transition-all duration-150"
+                  title="Stop generating"
+                  aria-label="Stop generating"
+                >
+                  <Square className="w-3.5 h-3.5 fill-current" />
+                </button>
+              ) : (
+                <button
+                  onClick={onSend}
+                  disabled={!canSend}
+                  className={cn(
+                    'inline-flex items-center justify-center h-9 w-9 rounded-full transition-all duration-150',
+                    canSend
+                      ? 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm active:scale-95'
+                      : 'bg-muted text-muted-foreground cursor-not-allowed',
+                  )}
+                  title="Send message"
+                  aria-label="Send message"
+                >
                   <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
-                )}
-              </button>
+                </button>
+              )}
             </div>
           </div>
         </div>

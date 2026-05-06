@@ -54,11 +54,11 @@ function ChatContent() {
   }, [searchParams, agents, setSelectedAgent, setCurrentConversation]);
 
   return (
-    <div className="flex h-screen bg-linear-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low text-foreground">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Sidebar */}
       <div
         className={cn(
-          "transition-all duration-300 overflow-hidden border-r border-border lg:block hidden bg-card",
+          "transition-all duration-300 overflow-hidden border-r border-border/40 lg:block hidden",
           sidebarOpen ? 'w-64' : 'w-0'
         )}
       >
@@ -74,7 +74,7 @@ function ChatContent() {
             className="absolute inset-0 bg-background/80 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-64 bg-card border-r border-border shadow-xl">
+          <div className="absolute left-0 top-0 bottom-0 w-64 bg-background border-r border-border/40 shadow-xl">
             <ChatHistory />
           </div>
         </div>
@@ -82,7 +82,7 @@ function ChatContent() {
 
       <div className="flex-1 flex flex-col overflow-hidden bg-background">
         {/* Header */}
-        <header className="bg-card border-b border-border px-4 h-[61px] flex items-center z-10">
+        <header className="border-b border-border/40 px-4 h-[57px] flex items-center z-10">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               <button
@@ -164,7 +164,7 @@ function ChatContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-screen items-center justify-center bg-linear-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     }>

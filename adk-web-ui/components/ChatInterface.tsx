@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
 import { Message, Artifact } from '@/lib/types';
@@ -49,6 +49,8 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     limit: number;
     userType: 'authenticated' | 'anonymous';
   } | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const stoppedRef = useRef(false);
 
   // Info panel default state by viewport
   useEffect(() => {
@@ -176,6 +178,9 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     setError(null);
     setArtifacts([]);
     setCurrentMessageArtifacts([]);
+    stoppedRef.current = false;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
       const assistantMessageId = `msg-${Date.now() + 1}`;
@@ -210,6 +215,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           messageContent,
           'default-user',
           sessionId,
+          controller.signal,
         )) {
           if (!hasReceivedFirstChunk) {
             hasReceivedFirstChunk = true;
@@ -313,6 +319,30 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           setCurrentMessageArtifacts([]);
         }
       } catch (streamError: any) {
+        // User clicked stop — commit whatever we streamed and exit cleanly.
+        if (stoppedRef.current || streamError?.name === 'AbortError') {
+          setIsStreaming(false);
+          setIsThinking(false);
+          setIsInitializing(false);
+          setStreamingContent('');
+          setStreamingThinking('');
+          setCurrentAssistantMessageId(null);
+          if (fullResponse.trim()) {
+            const stoppedMessage: Message = {
+              id: assistantMessageId,
+              role: 'assistant',
+              content: fullResponse,
+              thinking: fullThinking || undefined,
+              timestamp: new Date(),
+              agentName: selectedAgent.name,
+              artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
+            };
+            addMessage(stoppedMessage);
+            setCurrentMessageArtifacts([]);
+          }
+          return;
+        }
+
         if (
           streamError?.status === 429 ||
           streamError?.response?.status === 429 ||
@@ -423,8 +453,16 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
       setStreamingContent('');
       setStreamingThinking('');
       setCurrentAssistantMessageId(null);
+      abortControllerRef.current = null;
+      stoppedRef.current = false;
     }
   };
+
+  const handleStop = useCallback(() => {
+    if (!abortControllerRef.current) return;
+    stoppedRef.current = true;
+    abortControllerRef.current.abort();
+  }, []);
 
   const messages = currentConversation?.messages || [];
   const busy = isLoading || isStreaming || isInitializing;
@@ -476,6 +514,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             value={input}
             onChange={setInput}
             onSend={handleSend}
+            onStop={handleStop}
             attachments={attachments}
             onAttachFiles={handleAttachFiles}
             onRemoveAttachment={handleRemoveAttachment}

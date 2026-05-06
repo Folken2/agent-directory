@@ -42,13 +42,10 @@ export default function StreamingBubble({
 
         <div className="bg-card text-card-foreground border border-border/60 rounded-2xl px-6 py-4 shadow-sm">
           {displayContent ? (
-            <>
+            <div className="relative">
               <MarkdownRenderer content={displayContent} isStreaming={true} isDarkMode={isDarkMode} />
-              <div className="flex items-center mt-3 gap-2">
-                <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Generating</span>
-              </div>
-            </>
+              <span className="streaming-cursor" aria-hidden="true" />
+            </div>
           ) : isThinking && streamingThinking ? null : (
             <div className="flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />

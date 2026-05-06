@@ -644,3 +644,21 @@ body.chat-page main {
   margin-top: 0 !important;
   padding-top: 0 !important;
 }
+
+/* Streaming text cursor — shown at the end of the in-progress assistant message */
+.streaming-cursor {
+  display: inline-block;
+  width: 0.5ch;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background-color: hsl(var(--primary));
+  border-radius: 1px;
+  animation: streaming-cursor-blink 1s steps(2, start) infinite;
+}
+
+@keyframes streaming-cursor-blink {
+  to {
+    visibility: hidden;
+  }
+}

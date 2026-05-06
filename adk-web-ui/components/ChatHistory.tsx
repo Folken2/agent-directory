@@ -52,8 +52,8 @@ export default function ChatHistory() {
     : conversations;
 
   return (
-    <div className="h-full flex flex-col bg-card border-r border-border">
-      <div className="h-[61px] px-4 flex items-center border-b border-border shrink-0">
+    <div className="h-full flex flex-col bg-background">
+      <div className="h-[57px] px-4 flex items-center border-b border-border/40 shrink-0">
         <button
           onClick={handleNewConversation}
           disabled={!selectedAgent}

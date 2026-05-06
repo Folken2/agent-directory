@@ -628,7 +628,8 @@ class ADKClient {
     agentName: string,
     message: string | { parts: Array<{ text?: string; inline_data?: any }> },
     userId: string = this.defaultUserId,
-    sessionId?: string
+    sessionId?: string,
+    signal?: AbortSignal
   ): AsyncGenerator<StreamChunk> {
     try {
       // Ensure we have a session
@@ -659,6 +660,7 @@ class ADKClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(request),
+        signal,
       });
 
       if (!response.ok) {
