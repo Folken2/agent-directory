@@ -22,7 +22,7 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-6 lg:px-8 py-10">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex items-baseline gap-1.5 text-sm text-md-on-surface-variant">
-            <span suppressHydrationWarning>© {new Date().getFullYear()} Agent Directory</span>
+            <span>© {new Date().getFullYear()} Agent Directory</span>
             <span className="font-serif-accent text-[13px]">by folch.ai</span>
             <span className="hidden sm:inline text-md-on-surface-variant/60">·</span>
             <span className="hidden sm:inline text-md-on-surface-variant/80">Built on Google ADK</span>
