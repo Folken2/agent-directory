@@ -77,9 +77,36 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const showHeader = !!codeString;
+
   return (
     <div className="relative group my-4">
-      <div className="relative rounded-lg overflow-hidden border border-border bg-[hsl(var(--md-surface-container-high))]">
+      <div className="relative rounded-lg overflow-hidden border border-border/50 bg-[hsl(var(--md-surface-container-high))]">
+        {showHeader && (
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-muted/30">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80">
+              {language === 'text' ? 'plain text' : language}
+            </span>
+            <button
+              onClick={handleCopy}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded opacity-60 group-hover:opacity-100"
+              title="Copy code"
+              aria-label="Copy code"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-3 h-3 text-green-600 dark:text-green-400" />
+                  <span>Copied</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-3 h-3" />
+                  <span>Copy</span>
+                </>
+              )}
+            </button>
+          </div>
+        )}
         <Prism
           language={language}
           style={isDarkMode ? oneDark : oneLight}
@@ -90,20 +117,6 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
         >
           {codeString}
         </Prism>
-        {codeString && (
-          <button
-            onClick={handleCopy}
-            className="absolute top-2 right-2 p-1.5 rounded-md bg-muted/90 hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity z-10 backdrop-blur-sm"
-            title="Copy code"
-            aria-label="Copy code"
-          >
-            {copied ? (
-              <Check className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
-            ) : (
-              <Copy className="w-3.5 h-3.5 text-muted-foreground" />
-            )}
-          </button>
-        )}
       </div>
     </div>
   );

@@ -40,14 +40,14 @@ export default function StreamingBubble({
         <ToolStatusDisplay messageId={messageId} />
         {streamingThinking && <ThinkingBlock content={streamingThinking} isStreaming={isThinking} />}
 
-        <div className="bg-card text-card-foreground border border-border/60 rounded-2xl px-6 py-4 shadow-sm">
+        <div className="text-foreground">
           {displayContent ? (
             <div className="relative">
               <MarkdownRenderer content={displayContent} isStreaming={true} isDarkMode={isDarkMode} />
               <span className="streaming-cursor" aria-hidden="true" />
             </div>
           ) : isThinking && streamingThinking ? null : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 py-2">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Thinking…</span>
             </div>

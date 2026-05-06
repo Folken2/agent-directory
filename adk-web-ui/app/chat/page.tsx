@@ -55,11 +55,11 @@ function ChatContent() {
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      {/* Sidebar */}
+      {/* Sidebar — snap toggle (no width transition) avoids reflowing the message list every frame */}
       <div
         className={cn(
-          "transition-all duration-300 overflow-hidden border-r border-border/40 lg:block hidden",
-          sidebarOpen ? 'w-64' : 'w-0'
+          'overflow-hidden border-r border-border/40 lg:block hidden',
+          sidebarOpen ? 'w-64' : 'w-0',
         )}
       >
         <div className="h-full w-64">

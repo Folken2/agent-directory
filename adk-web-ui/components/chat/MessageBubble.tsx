@@ -84,35 +84,23 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
 
   const displayContent = getDisplayContent(message.content);
   const hasArtifacts = !!(message.artifacts && message.artifacts.length > 0);
-  const showCard = !!displayContent || hasArtifacts;
+  const showAnything = !!displayContent || hasArtifacts;
+  const isCopied = copiedMessageId === message.id;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.18 }}
-      className="flex w-full justify-start"
+      className="group/msg flex w-full justify-start"
       title={timestamp?.toLocaleString()}
     >
       <div className="max-w-3xl w-full space-y-2">
         <ToolStatusDisplay messageId={message.id} />
         {message.thinking && <ThinkingBlock content={message.thinking} />}
 
-        {showCard && (
-          <div className="bg-card text-card-foreground border border-border/60 rounded-2xl px-6 py-4 shadow-sm">
-            {displayContent && (
-              <div className="flex items-center justify-between gap-2 mb-2 text-xs text-muted-foreground">
-                <span>{timestamp?.toLocaleTimeString() || ''}</span>
-                <button
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted/70 transition-colors text-foreground/70"
-                  onClick={() => onCopy(displayContent, message.id)}
-                >
-                  {copiedMessageId === message.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                  <span>{copiedMessageId === message.id ? 'Copied' : 'Copy'}</span>
-                </button>
-              </div>
-            )}
-
+        {showAnything && (
+          <div className="text-foreground">
             {displayContent && (
               <MarkdownRenderer content={displayContent} isStreaming={false} isDarkMode={isDarkMode} />
             )}
@@ -125,21 +113,36 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
               </div>
             )}
 
-            {hasArtifacts && message.artifacts!.length > 1 && (
-              <div className="mt-3 flex justify-end">
-                <button
-                  className="inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-md bg-muted hover:bg-muted/80 transition-colors"
-                  onClick={() => {
-                    message.artifacts?.forEach((a) => {
-                      const link = document.createElement('a');
-                      link.href = a.url;
-                      link.download = a.name;
-                      link.click();
-                    });
-                  }}
-                >
-                  Download all
-                </button>
+            {(displayContent || (hasArtifacts && message.artifacts!.length > 1)) && (
+              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
+                {displayContent && (
+                  <button
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted/70 transition-colors"
+                    onClick={() => onCopy(displayContent, message.id)}
+                    aria-label={isCopied ? 'Copied' : 'Copy message'}
+                  >
+                    {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                    <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                  </button>
+                )}
+                {hasArtifacts && message.artifacts!.length > 1 && (
+                  <button
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted/70 transition-colors"
+                    onClick={() => {
+                      message.artifacts?.forEach((a) => {
+                        const link = document.createElement('a');
+                        link.href = a.url;
+                        link.download = a.name;
+                        link.click();
+                      });
+                    }}
+                  >
+                    Download all
+                  </button>
+                )}
+                {timestamp && (
+                  <span className="ml-auto text-muted-foreground/70">{timestamp.toLocaleTimeString()}</span>
+                )}
               </div>
             )}
           </div>
