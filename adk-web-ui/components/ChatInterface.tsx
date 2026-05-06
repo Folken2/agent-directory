@@ -455,7 +455,11 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   const handleStop = useCallback(() => {
     if (!abortControllerRef.current) return;
     stoppedRef.current = true;
-    abortControllerRef.current.abort();
+    // Pass a reason so dev tools / future logs read meaningfully instead of
+    // "signal is aborted without reason".
+    abortControllerRef.current.abort(
+      new DOMException('User stopped generation', 'AbortError'),
+    );
   }, []);
 
   const messages = currentConversation?.messages || [];

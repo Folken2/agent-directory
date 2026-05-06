@@ -919,6 +919,15 @@ class ADKClient {
       console.log(`[ADK Client] Stream complete. Total text chunks yielded: ${textChunkCount}`);
       yield { type: 'done' };
     } catch (error: any) {
+      // User-initiated abort isn't a real error: re-throw so the consumer's
+      // catch can commit the partial response, but skip the noisy log.
+      const isAbort =
+        error?.name === 'AbortError' ||
+        signal?.aborted ||
+        error?.message?.toLowerCase?.()?.includes('aborted');
+      if (isAbort) {
+        throw error;
+      }
       console.error('Error streaming agent:', error);
       yield { type: 'error', error: error.message || 'Streaming failed' };
     }
