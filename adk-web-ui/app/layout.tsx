@@ -1,32 +1,22 @@
 import type { Metadata } from "next";
-import { Figtree, Source_Serif_4, JetBrains_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import SessionProvider from "@/components/providers/SessionProvider";
 import { Analytics } from "@vercel/analytics/next";
 
-// Body / UI: Figtree — a warm geometric humanist sans, Google-Sans-adjacent
-// without the Inter monoculture. Variable weight for fine-grained hierarchy.
-const figtree = Figtree({
+// Google Sans is not available via next/font/google, so we use Inter as the closest alternative
+// Inter is Google's recommended open-source alternative with similar characteristics
+const inter = Inter({
   variable: "--font-google-sans",
   subsets: ["latin"],
   display: "swap",
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
-// Editorial / wordmark accent: Source Serif 4 italic, used sparingly
-// (the "by folch.ai" signature, the home hero pull-quote).
-const sourceSerif = Source_Serif_4({
-  variable: "--font-serif-accent",
-  subsets: ["latin"],
-  display: "swap",
-  style: ["italic", "normal"],
-  weight: ["400", "500", "600"],
-});
-
-// Mono: actual mono now. The previous setup pointed --font-roboto-mono at Inter.
-const jetbrainsMono = JetBrains_Mono({
+// Roboto Mono for code snippets
+const robotoMono = Inter({
   variable: "--font-roboto-mono",
   subsets: ["latin"],
   display: "swap",
@@ -35,7 +25,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents",
-  description: "Discover and interact with AI agents built on Google's Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash.",
+  description: "Discover and interact with AI agents built on Google's Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 2.5 Flash.",
   keywords: [
     "Google AI",
     "Google agents AI",
@@ -51,7 +41,7 @@ export const metadata: Metadata = {
     "Google AI platform",
     "ADK agents",
     "Google AI tools",
-    "Gemini 3 Flash",
+    "Gemini 2.5 Flash",
     "AI agent directory",
   ],
   authors: [{ name: "Google" }],
@@ -67,7 +57,7 @@ export const metadata: Metadata = {
     url: '/',
     siteName: 'ADK Agent Directory',
     title: 'ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents',
-    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash.',
+    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 2.5 Flash.',
     images: [
       {
         url: '/adk_logo.png',
@@ -119,7 +109,7 @@ export default function RootLayout({
     name: 'ADK Agent Directory',
     alternateName: 'Google ADK Agent Directory',
     url: baseUrl,
-    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash.',
+    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 2.5 Flash.',
     publisher: {
       '@type': 'Organization',
       name: 'Google',
@@ -154,7 +144,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body
-        className={`${figtree.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} antialiased h-full flex flex-col`}
+        className={`${inter.variable} ${robotoMono.variable} antialiased h-full flex flex-col`}
       >
         <script
           type="application/ld+json"
