@@ -1,16 +1,16 @@
 # ADK Agent Builder
 
-A specialist AI assistant that helps users build agents using the Google Agent Development Kit (ADK). This agent has access to the complete ADK documentation through MCP (Model Context Protocol) and provides expert guidance on agent design, implementation, and best practices.
+A specialist AI assistant that helps users build agents using the Google Agent Development Kit (ADK). The agent is grounded in a **curated library of ADK skills shipped inside the agent package** — no external doc fetches at runtime — so it works the same locally and in deployed environments.
 
 ## Overview
 
-The ADK Agent Builder is a meta-agent - an agent that helps you build other agents. It acts as an expert consultant and mentor, providing:
+The ADK Agent Builder is a meta-agent that helps you build other agents. It acts as an expert consultant and mentor, providing:
 
-- **Architectural Guidance**: Help designing agent systems, from simple single-agent setups to complex multi-agent orchestrations
+- **Architectural Guidance**: From simple single-agent setups to complex multi-agent orchestrations
 - **Code Examples**: Working code snippets and complete examples
 - **Best Practices**: ADK patterns, anti-patterns, and recommendations
 - **Troubleshooting**: Debug help and solutions for common issues
-- **Documentation Access**: Direct access to ADK documentation for accurate, up-to-date information
+- **Skill-grounded answers**: Every substantive answer is queried against the bundled ADK skills
 
 ## Quick Start
 
@@ -45,26 +45,21 @@ response = root_agent.run("Help me build a simple web search agent")
 print(response)
 ```
 
-## Features
+## Knowledge — bundled ADK skills
 
-### Expert Guidance
+Instead of fetching pages from `adk.dev` at runtime, this agent loads a curated set of `SKILL.md` files via ADK's `SkillToolset`. The skills live in `skills/` next to `agent.py` and ship with the package.
 
-- **Simple to Complex**: Guides you from simple single-agent setups to complex multi-agent systems
-- **Architecture Design**: Helps design agent hierarchies and communication patterns
-- **Tool Integration**: Explains built-in tools, function tools, and MCP tools
-- **Best Practices**: Shares ADK patterns and warns against anti-patterns
+| Skill | Use it for |
+| --- | --- |
+| `adk-agent-patterns` | Choosing between `LlmAgent`, `LoopAgent`, `SequentialAgent`, `ParallelAgent`, multi-agent hierarchies |
+| `adk-tool-creation` | Writing function tools, `ToolContext`, structured returns, error handling |
+| `adk-prompt-engineering` | System prompt design, dynamic `InstructionProvider`, prompt versioning |
+| `adk-callbacks-hitl` | `before/after` callbacks, human-in-the-loop gates, state management |
+| `adk-streaming` | Voice / video agents on the Gemini Live API |
+| `adk-skill-creation` | Authoring your own `SKILL.md` for an agent's domain knowledge |
+| `adk-skill-design-patterns` | The five canonical SKILL.md shapes — pick before authoring |
 
-### Documentation Access
-
-- **Complete ADK Docs**: Access to the full ADK documentation via MCP
-- **Accurate Information**: Always references official documentation
-- **Up-to-Date**: Uses latest ADK patterns and APIs
-
-### Practical Help
-
-- **Code Examples**: Provides complete, working code examples
-- **Troubleshooting**: Helps debug errors and issues
-- **Configuration**: Guides on deployment and configuration
+The agent queries the `SkillToolset` with focused questions; the toolset returns the relevant skill content rather than dumping it into the system prompt, keeping context usage small.
 
 ## Example Use Cases
 
@@ -72,93 +67,61 @@ print(response)
 
 **User**: "I want to create an agent that searches the web and summarizes results"
 
-**Agent Builder** will:
-- Recommend using `LlmAgent` with `google_search` tool
-- Provide complete code structure
-- Explain configuration and deployment
-- Show best practices for prompts
+The Agent Builder queries `adk-agent-patterns` and `adk-tool-creation`, then recommends a single `LlmAgent` with `google_search`, with a complete code example.
 
 ### 2. Multi-Agent System Design
 
 **User**: "I need an agent that processes data and then generates a report"
 
-**Agent Builder** will:
-- Recommend `SequentialAgent` with specialized sub-agents
-- Map out session state communication
-- Show how to structure the workflow
-- Explain data flow between agents
+It queries `adk-agent-patterns` and recommends a `SequentialAgent` pipeline, mapping out session-state communication between sub-agents.
 
 ### 3. Tool Integration
 
 **User**: "How do I add a custom API tool to my agent?"
 
-**Agent Builder** will:
-- Explain `FunctionTool` creation
-- Show integration patterns
-- Explain tool distribution rules
-- Provide complete examples
+It queries `adk-tool-creation` and walks through `FunctionTool` patterns, `ToolContext` use, and structured return shapes.
 
-### 4. Troubleshooting
+### 4. Human-in-the-loop
 
-**User**: "My agent is giving me an error about built-in tools"
+**User**: "How do I require approval before a destructive action?"
 
-**Agent Builder** will:
-- Help identify the issue
-- Reference ADK constraints (one built-in tool per agent)
-- Provide solutions
-- Suggest alternative architectures
+It queries `adk-callbacks-hitl` and shows the `before_tool_callback` pattern with state-driven approval.
 
 ## Project Structure
 
 ```text
 adk_agent_builder/
-├── agent.py              # Main agent definition with ADK docs MCP
+├── agent.py              # Builds SkillToolset from skills/ and wires the agent
 ├── config/
 │   ├── llm.py           # LLM configuration
-│   └── utils.py         # MCP tool handling utilities
+│   └── utils.py         # Tool-rendering callback that injects tool descriptions into the prompt
 ├── prompt/
 │   └── prompt.py        # Specialist prompt for agent building
+├── skills/              # Bundled ADK skills (SKILL.md + references/)
+│   ├── adk-agent-patterns/
+│   ├── adk-tool-creation/
+│   ├── adk-prompt-engineering/
+│   ├── adk-callbacks-hitl/
+│   ├── adk-streaming/
+│   ├── adk-skill-creation/
+│   └── adk-skill-design-patterns/
 ├── metadata.json        # Agent metadata for web UI
 └── README.md            # This file
 ```
 
 ## How It Works
 
-1. **User asks a question** about building ADK agents
-2. **Agent Builder** uses ADK docs MCP to fetch relevant documentation
-3. **Provides expert guidance** based on ADK patterns and best practices
-4. **Offers code examples** and architectural recommendations
-5. **Helps troubleshoot** any issues or errors
+1. On import, `agent.py` walks `skills/`, calls `load_skill_from_dir` on each subdirectory containing a `SKILL.md`, and wraps the result in a `SkillToolset`.
+2. The agent's prompt instructs it to query the skill toolset before answering substantive ADK questions.
+3. The before-agent callback (`before_agent_callback_update_tools`) discovers the loaded tools at runtime and rewrites the instruction to include their descriptions.
 
-## MCP Integration
-
-This agent uses **[mcpdoc](https://github.com/langchain-ai/mcpdoc)** (`uvx --from mcpdoc mcpdoc`) with the ADK `llms.txt` index from **`https://raw.githubusercontent.com/google/adk-docs/main/llms.txt`**.
-
-### Domain allowlist (this is not a Google ADK change)
-
-[mcpdoc documents](https://github.com/langchain-ai/mcpdoc#note-security-and-domain-access-control) that **only the host of your `llms.txt` URL is allowed by default** for `fetch_docs`. The index lives on `raw.githubusercontent.com`, but **every documentation page link in that file points at `https://adk.dev/...`**. Without extra configuration, `fetch_docs` returns “URL not allowed” for those pages.
-
-**Fix:** pass **`--allowed-domains https://adk.dev/`** (see `agent.py`). That is [official mcpdoc CLI behavior](https://github.com/langchain-ai/mcpdoc), not something the ADK team changed in their MCP server.
-
-Optional flags from upstream: `--follow-redirects` (default off) if you must use a `llms.txt` URL that HTTP-redirects; `--allowed-domains '*'` only if you accept fetching any domain.
-
-### Cursor / global MCP
-
-If you register the same server in **`~/.cursor/mcp.json`**, mirror the args from `agent.py` (including `--allowed-domains https://adk.dev/`).
-
-### URLs
-
-**Why not `google.github.io/adk-docs/llms.txt`?** That URL returns **301** to `https://adk.dev/llms.txt`. mcpdoc defaults to **not** following redirects, so the request can fail before any content loads. The raw GitHub URL serves the same file with **200** and no redirect. Fallback if needed: `https://adk.dev/llms.txt` (**200**).
-
-Doc pages in the index use **`https://adk.dev/...`** (HTTP 200). GitHub Pages copies under `google.github.io/adk-docs/...` often **301** to `adk.dev` as well.
-
-The MCP connection allows the agent to:
-
-- Fetch the index (`llms.txt`) and linked pages on `adk.dev` when `--allowed-domains` is set
-- Provide accurate, up-to-date guidance
-- Reference official ADK patterns and APIs
+The skills directory path is resolved as `pathlib.Path(__file__).parent / "skills"`, so the agent works in any deployment without needing env vars or filesystem mounts.
 
 ## Customization
+
+### Add or edit skills
+
+Drop a new directory under `skills/` containing a `SKILL.md` (with frontmatter `name:` and `description:` at minimum). It will be picked up on the next agent boot.
 
 ### Change LLM Model
 
@@ -166,31 +129,23 @@ Edit `config/llm.py`:
 
 ```python
 FAST_MODEL = LiteLlm(
-    model="openrouter/google/gemini-3-flash-preview",  # Change model here
+    model="openrouter/google/gemini-3-flash-preview",
     app_name="adk-samples-directory",
 )
 ```
 
 ### Modify Prompt
 
-Edit `prompt/prompt.py` to customize the agent's behavior and expertise:
-
-```python
-prompt_v0 = """
-Your custom instructions here...
-"""
-```
+Edit `prompt/prompt.py` (`prompt_v1`) to customize behavior. The codebase uses versioned prompts — bump to `prompt_v2` for substantive changes.
 
 ## Resources
 
-- [Google ADK Documentation](https://google.github.io/adk-docs/)
+- [Google ADK Documentation](https://adk.dev/)
 - [ADK GitHub Repository](https://github.com/google/adk)
 - [MCP (Model Context Protocol)](https://modelcontextprotocol.io/)
 
 ## Notes
 
-- The agent uses ADK documentation via MCP for accurate information
-- Always references official docs when providing guidance
-- Focuses on best practices and avoiding common pitfalls
-- Provides complete, working code examples when possible
-
+- All ADK guidance is grounded in the bundled skills — the agent does not fetch external docs at runtime
+- Skills are queryable via the `SkillToolset`, not preloaded into the system prompt
+- The agent recommends the simplest architecture first and warns against over-engineering
