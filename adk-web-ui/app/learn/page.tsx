@@ -184,7 +184,7 @@ export default function LearnPage() {
   }, [selectedVideo]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low pt-16">
+    <div className="min-h-screen bg-background pt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Unified Resources Grid */}
         <div className="mb-12">

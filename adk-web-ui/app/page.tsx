@@ -1,58 +1,70 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import AgentGrid from '@/components/AgentGrid';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Github } from 'lucide-react';
 
 export default function Home() {
-  const handleCTAClick = () => {
-    // Scroll to agents section
-    const agentsSection = document.getElementById('agents-section');
-    if (agentsSection) {
-      agentsSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low pt-16">
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
-        <div className="text-center max-w-4xl mx-auto relative">
-          {/* Decorative blur */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-md-primary/5 rounded-full blur-3xl -z-10" />
+    <div className="min-h-screen bg-background">
+      {/* Hero — left-aligned, restrained, generous whitespace.
+          The serif italic carries the personal touch; everything else is calm. */}
+      <section className="max-w-6xl mx-auto px-6 lg:px-8 pt-20 pb-16 sm:pt-28 sm:pb-24">
+        <div className="max-w-3xl">
+          <span className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-md-on-surface-variant">
+            <span className="h-1 w-1 rounded-full bg-md-primary" />
+            Built on Google ADK · Gemini 3 Flash
+          </span>
 
-          <h2 className="text-display-medium sm:text-display-large font-bold text-md-on-surface mb-6 tracking-tight">
-            Discover Google AI Agents
-          </h2>
-          <p className="text-body-large sm:text-headline-small text-md-on-surface-variant/80 mb-10 leading-relaxed max-w-2xl mx-auto font-light">
-            Explore our collection of specialized Google Agents. All agents are built with the Agent Development Kit (ADK) and powered by Gemini, each designed with specific tools and capabilities to help you accomplish your goals efficiently.
+          <h1 className="mt-6 text-4xl sm:text-5xl lg:text-6xl font-semibold tracking-tight text-md-on-surface leading-[1.05]">
+            A directory of <span className="font-serif-accent font-normal text-md-on-surface">agents</span>,
+            <br className="hidden sm:block" /> ready to try.
+          </h1>
+
+          <p className="mt-6 text-base sm:text-lg text-md-on-surface-variant leading-relaxed max-w-[60ch]">
+            Production-grade AI agents built on Google&rsquo;s Agent Development Kit.
+            Browse the catalog, open one in chat, and read how it&rsquo;s built — all
+            in the browser, no install required.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-            <button
-              onClick={handleCTAClick}
-              className="px-8 py-4 bg-md-primary hover:bg-md-primary/90 text-md-on-primary rounded-full text-label-large font-semibold transition-all duration-300 shadow-lg shadow-md-primary/25 hover:shadow-xl hover:shadow-md-primary/30 hover:-translate-y-0.5 flex items-center gap-2 group"
+
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <Link
+              href="#agents"
+              className="group inline-flex items-center gap-2 px-5 h-11 rounded-full bg-md-primary text-md-on-primary text-sm font-medium tracking-tight hover:opacity-90 transition-opacity"
             >
-              Browse Agents
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-            <a href="https://github.com/Folken2/agent-directory" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-md-surface border border-md-outline hover:bg-md-surface-container-low text-md-on-surface rounded-full text-label-large font-medium transition-all duration-300 hover:border-md-outline-variant hover:-translate-y-0.5">
-              View Repository
+              Browse agents
+              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+            </Link>
+            <a
+              href="https://github.com/Folken2/agent-directory"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-5 h-11 rounded-full bg-md-surface-container hover:bg-md-surface-container-high text-md-on-surface text-sm font-medium tracking-tight transition-colors"
+            >
+              <Github className="w-4 h-4" />
+              View on GitHub
             </a>
           </div>
-
-          <p className="text-label-small text-md-on-surface-variant/60 uppercase tracking-widest">
-            Powered by Google Gemini 2.5 Flash
-          </p>
         </div>
       </section>
 
-      {/* Agents Section */}
-      <section id="agents-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-32">
-        <div className="flex items-center justify-between mb-10">
-          <h3 className="text-headline-small text-md-on-surface font-semibold tracking-tight">Available Agents</h3>
-          {/* <div className="h-px bg-md-outline/30 flex-1 ml-6"></div> */}
-        </div>
+      {/* Hairline divider — replaces the gradient transition */}
+      <div className="max-w-6xl mx-auto px-6 lg:px-8">
+        <div className="h-px bg-md-outline/60" />
+      </div>
+
+      {/* Agents */}
+      <section id="agents" className="max-w-6xl mx-auto px-6 lg:px-8 py-16 sm:py-20">
+        <header className="mb-10 flex items-end justify-between gap-6">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-md-on-surface">
+              Available agents
+            </h2>
+            <p className="mt-1.5 text-sm text-md-on-surface-variant">
+              Each agent is a self-contained ADK app with its own tools and prompts.
+            </p>
+          </div>
+        </header>
         <AgentGrid />
       </section>
     </div>

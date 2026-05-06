@@ -81,7 +81,7 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
 
   return (
     <div className="relative group my-4">
-      <div className="relative rounded-lg overflow-hidden border border-border/50 bg-[hsl(var(--md-surface-container-high))]">
+      <div className="relative rounded-lg overflow-hidden border border-border/50 bg-md-surface-container-high">
         {showHeader && (
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-muted/30">
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80">

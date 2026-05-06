@@ -18,19 +18,22 @@ export default function Footer() {
   const personalUrl = normalizeUrl(process.env.NEXT_PUBLIC_PERSONAL_URL, 'https://example.com');
 
   return (
-    <footer className="border-t border-md-outline bg-md-surface-variant elevation-2">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-label-medium text-md-on-surface-variant">
-            © {new Date().getFullYear()} ADK Agent Directory. Built with Google ADK.
+    <footer className="border-t border-md-outline/60 bg-background">
+      <div className="max-w-6xl mx-auto px-6 lg:px-8 py-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+          <div className="flex items-baseline gap-1.5 text-sm text-md-on-surface-variant">
+            <span>© {new Date().getFullYear()} Agent Directory</span>
+            <span className="font-serif-accent text-[13px]">by folch.ai</span>
+            <span className="hidden sm:inline text-md-on-surface-variant/60">·</span>
+            <span className="hidden sm:inline text-md-on-surface-variant/80">Built on Google ADK</span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Link
               href={githubUrl}
               target="_blank"
               rel="noreferrer"
               prefetch={false}
-              className="inline-flex items-center justify-center p-2.5 text-md-on-surface-variant hover:text-md-primary rounded-lg border border-md-outline hover:border-md-primary transition-all elevation-0 hover:elevation-1"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container transition-colors"
               aria-label="GitHub"
             >
               <Github className="w-4 h-4" />
@@ -40,7 +43,7 @@ export default function Footer() {
               target="_blank"
               rel="noreferrer"
               prefetch={false}
-              className="inline-flex items-center justify-center p-2.5 text-md-on-surface-variant hover:text-md-primary rounded-lg border border-md-outline hover:border-md-primary transition-all elevation-0 hover:elevation-1"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container transition-colors"
               aria-label="LinkedIn"
             >
               <Linkedin className="w-4 h-4" />
@@ -50,7 +53,7 @@ export default function Footer() {
               target="_blank"
               rel="noreferrer"
               prefetch={false}
-              className="inline-flex items-center justify-center p-2.5 text-md-on-surface-variant hover:text-md-primary rounded-lg border border-md-outline hover:border-md-primary transition-all elevation-0 hover:elevation-1"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container transition-colors"
               aria-label="Website"
             >
               <Globe2 className="w-4 h-4" />
@@ -61,4 +64,3 @@ export default function Footer() {
     </footer>
   );
 }
-

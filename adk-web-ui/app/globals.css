@@ -5,83 +5,59 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================================
-   Material Design 3 - Google ADK Theme (Refined for Minimalism)
+   ADK Agent Directory — Light by default, Google-Blue forward, OKLCH-native.
+   Neutrals are tinted toward the primary hue for subconscious cohesion.
+   The folch.ai signature accent is reserved for the wordmark and 1–2
+   editorial moments per screen.
    ============================================================================ */
 
 :root {
-  /* Primary - Vivid Blue */
-  --md-primary: 221 83% 53%;
-  /* #2563EB */
-  --md-primary-container: 214 95% 93%;
-  /* #DBEAFE */
-  --md-on-primary: 0 0% 100%;
-  /* White */
-  --md-on-primary-container: 214 100% 20%;
-  /* #172554 */
+  /* Primary — Google Blue, OKLCH-tuned */
+  --md-primary: oklch(0.55 0.22 264);            /* base interactive */
+  --md-primary-container: oklch(0.94 0.04 264);  /* tinted background */
+  --md-on-primary: oklch(0.99 0.005 264);
+  --md-on-primary-container: oklch(0.32 0.16 264);
 
-  /* Secondary - Clean Green */
-  --md-secondary: 142 71% 45%;
-  /* #22C55E */
-  --md-secondary-container: 142 76% 95%;
-  /* #DCFCE7 */
-  --md-on-secondary: 0 0% 100%;
-  /* White */
-  --md-on-secondary-container: 145 80% 10%;
-  /* #052E16 */
+  /* Secondary — quieted green, used very sparingly (success states only) */
+  --md-secondary: oklch(0.65 0.16 152);
+  --md-secondary-container: oklch(0.96 0.04 152);
+  --md-on-secondary: oklch(0.99 0 0);
+  --md-on-secondary-container: oklch(0.30 0.10 152);
 
-  /* Tertiary - Warn/Accent */
-  --md-tertiary: 35 92% 50%;
-  /* #F59E0B */
-  --md-tertiary-container: 45 93% 94%;
-  /* #FEF3C7 */
-  --md-on-tertiary: 0 0% 100%;
-  /* White */
-  --md-on-tertiary-container: 30 80% 20%;
-  /* #451A03 */
+  /* Tertiary — folch.ai signature: warm saffron, NOT Google's amber.
+     Used at most once or twice per screen as the personal-touch accent. */
+  --md-tertiary: oklch(0.72 0.14 60);
+  --md-tertiary-container: oklch(0.96 0.04 60);
+  --md-on-tertiary: oklch(0.20 0.04 60);
+  --md-on-tertiary-container: oklch(0.38 0.10 60);
 
   /* Error */
-  --md-error: 0 84% 60%;
-  /* #EF4444 */
-  --md-error-container: 0 86% 97%;
-  /* #FEF2F2 */
-  --md-on-error: 0 0% 100%;
-  /* White */
-  --md-on-error-container: 0 74% 42%;
-  /* #991B1B */
+  --md-error: oklch(0.62 0.21 25);
+  --md-error-container: oklch(0.96 0.04 25);
+  --md-on-error: oklch(0.99 0 0);
+  --md-on-error-container: oklch(0.42 0.18 25);
 
-  /* Surface - Extremely Clean White/Grey */
-  --md-surface: 0 0% 100%;
-  /* #FFFFFF */
-  --md-surface-dim: 220 14% 96%;
-  /* #F1F5F9 */
-  --md-surface-bright: 0 0% 100%;
-  /* #FFFFFF */
+  /* Surfaces — neutrals tinted toward 264° (Google Blue) at chroma 0.005-0.012.
+     Imperceptible as "blue" but creates subconscious cohesion. */
+  --md-surface: oklch(0.995 0.003 264);          /* near-pure white, 0.5% tint */
+  --md-surface-dim: oklch(0.97 0.005 264);
+  --md-surface-bright: oklch(1 0 0);
 
-  --md-surface-container-lowest: 0 0% 100%;
-  /* #FFFFFF */
-  --md-surface-container-low: 210 20% 98%;
-  /* #F8FAFC */
-  --md-surface-container: 220 14% 96%;
-  /* #F1F5F9 */
-  --md-surface-container-high: 220 13% 91%;
-  /* #E2E8F0 */
-  --md-surface-container-highest: 220 13% 90%;
-  /* #CBD5E1 */
+  --md-surface-container-lowest: oklch(1 0 0);
+  --md-surface-container-low: oklch(0.985 0.005 264);
+  --md-surface-container: oklch(0.97 0.007 264);
+  --md-surface-container-high: oklch(0.94 0.009 264);
+  --md-surface-container-highest: oklch(0.91 0.011 264);
 
-  --md-surface-variant: 220 14% 96%;
-  /* #F1F5F9 */
+  --md-surface-variant: oklch(0.97 0.007 264);
 
-  /* Text Colors - High Contrast */
-  --md-on-surface: 222 47% 11%;
-  /* #0F172A */
-  --md-on-surface-variant: 215 16% 47%;
-  /* #64748B */
+  /* Text — also tinted toward primary for cohesion */
+  --md-on-surface: oklch(0.22 0.04 264);          /* near-black with hint */
+  --md-on-surface-variant: oklch(0.52 0.025 264); /* secondary text */
 
-  /* Outline - Delicate borders */
-  --md-outline: 214 32% 91%;
-  /* #E2E8F0 */
-  --md-outline-variant: 214 32% 96%;
-  /* #F1F5F9 */
+  /* Outlines */
+  --md-outline: oklch(0.92 0.012 264);
+  --md-outline-variant: oklch(0.96 0.008 264);
 
   /* Spacing */
   --spacing-xs: 4px;
@@ -129,48 +105,41 @@
 }
 
 .dark {
-  /* Dark Mode - Deep Slate Theme */
-  --md-primary: 217 91% 60%;
-  /* #60A5FA */
-  --md-primary-container: 215 80% 20%;
-  /* #1E3A8A */
-  --md-on-primary: 215 100% 10%;
-  /* #0F172A */
-  --md-on-primary-container: 217 91% 85%;
-  /* #DBEAFE */
+  /* Dark — same hue language, lower lightness, gently tinted neutrals.
+     Reduce chroma at the lightness extremes so colors don't get garish. */
+  --md-primary: oklch(0.72 0.16 264);
+  --md-primary-container: oklch(0.30 0.10 264);
+  --md-on-primary: oklch(0.16 0.04 264);
+  --md-on-primary-container: oklch(0.88 0.06 264);
 
-  --md-secondary: 142 70% 50%;
-  --md-secondary-container: 145 80% 10%;
-  --md-on-secondary: 210 40% 98%;
-  --md-on-secondary-container: 142 70% 90%;
+  --md-secondary: oklch(0.72 0.14 152);
+  --md-secondary-container: oklch(0.28 0.08 152);
+  --md-on-secondary: oklch(0.99 0 0);
+  --md-on-secondary-container: oklch(0.90 0.05 152);
 
-  /* Dark Surface - Not pitch black, but very dark slate */
-  --md-surface: 222 47% 4%;
-  /* #020617 */
-  --md-surface-dim: 222 47% 2%;
-  /* #020410 */
-  --md-surface-bright: 217 33% 17%;
-  /* #1E293B */
+  --md-tertiary: oklch(0.78 0.13 60);
+  --md-tertiary-container: oklch(0.32 0.08 60);
+  --md-on-tertiary: oklch(0.18 0.04 60);
+  --md-on-tertiary-container: oklch(0.90 0.07 60);
 
-  --md-surface-container-lowest: 222 47% 2%;
-  --md-surface-container-low: 222 47% 4%;
-  --md-surface-container: 222 47% 11%;
-  /* #0F172A */
-  --md-surface-container-high: 217 33% 17%;
-  /* #1E293B */
-  --md-surface-container-highest: 215 25% 27%;
-  /* #334155 */
+  /* Dark surfaces — tinted toward 264° at chroma 0.008-0.014 */
+  --md-surface: oklch(0.16 0.012 264);
+  --md-surface-dim: oklch(0.13 0.012 264);
+  --md-surface-bright: oklch(0.24 0.014 264);
 
-  --md-surface-variant: 217 33% 17%;
+  --md-surface-container-lowest: oklch(0.13 0.012 264);
+  --md-surface-container-low: oklch(0.16 0.012 264);
+  --md-surface-container: oklch(0.20 0.014 264);
+  --md-surface-container-high: oklch(0.24 0.014 264);
+  --md-surface-container-highest: oklch(0.30 0.014 264);
 
-  --md-on-surface: 210 40% 98%;
-  /* #F8FAFC */
-  --md-on-surface-variant: 215 20% 65%;
-  /* #94A3B8 */
+  --md-surface-variant: oklch(0.24 0.014 264);
 
-  --md-outline: 217 33% 17%;
-  /* #1E293B - Very subtle borders */
-  --md-outline-variant: 217 33% 20%;
+  --md-on-surface: oklch(0.96 0.008 264);
+  --md-on-surface-variant: oklch(0.72 0.014 264);
+
+  --md-outline: oklch(0.30 0.014 264);
+  --md-outline-variant: oklch(0.26 0.012 264);
 
   /* Legacy Mapping for Dark */
   --background: var(--md-surface-container-low);
@@ -195,60 +164,61 @@
 }
 
 @theme inline {
-  --color-md-primary: hsl(var(--md-primary));
-  --color-md-primary-container: hsl(var(--md-primary-container));
-  --color-md-on-primary: hsl(var(--md-on-primary));
-  --color-md-on-primary-container: hsl(var(--md-on-primary-container));
+  /* Tokens are now full color values (oklch), so no hsl() wrapper. */
+  --color-md-primary: var(--md-primary);
+  --color-md-primary-container: var(--md-primary-container);
+  --color-md-on-primary: var(--md-on-primary);
+  --color-md-on-primary-container: var(--md-on-primary-container);
 
-  --color-md-secondary: hsl(var(--md-secondary));
-  --color-md-secondary-container: hsl(var(--md-secondary-container));
-  --color-md-on-secondary: hsl(var(--md-on-secondary));
-  --color-md-on-secondary-container: hsl(var(--md-on-secondary-container));
+  --color-md-secondary: var(--md-secondary);
+  --color-md-secondary-container: var(--md-secondary-container);
+  --color-md-on-secondary: var(--md-on-secondary);
+  --color-md-on-secondary-container: var(--md-on-secondary-container);
 
-  --color-md-tertiary: hsl(var(--md-tertiary));
-  --color-md-tertiary-container: hsl(var(--md-tertiary-container));
-  --color-md-on-tertiary: hsl(var(--md-on-tertiary));
-  --color-md-on-tertiary-container: hsl(var(--md-on-tertiary-container));
+  --color-md-tertiary: var(--md-tertiary);
+  --color-md-tertiary-container: var(--md-tertiary-container);
+  --color-md-on-tertiary: var(--md-on-tertiary);
+  --color-md-on-tertiary-container: var(--md-on-tertiary-container);
 
-  --color-md-error: hsl(var(--md-error));
-  --color-md-error-container: hsl(var(--md-error-container));
-  --color-md-on-error: hsl(var(--md-on-error));
-  --color-md-on-error-container: hsl(var(--md-on-error-container));
+  --color-md-error: var(--md-error);
+  --color-md-error-container: var(--md-error-container);
+  --color-md-on-error: var(--md-on-error);
+  --color-md-on-error-container: var(--md-on-error-container);
 
-  --color-md-surface: hsl(var(--md-surface));
-  --color-md-surface-dim: hsl(var(--md-surface-dim));
-  --color-md-surface-bright: hsl(var(--md-surface-bright));
-  --color-md-surface-container-lowest: hsl(var(--md-surface-container-lowest));
-  --color-md-surface-container-low: hsl(var(--md-surface-container-low));
-  --color-md-surface-container: hsl(var(--md-surface-container));
-  --color-md-surface-container-high: hsl(var(--md-surface-container-high));
-  --color-md-surface-container-highest: hsl(var(--md-surface-container-highest));
-  --color-md-surface-variant: hsl(var(--md-surface-variant));
-  --color-md-on-surface: hsl(var(--md-on-surface));
-  --color-md-on-surface-variant: hsl(var(--md-on-surface-variant));
+  --color-md-surface: var(--md-surface);
+  --color-md-surface-dim: var(--md-surface-dim);
+  --color-md-surface-bright: var(--md-surface-bright);
+  --color-md-surface-container-lowest: var(--md-surface-container-lowest);
+  --color-md-surface-container-low: var(--md-surface-container-low);
+  --color-md-surface-container: var(--md-surface-container);
+  --color-md-surface-container-high: var(--md-surface-container-high);
+  --color-md-surface-container-highest: var(--md-surface-container-highest);
+  --color-md-surface-variant: var(--md-surface-variant);
+  --color-md-on-surface: var(--md-on-surface);
+  --color-md-on-surface-variant: var(--md-on-surface-variant);
 
-  --color-md-outline: hsl(var(--md-outline));
-  --color-md-outline-variant: hsl(var(--md-outline-variant));
+  --color-md-outline: var(--md-outline);
+  --color-md-outline-variant: var(--md-outline-variant);
 
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
 
   --radius-sm: var(--radius-small);
   --radius-md: var(--radius-medium);
@@ -270,8 +240,24 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-google-sans, var(--font-geist-sans, system-ui, sans-serif));
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+    font-family: var(--font-google-sans, ui-sans-serif, system-ui, sans-serif);
+    font-feature-settings: "ss01", "cv02", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Serif italic accent — used for the wordmark and rare editorial moments. */
+  .font-serif-accent {
+    font-family: var(--font-serif-accent, ui-serif, Georgia, serif);
+    font-style: italic;
+    font-feature-settings: "kern", "liga", "calt";
+  }
+
+  code,
+  pre,
+  kbd {
+    font-family: var(--font-roboto-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
   }
 
   /* Typography - Clean & Minimal */
@@ -652,7 +638,7 @@ body.chat-page main {
   height: 1em;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background-color: hsl(var(--primary));
+  background-color: var(--primary);
   border-radius: 1px;
   animation: streaming-cursor-blink 1s steps(2, start) infinite;
 }
