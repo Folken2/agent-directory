@@ -71,16 +71,6 @@ State placeholders inside the prompts (`{research_plan}`, `{findings}`, etc.)
 are filled automatically by ADK before each sub-agent runs. Optional fields
 (only present from iteration 2 onward) use the `{key?}` form.
 
-## Differentiation from `tavily_mcp_agent`
-
-| | `tavily_mcp_agent` | `deep_research_agent` |
-|--|--|--|
-| Architecture | Single LlmAgent | SequentialAgent + LoopAgent |
-| Pattern | Power tool — you ask, it queries | Autonomous researcher — you ask, it iterates |
-| Tool calls | 1-3 per turn | 5-15 per turn across iterations |
-| Output | Direct answer + 4 sources | Multi-section cited report |
-| Best for | Quick lookups, single-page extraction | Comparative analysis, deep investigations |
-
 ## Tweaking the Loop
 
 In `agent.py`:

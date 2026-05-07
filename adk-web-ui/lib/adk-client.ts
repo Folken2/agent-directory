@@ -205,22 +205,6 @@ class ADKClient {
           useCases: [],
           samplePrompts: [],
         },
-        {
-          name: 'simple_agent_web_search_EXA',
-          description: 'AI assistant that grounds answers using web search and always cites sources',
-          tools: ['web_search_async'],
-          tags: [],
-          useCases: [],
-          samplePrompts: [],
-        },
-        {
-          name: 'simple_agent_web_search',
-          description: 'AI assistant that grounds answers using web search and always cites sources',
-          tools: ['google_search'],
-          tags: [],
-          useCases: [],
-          samplePrompts: [],
-        },
       ];
     }
   }

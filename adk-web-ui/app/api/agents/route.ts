@@ -176,16 +176,6 @@ const FALLBACK_AGENTS = [
     description: 'AI assistant that generates images based on a prompt',
     tools: ['generate_image', 'load_artifacts'],
   },
-  {
-    name: 'simple_agent_web_search_EXA',
-    description: 'AI assistant that grounds answers using web search and always cites sources',
-    tools: ['web_search_async'],
-  },
-  {
-    name: 'simple_agent_web_search',
-    description: 'AI assistant that grounds answers using web search and always cites sources',
-    tools: ['google_search'],
-  },
 ];
 
 export async function GET(_request: NextRequest) {

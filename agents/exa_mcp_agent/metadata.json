@@ -1,6 +1,7 @@
 {
   "name": "exa_mcp_agent",
   "displayName": "Exa Research Assistant",
+  "logo": "https://exa.ai/images/favicon-32x32.png",
   "category": "Research",
   "description": "Deep research across the web, code, companies, and people. Searches GitHub repos, crawls URLs, finds LinkedIn profiles, and generates comprehensive research reports with citations.",
   "tools": ["web_search_exa", "web_search_advanced_exa", "get_code_context_exa", "deep_search_exa", "crawling_exa", "company_research_exa", "linkedin_search_exa", "deep_researcher_start", "deep_researcher_check"],

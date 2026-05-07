@@ -79,13 +79,12 @@ This is a **monorepo** containing both the Python backend (ADK agents) and the N
 ├── agents/                      # Python backend — ADK agents
 │   ├── adk_agent_builder/      # Meta-agent for building agents
 │   ├── data_analyst_agent/     # Code execution & data analysis
+│   ├── deep_research_agent/    # Multi-agent loop research with Tavily
 │   ├── exa_mcp_agent/          # EXA AI research agent
 │   ├── image_generation_agent/ # Image generation agent
 │   ├── mermaid_mcp_agent/      # Mermaid diagram generator
+│   ├── repo_atlas_agent/       # GitHub repo visualizer (Mermaid + overview)
 │   ├── resume_screener/        # Multi-agent resume screener
-│   ├── simple_agent_maps_grounded/ # Maps-integrated agent
-│   ├── simple_agent_web_search/ # Basic web search agent
-│   ├── tavily_mcp_agent/       # Tavily research agent
 │   ├── pyproject.toml          # Python dependencies
 │   └── uv.lock                 # Lock file
 ├── adk-web-ui/                  # Next.js frontend
