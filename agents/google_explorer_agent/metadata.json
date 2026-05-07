@@ -1,0 +1,22 @@
+{
+  "name": "google_explorer_agent",
+  "displayName": "Google Explorer",
+  "logo": "https://www.google.com/favicon.ico",
+  "category": "Research",
+  "description": "Multi-step travel and local research. Plans trips, scouts neighborhoods, and recommends places — by chaining live Google Search with Google Maps in a single coordinated answer.",
+  "tools": ["google search", "google maps"],
+  "tags": ["research", "travel", "trip-planning", "local-search", "places", "web-search", "citations", "grounded"],
+  "useCases": [
+    { "title": "Trip Itineraries", "description": "Multi-day plans with neighborhoods, restaurants, and venues — sourced and mapped" },
+    { "title": "Neighborhood Research", "description": "What's a place really like? Reviews, vibe, and concrete spots in one answer" },
+    { "title": "Local Discovery", "description": "Find the best places for a specific need, with web context plus addresses, hours, and ratings" },
+    { "title": "City Comparisons", "description": "Compare cities or neighborhoods across food, nightlife, safety, and points of interest" }
+  ],
+  "samplePrompts": [
+    "Plan a 4-day Lisbon itinerary: coolest neighborhoods, one rooftop bar per night, vegan-friendly lunch each day.",
+    "Find top-rated vegan lunch spots in Bairro Alto, Lisbon — top 3 with hours and ratings.",
+    "Compare Tokyo's Shibuya vs Shinjuku for a first-time visitor and recommend a hotel area with concrete options.",
+    "What's the current vibe of Mexico City's Roma Norte in 2026, and which 5 cafés should I actually visit?"
+  ],
+  "author": "Albert Folch"
+}
