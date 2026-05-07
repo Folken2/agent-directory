@@ -622,7 +622,7 @@ body.chat-page main {
   height: 1em;
   margin-left: 2px;
   vertical-align: text-bottom;
-  background-color: hsl(var(--primary));
+  background-color: hsl(var(--foreground));
   border-radius: 1px;
   animation: streaming-cursor-blink 1s steps(2, start) infinite;
 }

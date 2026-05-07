@@ -170,7 +170,7 @@ export default function Composer({
             <div className="flex items-center gap-3">
               <span
                 className={cn(
-                  'hidden sm:inline text-[11px] text-muted-foreground/70 transition-opacity',
+                  'hidden sm:inline text-[11px] text-md-on-surface-variant/70 transition-opacity',
                   focused || value.length > 0 ? 'opacity-100' : 'opacity-0',
                 )}
               >
@@ -205,7 +205,7 @@ export default function Composer({
           </div>
         </div>
 
-        <p className="text-center text-[11px] text-muted-foreground/70 mt-2">
+        <p className="text-center text-label-small text-md-on-surface-variant/60 uppercase tracking-widest mt-3">
           AI can make mistakes. Please verify important information.
         </p>
       </div>

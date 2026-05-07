@@ -73,14 +73,14 @@ export default function ChatHistory() {
         {filteredConversations.length === 0 ? (
           <div className="px-2 py-10 text-center">
             <MessageSquare className="w-7 h-7 mx-auto mb-3 text-muted-foreground/40" />
-            <p className="text-[13px] font-medium text-muted-foreground">No conversations yet</p>
-            <p className="text-[11px] mt-1 text-muted-foreground/70">
+            <p className="text-[13px] font-medium text-md-on-surface-variant">No conversations yet</p>
+            <p className="text-label-small text-md-on-surface-variant/60 uppercase tracking-widest mt-2">
               Start a new chat to begin
             </p>
           </div>
         ) : (
           <>
-            <div className="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+            <div className="px-2 pb-2 text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
               Recent{selectedAgent ? ` · ${selectedAgent.displayName || selectedAgent.name}` : ''}
             </div>
             <div className="space-y-0.5">

@@ -472,7 +472,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
         <div className="px-4 pt-3 flex items-center justify-end gap-3">
           <button
             onClick={() => setInfoOpen((open) => !open)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label-medium text-md-on-surface-variant hover:text-foreground hover:bg-muted transition-colors"
             aria-label={infoOpen ? 'Hide agent info' : 'Show agent info'}
           >
             <Info className="w-3.5 h-3.5" />
@@ -532,7 +532,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
         {selectedAgent ? (
           <div className="px-5 py-6 space-y-7">
             <section>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+              <p className="text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
                 About
               </p>
               <p className="mt-2 text-[13px] text-foreground/90 leading-relaxed">
@@ -542,7 +542,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
             {selectedAgent.tags && selectedAgent.tags.length > 0 && (
               <section>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+                <p className="text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
                   Tags
                 </p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -560,7 +560,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
             {selectedAgent.tools && selectedAgent.tools.length > 0 && (
               <section>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+                <p className="text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
                   Tools
                 </p>
                 <ul className="mt-2 space-y-1">
@@ -578,7 +578,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
             {selectedAgent.useCases && selectedAgent.useCases.length > 0 && (
               <section>
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/80">
+                <p className="text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
                   Use cases
                 </p>
                 <ul className="mt-2 space-y-1.5">
