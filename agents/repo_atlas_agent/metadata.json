@@ -1,0 +1,22 @@
+{
+  "name": "repo_atlas_agent",
+  "displayName": "Repo Atlas",
+  "logo": "https://github.githubassets.com/favicons/favicon.svg",
+  "category": "Developer Tools",
+  "description": "Map any public GitHub repository in seconds. Pass a URL and get a Mermaid diagram of the codebase structure plus a concise overview of purpose, stack, and entry points — all from the GitHub REST API, no cloning required.",
+  "tools": ["fetch_repo_meta", "fetch_repo_tree", "read_repo_file"],
+  "tags": ["github", "code-analysis", "mermaid", "repo-explorer", "developer-tools", "diagram"],
+  "useCases": [
+    { "title": "Onboarding to a Codebase", "description": "Quick orientation to an unfamiliar repo before diving in" },
+    { "title": "Architecture Documentation", "description": "Generate Mermaid diagrams to drop into READMEs or wikis" },
+    { "title": "Tech Stack Audit", "description": "Identify language, framework, and key dependencies at a glance" },
+    { "title": "Repo Triage", "description": "Decide whether a candidate library fits before cloning" }
+  ],
+  "samplePrompts": [
+    "Map https://github.com/earendil-works/pi — how is this AI agent toolkit split across the coding-agent CLI, unified LLM API, and Slack bot?",
+    "Visualize https://github.com/openclaw/openclaw — what are the components of this cross-platform personal AI assistant?",
+    "Generate a structural diagram for https://github.com/redis/redis — point out the core data-structure modules, the cluster layer, and the vector-query engine.",
+    "Give me an atlas of https://github.com/Shubhamsaboo/awesome-llm-apps — how are the 100+ AI agent and RAG apps organized in this collection?"
+  ],
+  "author": "Albert Folch"
+}
