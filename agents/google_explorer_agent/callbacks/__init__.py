@@ -1,6 +1,4 @@
-"""
-Callbacks package for maps grounded agent.
-"""
+"""Callbacks package for the Google Explorer agent."""
 
 from .recovery import (
     after_tool_recovery_callback,
