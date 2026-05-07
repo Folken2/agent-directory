@@ -1,0 +1,22 @@
+{
+  "name": "deep_research_agent",
+  "displayName": "Deep Research Agent",
+  "logo": "https://tavily.com/favicon.ico",
+  "category": "Research",
+  "description": "Autonomous multi-agent research pipeline. Decomposes a question into a plan, iteratively gathers evidence with Tavily, critiques coverage, and composes a fully cited markdown report — all in one turn.",
+  "tools": ["tavily-search", "tavily-extract", "exit_loop"],
+  "tags": ["research", "multi-agent", "loop-agent", "deep-research", "citations", "synthesis"],
+  "useCases": [
+    { "title": "Comparative Analysis", "description": "Side-by-side comparison reports across vendors, products, or technologies" },
+    { "title": "Market Reports", "description": "Multi-angle market research with sourced statistics and trends" },
+    { "title": "Technical Deep-Dives", "description": "In-depth technical investigations covering architecture, pricing, and adoption" },
+    { "title": "Due Diligence", "description": "Background research on companies, frameworks, or claims with citation trails" }
+  ],
+  "samplePrompts": [
+    "Compare the agent frameworks LangGraph, CrewAI, and Google ADK across orchestration model, observability, and production readiness.",
+    "Research the state of self-hosted vector databases in 2026 — Weaviate, Qdrant, Milvus — across performance, licensing, and operational complexity.",
+    "Investigate Anthropic's Claude pricing evolution from 2023 to today and predict the trajectory based on competitive pressure.",
+    "Build a deep brief on the European AI Act's impact on startup tooling — what changes, what compliance now requires, and who is affected most."
+  ],
+  "author": "Albert Folch"
+}
