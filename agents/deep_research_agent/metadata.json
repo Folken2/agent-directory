@@ -5,6 +5,7 @@
   "category": "Research",
   "description": "Autonomous multi-agent research pipeline. Decomposes a question into a plan, iteratively gathers evidence with Tavily, critiques coverage, and composes a fully cited markdown report — all in one turn.",
   "tools": ["tavily-search", "tavily-extract", "exit_loop"],
+  "finalSubAgent": "writer",
   "tags": ["research", "multi-agent", "loop-agent", "deep-research", "citations", "synthesis"],
   "useCases": [
     { "title": "Comparative Analysis", "description": "Side-by-side comparison reports across vendors, products, or technologies" },

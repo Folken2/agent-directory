@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { Agent, Artifact, Message } from '@/lib/types';
+import { Agent, Artifact, Message, SubAgentStep } from '@/lib/types';
 import MessageBubble from './MessageBubble';
 import StreamingBubble from './StreamingBubble';
 import EmptyState from './EmptyState';
@@ -22,6 +22,7 @@ interface MessageListProps {
   streamingThinking: string;
   currentAssistantMessageId: string | null;
   currentMessageArtifacts: Artifact[];
+  streamingSubAgentSteps: SubAgentStep[];
 }
 
 export default function MessageList({
@@ -38,6 +39,7 @@ export default function MessageList({
   streamingThinking,
   currentAssistantMessageId,
   currentMessageArtifacts,
+  streamingSubAgentSteps,
 }: MessageListProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -79,6 +81,7 @@ export default function MessageList({
                 isThinking={isThinking}
                 artifacts={currentMessageArtifacts}
                 isDarkMode={isDarkMode}
+                subAgentSteps={streamingSubAgentSteps}
               />
             )}
 

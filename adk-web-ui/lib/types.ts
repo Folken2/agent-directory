@@ -23,6 +23,18 @@ export interface Agent {
   lastUpdated?: string; // Last update date
   logo?: string; // Logo/thumbnail URL for the agent
   category?: string;
+  // Multi-agent declarations. When present, only `finalSubAgent` text streams
+  // to the main bubble; other sub-agent text is routed to a progress block.
+  finalSubAgent?: string;
+}
+
+export interface SubAgentStep {
+  author: string;       // sub-agent name as emitted by ADK (e.g., "planner")
+  content: string;      // accumulated text from this sub-agent (latest run only)
+  status: 'running' | 'done';
+  startedAt: number;    // ms epoch
+  completedAt?: number;
+  runIndex: number;     // 1, 2, 3 — increments when an author re-emits in a loop
 }
 
 export interface Message {
@@ -33,6 +45,7 @@ export interface Message {
   timestamp: Date;
   agentName?: string;
   artifacts?: Artifact[];
+  subAgentSteps?: SubAgentStep[];
 }
 
 export interface Artifact {
@@ -107,5 +120,6 @@ export interface StreamChunk {
   error?: string;
   toolCall?: ToolCall;
   toolResponse?: ToolResponse;
+  author?: string;       // ADK event.author — which (sub-)agent produced this chunk
 }
 

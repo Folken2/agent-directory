@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
-import { Message, Artifact } from '@/lib/types';
+import { Message, Artifact, SubAgentStep } from '@/lib/types';
 import RateLimitBanner from './RateLimitBanner';
 import MessageList from './chat/MessageList';
 import Composer from './chat/Composer';
@@ -41,6 +41,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [currentAssistantMessageId, setCurrentAssistantMessageId] = useState<string | null>(null);
   const [currentMessageArtifacts, setCurrentMessageArtifacts] = useState<Artifact[]>([]);
+  const [streamingSubAgentSteps, setStreamingSubAgentSteps] = useState<SubAgentStep[]>([]);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -169,6 +170,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     setIsInitializing(true);
     setIsStreaming(false);
     setStreamingContent('');
+    setStreamingSubAgentSteps([]);
     setError(null);
     setArtifacts([]);
     setCurrentMessageArtifacts([]);
@@ -182,6 +184,62 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
       let fullResponse = '';
       let fullThinking = '';
       let hasReceivedFirstChunk = false;
+
+      // Multi-agent routing: when the agent declares a `finalSubAgent`, only
+      // text from that author streams to the main bubble. Other authors are
+      // accumulated as collapsible progress steps. A transition to a new
+      // author flips the previous step from "running" → "done".
+      const finalAuthor = selectedAgent.finalSubAgent || selectedAgent.name;
+      const subAgentSteps: SubAgentStep[] = [];
+      const isIntermediateAuthor = (author: string | undefined): boolean =>
+        !!selectedAgent.finalSubAgent &&
+        !!author &&
+        author !== finalAuthor &&
+        author !== selectedAgent.name;
+      const recordIntermediate = (author: string, content: string) => {
+        const last = subAgentSteps[subAgentSteps.length - 1];
+        if (last && last.author === author && last.status === 'running') {
+          // Continuation of the same step — append (or replace if it's a
+          // larger overlapping prefix, mirroring the main-content dedupe).
+          if (content === last.content) return;
+          if (content.length > last.content.length && content.startsWith(last.content)) {
+            last.content = content;
+          } else if (last.content.includes(content)) {
+            return;
+          } else {
+            last.content += content;
+          }
+        } else {
+          // New author OR same author after a finished run — close any open
+          // running step from a different author, then push a fresh step.
+          if (last && last.status === 'running' && last.author !== author) {
+            last.status = 'done';
+            last.completedAt = Date.now();
+          }
+          const priorRuns = subAgentSteps.filter((s) => s.author === author).length;
+          subAgentSteps.push({
+            author,
+            content,
+            status: 'running',
+            startedAt: Date.now(),
+            runIndex: priorRuns + 1,
+          });
+        }
+        setStreamingSubAgentSteps([...subAgentSteps]);
+      };
+      const closeIntermediateOnFinalEmit = () => {
+        // Whenever the final author emits text, all prior intermediate steps
+        // are necessarily done.
+        let mutated = false;
+        for (const s of subAgentSteps) {
+          if (s.status === 'running') {
+            s.status = 'done';
+            s.completedAt = Date.now();
+            mutated = true;
+          }
+        }
+        if (mutated) setStreamingSubAgentSteps([...subAgentSteps]);
+      };
 
       const sessionId = conversation.id.replace('conv-', 'session-');
 
@@ -218,6 +276,9 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           }
 
           if (chunk.type === 'thinking' && chunk.content) {
+            // Drop thinking from intermediate sub-agents — their visible text
+            // already represents the work, no need to surface internal CoT.
+            if (isIntermediateAuthor(chunk.author)) continue;
             const newThinking = chunk.content;
             setIsThinking(true);
             if (newThinking === fullThinking && fullThinking.length > 0) continue;
@@ -230,6 +291,14 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             }
             setStreamingThinking(fullThinking);
           } else if (chunk.type === 'text' && chunk.content) {
+            // Route by author: intermediate sub-agents become collapsed steps;
+            // only the final author's text reaches the main bubble.
+            if (isIntermediateAuthor(chunk.author)) {
+              recordIntermediate(chunk.author!, chunk.content);
+              continue;
+            }
+            // Final author emitted — close any still-running intermediate steps.
+            closeIntermediateOnFinalEmit();
             if (isThinking) setIsThinking(false);
             const newContent = chunk.content;
             if (newContent === fullResponse && fullResponse.length > 0) continue;
@@ -300,6 +369,14 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             }
           }
 
+          // Mark any still-running step as done — the stream is over.
+          for (const s of subAgentSteps) {
+            if (s.status === 'running') {
+              s.status = 'done';
+              s.completedAt = Date.now();
+            }
+          }
+
           const assistantMessage: Message = {
             id: assistantMessageId,
             role: 'assistant',
@@ -308,9 +385,11 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             timestamp: new Date(),
             agentName: selectedAgent.name,
             artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
+            subAgentSteps: subAgentSteps.length > 0 ? subAgentSteps.map((s) => ({ ...s })) : undefined,
           };
           addMessage(assistantMessage);
           setCurrentMessageArtifacts([]);
+          setStreamingSubAgentSteps([]);
         }
       } catch (streamError: any) {
         // User clicked stop — commit whatever we streamed and exit cleanly.
@@ -320,8 +399,15 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           setIsInitializing(false);
           setStreamingContent('');
           setStreamingThinking('');
+          setStreamingSubAgentSteps([]);
           setCurrentAssistantMessageId(null);
-          if (fullResponse.trim()) {
+          if (fullResponse.trim() || subAgentSteps.length > 0) {
+            for (const s of subAgentSteps) {
+              if (s.status === 'running') {
+                s.status = 'done';
+                s.completedAt = Date.now();
+              }
+            }
             const stoppedMessage: Message = {
               id: assistantMessageId,
               role: 'assistant',
@@ -330,6 +416,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
               timestamp: new Date(),
               agentName: selectedAgent.name,
               artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
+              subAgentSteps: subAgentSteps.length > 0 ? subAgentSteps.map((s) => ({ ...s })) : undefined,
             };
             addMessage(stoppedMessage);
             setCurrentMessageArtifacts([]);
@@ -446,6 +533,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
       setIsInitializing(false);
       setStreamingContent('');
       setStreamingThinking('');
+      setStreamingSubAgentSteps([]);
       setCurrentAssistantMessageId(null);
       abortControllerRef.current = null;
       stoppedRef.current = false;
@@ -505,6 +593,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           streamingThinking={streamingThinking}
           currentAssistantMessageId={currentAssistantMessageId}
           currentMessageArtifacts={currentMessageArtifacts}
+          streamingSubAgentSteps={streamingSubAgentSteps}
         />
 
         <div className="bg-background/90 backdrop-blur-lg sticky bottom-0 z-10 relative">

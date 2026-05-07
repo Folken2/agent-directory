@@ -10,6 +10,7 @@ import { MarkdownRenderer } from './markdown';
 import ToolStatusDisplay from '../ToolStatusDisplay';
 import ThinkingBlock from '../ThinkingBlock';
 import InlineArtifact from '../InlineArtifact';
+import SubAgentProgress from './SubAgentProgress';
 
 function safeParseDate(date: any): Date | undefined {
   if (!date) return undefined;
@@ -97,6 +98,9 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
       <div className="max-w-3xl w-full space-y-2">
         <ToolStatusDisplay messageId={message.id} />
         {message.thinking && <ThinkingBlock content={message.thinking} />}
+        {message.subAgentSteps && message.subAgentSteps.length > 0 && (
+          <SubAgentProgress steps={message.subAgentSteps} />
+        )}
 
         {showAnything && (
           <div className="text-foreground">

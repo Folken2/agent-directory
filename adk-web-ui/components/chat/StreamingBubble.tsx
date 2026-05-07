@@ -3,12 +3,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { Artifact } from '@/lib/types';
+import { Artifact, SubAgentStep } from '@/lib/types';
 import { MarkdownRenderer } from './markdown';
 import { getDisplayContent } from './MessageBubble';
 import ToolStatusDisplay from '../ToolStatusDisplay';
 import ThinkingBlock from '../ThinkingBlock';
 import InlineArtifact from '../InlineArtifact';
+import SubAgentProgress from './SubAgentProgress';
 
 interface StreamingBubbleProps {
   messageId: string;
@@ -17,6 +18,7 @@ interface StreamingBubbleProps {
   isThinking: boolean;
   artifacts: Artifact[];
   isDarkMode: boolean;
+  subAgentSteps?: SubAgentStep[];
 }
 
 export default function StreamingBubble({
@@ -26,6 +28,7 @@ export default function StreamingBubble({
   isThinking,
   artifacts,
   isDarkMode,
+  subAgentSteps,
 }: StreamingBubbleProps) {
   const displayContent = getDisplayContent(streamingContent);
 
@@ -39,6 +42,9 @@ export default function StreamingBubble({
       <div className="max-w-3xl w-full space-y-2">
         <ToolStatusDisplay messageId={messageId} />
         {streamingThinking && <ThinkingBlock content={streamingThinking} isStreaming={isThinking} />}
+        {subAgentSteps && subAgentSteps.length > 0 && (
+          <SubAgentProgress steps={subAgentSteps} isStreaming={true} />
+        )}
 
         <div className="text-foreground">
           {displayContent ? (

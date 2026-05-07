@@ -795,12 +795,12 @@ class ADKClient {
                       const isThought = part.thought === true || part.thinking === true
                         || part.is_thought === true || 'thoughtSignature' in part;
                       if (isThought) {
-                        console.log(`[ADK Client] Yielding thinking from content.parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
-                        yield { type: 'thinking', content: text };
+                        console.log(`[ADK Client] Yielding thinking from content.parts (author=${eventData.author}), len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        yield { type: 'thinking', content: text, author: eventData.author };
                       } else {
                         textChunkCount++;
-                        console.log(`[ADK Client] Yielding text #${textChunkCount} from content.parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
-                        yield { type: 'text', content: text };
+                        console.log(`[ADK Client] Yielding text #${textChunkCount} from content.parts (author=${eventData.author}), len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        yield { type: 'text', content: text, author: eventData.author };
                       }
                     } else {
                       const inlineData = extractInlineDataFromPart(part);
@@ -887,8 +887,8 @@ class ADKClient {
                   // Fallback for content field
                   const content = typeof eventData.content === 'string' ? eventData.content : JSON.stringify(eventData.content);
                   textChunkCount++;
-                  console.log(`[ADK Client] Yielding text #${textChunkCount} from content field, len=${content.length}, preview="${content.substring(0, 50)}..."`);
-                  yield { type: 'text', content };
+                  console.log(`[ADK Client] Yielding text #${textChunkCount} from content field (author=${eventData.author}), len=${content.length}, preview="${content.substring(0, 50)}..."`);
+                  yield { type: 'text', content, author: eventData.author };
                 }
               } catch (e) {
                 // If parsing fails, treat as plain text

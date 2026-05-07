@@ -105,6 +105,7 @@ function loadAgentMetadata(agentName: string): {
   lastUpdated?: string;
   logo?: string;
   category?: string;
+  finalSubAgent?: string;
 } | null {
   try {
     // Path from API route to agent directories: go up one level from adk-web-ui to adk-samples, then into agents/
@@ -141,6 +142,7 @@ function loadAgentMetadata(agentName: string): {
       const lastUpdated = metadata.lastUpdated || metadata.last_updated || undefined;
       const logo = metadata.logo || undefined;
       const category = metadata.category || undefined;
+      const finalSubAgent = metadata.finalSubAgent || metadata.final_sub_agent || undefined;
 
       return {
         name: agentName,
@@ -157,6 +159,7 @@ function loadAgentMetadata(agentName: string): {
         lastUpdated,
         logo,
         category,
+        finalSubAgent,
       };
     }
   } catch (error) {
