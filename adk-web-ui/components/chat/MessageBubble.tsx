@@ -70,12 +70,11 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
         className="flex w-full justify-end"
         title={timestamp?.toLocaleString()}
       >
-        <div className="max-w-3xl rounded-2xl px-5 py-3 bg-primary text-primary-foreground shadow-sm">
+        <div className="max-w-[85%] rounded-2xl bg-muted/60 px-4 py-2 text-foreground/90 text-left">
           <MarkdownRenderer
             content={text}
             isStreaming={false}
             isDarkMode={isDarkMode}
-            className="markdown-content user-message"
           />
         </div>
       </motion.div>

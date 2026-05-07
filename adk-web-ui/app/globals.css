@@ -592,36 +592,6 @@
   background-color: hsl(var(--md-surface-container-high));
 }
 
-/* User message markdown - inherit colors from parent bubble */
-.markdown-content.user-message p,
-.markdown-content.user-message h1,
-.markdown-content.user-message h2,
-.markdown-content.user-message h3,
-.markdown-content.user-message h4,
-.markdown-content.user-message h5,
-.markdown-content.user-message h6,
-.markdown-content.user-message li,
-.markdown-content.user-message strong {
-  color: inherit;
-}
-
-.markdown-content.user-message .inline-code {
-  background-color: rgba(255, 255, 255, 0.15);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: inherit;
-}
-
-.markdown-content.user-message a {
-  color: inherit;
-  text-decoration-color: rgba(255, 255, 255, 0.5);
-}
-
-.markdown-content.user-message blockquote {
-  border-color: rgba(255, 255, 255, 0.4);
-  background-color: rgba(255, 255, 255, 0.1);
-  color: inherit;
-}
-
 /* Hide footer on chat page */
 body.chat-page footer {
   display: none;

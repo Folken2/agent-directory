@@ -93,7 +93,7 @@ export default function Composer({
   return (
     <div className="px-4 pb-4 pt-2">
       <div className="pointer-events-none absolute inset-x-0 -top-4 h-6 bg-linear-to-t from-background to-transparent" />
-      <div className="mx-auto max-w-4xl">
+      <div className="mx-auto max-w-5xl">
         <div
           className={cn(
             'group rounded-3xl border bg-card shadow-sm transition-all',
