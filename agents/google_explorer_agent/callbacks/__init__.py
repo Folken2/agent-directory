@@ -1,4 +1,4 @@
-"""Callbacks package for the Google Explorer agent."""
+"""Callbacks package for the Local Guide agent."""
 
 from .recovery import (
     after_tool_recovery_callback,

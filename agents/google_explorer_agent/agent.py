@@ -1,5 +1,5 @@
 """
-Google Explorer — unified multi-step research agent.
+Local Guide — unified multi-step research agent.
 
 Coordinator LlmAgent that delegates to two specialist sub-agents wrapped as
 AgentTools: one for web search (google_search) and one for Google Maps

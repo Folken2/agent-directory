@@ -1,6 +1,6 @@
 {
   "name": "google_explorer_agent",
-  "displayName": "Google Explorer",
+  "displayName": "Local Guide",
   "logo": "https://www.google.com/favicon.ico",
   "category": "Research",
   "description": "Multi-step travel and local research. Plans trips, scouts neighborhoods, and recommends places — by chaining live Google Search with Google Maps in a single coordinated answer.",

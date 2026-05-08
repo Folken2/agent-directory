@@ -1,4 +1,4 @@
-"""Utility helpers for the Google Explorer agent."""
+"""Utility helpers for the Local Guide agent."""
 
 from datetime import datetime
 
