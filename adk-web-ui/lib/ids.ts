@@ -5,47 +5,99 @@
  *   - ConversationId is the chat-UI-facing id, prefixed with "conv-".
  *
  * They share a numeric suffix (a millisecond timestamp at creation time) and
- * convert 1:1. Before this module, the conversion lived as
- * `id.replace('conv-', 'session-')` sprinkled across the codebase, with no
- * single owner — adding a new id type meant grepping for that string. Use
- * these helpers everywhere instead, and add new conversion functions here
- * rather than inlining string surgery at the callsite.
+ * convert 1:1.
  *
- * Branded types are intentionally NOT applied yet — the codebase still has
- * many `string` IDs in flight (zustand store, types.ts) and a brand would
- * cascade into a much larger PR. This module is a small, safe foundation
- * that the rest of the refactor leans on.
+ * Both are branded string types: they erase to plain strings at runtime, so
+ * concatenation into URLs / SQL parameters / template literals all just
+ * works, but the type system refuses to let you pass a SessionId where a
+ * ConversationId is expected and vice versa. The constructors here are the
+ * only way to mint a brand — `as SessionId` from a raw string is a code
+ * smell that should appear nowhere outside this file.
+ *
+ * If you need to brand an external string (URL params, SQL rows), call the
+ * `toSessionId` / `toConversationId` helpers; they validate the prefix and
+ * throw on mismatch, so a typo doesn't silently produce a malformed id.
  */
+
+declare const SessionIdBrand: unique symbol;
+declare const ConversationIdBrand: unique symbol;
+declare const MessageIdBrand: unique symbol;
+
+export type SessionId = string & { readonly [SessionIdBrand]: true };
+export type ConversationId = string & { readonly [ConversationIdBrand]: true };
+export type MessageId = string & { readonly [MessageIdBrand]: true };
 
 const SESSION_PREFIX = 'session-';
 const CONV_PREFIX = 'conv-';
+const MSG_PREFIX = 'msg-';
 
-export function newConversationId(): string {
-  return `${CONV_PREFIX}${Date.now()}`;
+export function newConversationId(): ConversationId {
+  return `${CONV_PREFIX}${Date.now()}` as ConversationId;
 }
 
-export function newSessionId(): string {
-  return `${SESSION_PREFIX}${Date.now()}`;
+export function newSessionId(): SessionId {
+  return `${SESSION_PREFIX}${Date.now()}` as SessionId;
 }
 
-export function toSessionId(conversationId: string): string {
+/**
+ * Mints a fresh MessageId. The optional `salt` lets callers disambiguate
+ * messages that may be created within the same millisecond (the assistant
+ * message is created right after the user message; without a salt they'd
+ * collide on `Date.now()`).
+ */
+export function newMessageId(salt: number = 0): MessageId {
+  return `${MSG_PREFIX}${Date.now() + salt}` as MessageId;
+}
+
+/**
+ * Builds a stable MessageId for a turn replayed from a past session. Uses
+ * the session id + turn index so the same turn always gets the same id
+ * (helpful for React keys and for diffing if the transcript is re-fetched).
+ */
+export function replayedMessageId(sessionId: SessionId | string, turnIndex: number): MessageId {
+  return `resumed-${sessionId}-${turnIndex}` as MessageId;
+}
+
+/** Convert a ConversationId to its paired SessionId (1:1). */
+export function toSessionId(conversationId: ConversationId | string): SessionId {
   if (!conversationId.startsWith(CONV_PREFIX)) {
     throw new Error(`Not a conversation id: ${conversationId}`);
   }
-  return SESSION_PREFIX + conversationId.slice(CONV_PREFIX.length);
+  return (SESSION_PREFIX + conversationId.slice(CONV_PREFIX.length)) as SessionId;
 }
 
-export function toConversationId(sessionId: string): string {
+/** Convert a SessionId to its paired ConversationId (1:1). */
+export function toConversationId(sessionId: SessionId | string): ConversationId {
   if (!sessionId.startsWith(SESSION_PREFIX)) {
     throw new Error(`Not a session id: ${sessionId}`);
   }
-  return CONV_PREFIX + sessionId.slice(SESSION_PREFIX.length);
+  return (CONV_PREFIX + sessionId.slice(SESSION_PREFIX.length)) as ConversationId;
 }
 
-export function isSessionId(value: string): boolean {
+/**
+ * Brand a raw string as a SessionId after validating it. Use this at trust
+ * boundaries (URL params, JSON, DB rows) where you have a `string` and need
+ * to confirm it really is one before letting the typed helpers operate.
+ */
+export function asSessionId(value: string): SessionId {
+  if (!value.startsWith(SESSION_PREFIX)) {
+    throw new Error(`Not a session id: ${value}`);
+  }
+  return value as SessionId;
+}
+
+/** Brand a raw string as a ConversationId after validating it. */
+export function asConversationId(value: string): ConversationId {
+  if (!value.startsWith(CONV_PREFIX)) {
+    throw new Error(`Not a conversation id: ${value}`);
+  }
+  return value as ConversationId;
+}
+
+export function isSessionId(value: string): value is SessionId {
   return value.startsWith(SESSION_PREFIX);
 }
 
-export function isConversationId(value: string): boolean {
+export function isConversationId(value: string): value is ConversationId {
   return value.startsWith(CONV_PREFIX);
 }

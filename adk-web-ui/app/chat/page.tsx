@@ -6,7 +6,7 @@ import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
 import ChatHistory from '@/components/ChatHistory';
 import { useAppStore } from '@/lib/store';
-import { toConversationId } from '@/lib/ids';
+import { toConversationId, replayedMessageId } from '@/lib/ids';
 import { Agent, ChatConversation, Message } from '@/lib/types';
 import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -100,7 +100,7 @@ function ChatContent() {
             json?.transcript?.turns ?? [];
 
           const messages: Message[] = turns.map((t, idx) => ({
-            id: `resumed-${sessionParam}-${idx}`,
+            id: replayedMessageId(sessionParam, idx),
             role: t.author,
             content: t.text,
             timestamp: new Date(t.at),
