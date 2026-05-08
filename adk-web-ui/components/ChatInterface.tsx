@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
+import { newConversationId, toSessionId } from '@/lib/ids';
 import { Message, Artifact, SubAgentStep, MapsCapture } from '@/lib/types';
 import RateLimitBanner from './RateLimitBanner';
 import MessageList from './chat/MessageList';
@@ -70,7 +71,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     const loadExistingArtifacts = async () => {
       if (!currentConversation || !selectedAgent) return;
       try {
-        const sessionId = currentConversation.id.replace('conv-', 'session-');
+        const sessionId = toSessionId(currentConversation.id);
         const response = await fetch(
           `/api/artifacts?app_name=${selectedAgent.name}&user_id=default-user&session_id=${sessionId}`,
         );
@@ -145,7 +146,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     let conversation = currentConversation;
     if (!conversation) {
       conversation = {
-        id: `conv-${Date.now()}`,
+        id: newConversationId(),
         title: input.trim().slice(0, 50) || 'New Conversation',
         agentName: selectedAgent.name,
         messages: [],
@@ -242,7 +243,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
         if (mutated) setStreamingSubAgentSteps([...subAgentSteps]);
       };
 
-      const sessionId = conversation.id.replace('conv-', 'session-');
+      const sessionId = toSessionId(conversation.id);
 
       let messageContent: string | { parts: Array<{ text?: string; inline_data?: any }> } = messageText;
       if (filesToSend.length > 0) {

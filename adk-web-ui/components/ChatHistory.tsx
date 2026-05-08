@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
+import { newConversationId, toConversationId } from '@/lib/ids';
 import { ChatConversation } from '@/lib/types';
 import { Plus, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -81,7 +82,7 @@ export default function ChatHistory() {
   const handleNewChat = () => {
     if (!selectedAgent) return;
     const newConv: ChatConversation = {
-      id: `conv-${Date.now()}`,
+      id: newConversationId(),
       title: 'New Conversation',
       agentName: selectedAgent.name,
       messages: [],
@@ -141,8 +142,7 @@ export default function ChatHistory() {
             ) : (
               <div className="space-y-0.5">
                 {dbSessions.map((s) => {
-                  const rawId = s.sessionId.replace(/^session-/, '');
-                  const isActive = currentConversation?.id === `conv-${rawId}`;
+                  const isActive = currentConversation?.id === toConversationId(s.sessionId);
                   return (
                     <button
                       key={s.sessionId}

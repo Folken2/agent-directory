@@ -6,6 +6,7 @@ import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
 import ChatHistory from '@/components/ChatHistory';
 import { useAppStore } from '@/lib/store';
+import { toConversationId } from '@/lib/ids';
 import { Agent, ChatConversation, Message } from '@/lib/types';
 import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -78,11 +79,10 @@ function ChatContent() {
       }
       setSelectedAgent(agent);
 
-      // Resume mode: hydrate a past ADK session and wire the conversation id
-      // so handleSend reuses the same session_id. ChatInterface derives
-      // session_id via id.replace('conv-', 'session-'), so the conversation id
-      // must be conv-<rawId> where rawId is sessionParam without the leading
-      // 'session-' prefix.
+      // Resume mode: hydrate a past ADK session and wire the conversation
+      // id so handleSend reuses the same session_id. The conversation id is
+      // derived from the session id via toConversationId() — these always
+      // round-trip 1:1 (see lib/ids.ts).
       if (sessionParam && resumedSessionRef.current !== sessionParam) {
         resumedSessionRef.current = sessionParam;
         try {
@@ -106,10 +106,9 @@ function ChatContent() {
             agentName: agent.name,
           }));
 
-          const rawId = sessionParam.replace(/^session-/, '');
           const firstUser = turns.find((t) => t.author === 'user');
           const conversation: ChatConversation = {
-            id: `conv-${rawId}`,
+            id: toConversationId(sessionParam),
             title: (firstUser?.text || 'Resumed conversation').slice(0, 50),
             agentName: agent.name,
             messages,
