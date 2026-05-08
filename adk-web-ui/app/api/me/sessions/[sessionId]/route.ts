@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { getUserSessionTranscript } from '@/lib/db-me';
+import { getSessionTranscriptForUser } from '@/lib/sessions';
 
 export async function GET(
   _req: NextRequest,
@@ -16,7 +16,7 @@ export async function GET(
   }
 
   try {
-    const transcript = await getUserSessionTranscript(session.user.id, sessionId);
+    const transcript = await getSessionTranscriptForUser(session.user.id, sessionId);
     if (!transcript) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }

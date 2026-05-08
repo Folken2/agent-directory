@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { listUserSessions } from '@/lib/db-me';
+import { listSessionsForUser } from '@/lib/sessions';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -11,7 +11,8 @@ export async function GET() {
     return NextResponse.json({ sessions: [] });
   }
   try {
-    const sessions = await listUserSessions(session.user.id);
+    const agent = req.nextUrl.searchParams.get('agent') || undefined;
+    const sessions = await listSessionsForUser(session.user.id, agent);
     return NextResponse.json({ sessions });
   } catch (error) {
     console.error('Error listing user sessions:', error);

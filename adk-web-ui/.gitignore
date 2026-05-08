@@ -44,3 +44,9 @@ next-env.d.ts
 
 # local-only scripts (one-off DB queries; keep out of the public repo)
 scripts/engagement-report.ts
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Artifact } from '@/lib/types';
 import { useAppStore } from '@/lib/store';
+import { toSessionId } from '@/lib/ids';
 import { Download, Trash2, Save, FileText, ExternalLink, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -90,7 +91,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
     setSaveError(null);
 
     try {
-      const sessionId = currentConversation.id.replace('conv-', 'session-');
+      const sessionId = toSessionId(currentConversation.id);
 
       // Convert URL to base64 for saving
       let base64Data = '';
@@ -186,7 +187,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
     setIsDeleting(true);
 
     try {
-      const sessionId = currentConversation.id.replace('conv-', 'session-');
+      const sessionId = toSessionId(currentConversation.id);
 
       const response = await fetch(
         `/api/artifacts?app_name=${selectedAgent.name}&user_id=default-user&session_id=${sessionId}&artifact_name=${artifact.name}`,
