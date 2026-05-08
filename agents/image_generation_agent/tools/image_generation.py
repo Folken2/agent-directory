@@ -6,12 +6,21 @@ import logging
 import os
 import base64
 import re
+import ssl
 from typing import Dict, Any, Optional, TypedDict
 import aiohttp
+import certifi
 from google.adk.tools import FunctionTool
 from google.adk.tools.tool_context import ToolContext
 import google.genai.types as types
 from ..config.llm import IMAGE_MODEL
+
+
+# Build once at import. Some Python installs (notably the python.org macOS
+# framework build) ship without a usable CA store, so aiohttp falls back to
+# an empty trust store and every TLS handshake fails. Pinning certifi makes
+# this work uniformly across local dev, Docker, and Railway.
+_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +60,8 @@ async def _call_openrouter(
     }
 
     logger.info(f"OpenRouter call ({log_label})")
-    async with aiohttp.ClientSession() as session:
+    connector = aiohttp.TCPConnector(ssl=_SSL_CONTEXT)
+    async with aiohttp.ClientSession(connector=connector) as session:
         async with session.post(
             f"{OPENROUTER_API_BASE}/chat/completions", headers=headers, json=payload
         ) as response:
