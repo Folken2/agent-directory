@@ -18,7 +18,18 @@ export type UserSession = {
   lastActivityAt: string;
 };
 
-export async function listUserSessions(authedUserId: string): Promise<UserSession[]> {
+export async function listUserSessions(
+  authedUserId: string,
+  agentSlug?: string
+): Promise<UserSession[]> {
+  const conditions = [
+    eq(agentRunEvents.rateLimitIdentifier, authedUserId),
+    inArray(agentRunEvents.status, [...TERMINAL]),
+  ];
+  if (agentSlug) {
+    conditions.push(eq(agentRunEvents.agentSlug, agentSlug));
+  }
+
   const rows = await db
     .select({
       sessionId: agentRunEvents.sessionId,
@@ -28,12 +39,7 @@ export async function listUserSessions(authedUserId: string): Promise<UserSessio
       lastActivityAt: sql<Date>`max(${agentRunEvents.createdAt})`,
     })
     .from(agentRunEvents)
-    .where(
-      and(
-        eq(agentRunEvents.rateLimitIdentifier, authedUserId),
-        inArray(agentRunEvents.status, [...TERMINAL])
-      )
-    )
+    .where(and(...conditions))
     .groupBy(agentRunEvents.sessionId, agentRunEvents.agentSlug, agentRunEvents.userId)
     .orderBy(desc(sql`max(${agentRunEvents.createdAt})`));
 
