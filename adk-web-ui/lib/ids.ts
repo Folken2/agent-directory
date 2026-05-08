@@ -21,12 +21,15 @@
 
 declare const SessionIdBrand: unique symbol;
 declare const ConversationIdBrand: unique symbol;
+declare const MessageIdBrand: unique symbol;
 
 export type SessionId = string & { readonly [SessionIdBrand]: true };
 export type ConversationId = string & { readonly [ConversationIdBrand]: true };
+export type MessageId = string & { readonly [MessageIdBrand]: true };
 
 const SESSION_PREFIX = 'session-';
 const CONV_PREFIX = 'conv-';
+const MSG_PREFIX = 'msg-';
 
 export function newConversationId(): ConversationId {
   return `${CONV_PREFIX}${Date.now()}` as ConversationId;
@@ -34,6 +37,25 @@ export function newConversationId(): ConversationId {
 
 export function newSessionId(): SessionId {
   return `${SESSION_PREFIX}${Date.now()}` as SessionId;
+}
+
+/**
+ * Mints a fresh MessageId. The optional `salt` lets callers disambiguate
+ * messages that may be created within the same millisecond (the assistant
+ * message is created right after the user message; without a salt they'd
+ * collide on `Date.now()`).
+ */
+export function newMessageId(salt: number = 0): MessageId {
+  return `${MSG_PREFIX}${Date.now() + salt}` as MessageId;
+}
+
+/**
+ * Builds a stable MessageId for a turn replayed from a past session. Uses
+ * the session id + turn index so the same turn always gets the same id
+ * (helpful for React keys and for diffing if the transcript is re-fetched).
+ */
+export function replayedMessageId(sessionId: SessionId | string, turnIndex: number): MessageId {
+  return `resumed-${sessionId}-${turnIndex}` as MessageId;
 }
 
 /** Convert a ConversationId to its paired SessionId (1:1). */

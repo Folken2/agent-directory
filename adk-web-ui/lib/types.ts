@@ -1,5 +1,5 @@
 // TypeScript types for ADK Web UI
-import type { ConversationId } from './ids';
+import type { ConversationId, MessageId } from './ids';
 
 export interface UseCase {
   title: string;
@@ -39,7 +39,7 @@ export interface SubAgentStep {
 }
 
 export interface Message {
-  id: string;
+  id: MessageId;
   role: 'user' | 'assistant';
   content: string;
   thinking?: string;
@@ -131,14 +131,22 @@ export interface MapsCapture {
   captured_at: string;
 }
 
-export interface StreamChunk {
-  type: 'text' | 'thinking' | 'artifact' | 'done' | 'error' | 'toolCall' | 'toolResponse' | 'mapsCapture';
-  content?: string;
-  artifact?: Artifact;
-  error?: string;
-  toolCall?: ToolCall;
-  toolResponse?: ToolResponse;
-  mapsCapture?: MapsCapture;
-  author?: string;       // ADK event.author — which (sub-)agent produced this chunk
-}
+/**
+ * One yield from `adkClient.streamAgent`. Discriminated by `type`, so each
+ * branch carries only the fields it actually needs — TS will refuse to let
+ * you read `chunk.toolCall` when `chunk.type === 'text'`. The `author` is
+ * optional and applies to all branches that come from a model emission
+ * (text/thinking); it identifies which (sub-)agent produced the chunk so
+ * the streaming hook can route intermediate authors into the progress
+ * feed instead of the main bubble.
+ */
+export type StreamChunk =
+  | { type: 'text'; content: string; author?: string }
+  | { type: 'thinking'; content: string; author?: string }
+  | { type: 'artifact'; artifact: Artifact; author?: string }
+  | { type: 'toolCall'; toolCall: ToolCall; author?: string }
+  | { type: 'toolResponse'; toolResponse: ToolResponse; author?: string }
+  | { type: 'mapsCapture'; mapsCapture: MapsCapture; author?: string }
+  | { type: 'error'; error: string }
+  | { type: 'done' };
 

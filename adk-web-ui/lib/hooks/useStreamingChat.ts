@@ -34,7 +34,8 @@
 import { useCallback, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
-import { toSessionId, newConversationId } from '@/lib/ids';
+import { toSessionId, newConversationId, newMessageId } from '@/lib/ids';
+import type { MessageId } from '@/lib/ids';
 import {
   Artifact,
   MapsCapture,
@@ -100,7 +101,7 @@ export type UseStreamingChatResult = {
   isThinking: boolean;
   streamingContent: string;
   streamingThinking: string;
-  currentAssistantMessageId: string | null;
+  currentAssistantMessageId: MessageId | null;
   currentMessageArtifacts: Artifact[];
   streamingSubAgentSteps: SubAgentStep[];
   busy: boolean;
@@ -138,7 +139,7 @@ export function useStreamingChat(): UseStreamingChatResult {
   const [isStreaming, setIsStreaming] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [isInitializing, setIsInitializing] = useState(false);
-  const [currentAssistantMessageId, setCurrentAssistantMessageId] = useState<string | null>(null);
+  const [currentAssistantMessageId, setCurrentAssistantMessageId] = useState<MessageId | null>(null);
   const [currentMessageArtifacts, setCurrentMessageArtifacts] = useState<Artifact[]>([]);
   const [streamingSubAgentSteps, setStreamingSubAgentSteps] = useState<SubAgentStep[]>([]);
   const [rateLimitInfo, setRateLimitInfo] = useState<RateLimitInfo | null>(null);
@@ -161,7 +162,7 @@ export function useStreamingChat(): UseStreamingChatResult {
       if ((!text.trim() && attachments.length === 0) || !selectedAgent || isLoading || isStreaming || isInitializing) return;
 
       const userMessage: Message = {
-        id: `msg-${Date.now()}`,
+        id: newMessageId(),
         role: 'user',
         content: text.trim() || (attachments.length > 0 ? `Sent ${attachments.length} file(s)` : ''),
         timestamp: new Date(),
@@ -201,7 +202,9 @@ export function useStreamingChat(): UseStreamingChatResult {
       abortControllerRef.current = controller;
 
       try {
-        const assistantMessageId = `msg-${Date.now() + 1}`;
+        // +1 salt: the user message just minted at Date.now() and we don't
+        // want to collide with it inside the same millisecond.
+        const assistantMessageId = newMessageId(1);
         setCurrentAssistantMessageId(assistantMessageId);
         let fullResponse = '';
         let fullThinking = '';
@@ -530,7 +533,7 @@ export function useStreamingChat(): UseStreamingChatResult {
 
         setError(error.message || 'Failed to send message');
         const errorMessage: Message = {
-          id: `msg-${Date.now()}`,
+          id: newMessageId(),
           role: 'assistant',
           content: `Error: ${error.message || 'Failed to process your request. Please try again.'}`,
           timestamp: new Date(),
