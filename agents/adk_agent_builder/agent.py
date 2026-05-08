@@ -23,14 +23,18 @@ logger = logging.getLogger(__name__)
 
 _SKILLS_DIR = pathlib.Path(__file__).parent / "skills"
 
-_ADK_DOCS_LLMS_TXT = "AgentDevelopmentKit:https://google.github.io/adk-docs/llms.txt"
+# Canonical llms.txt lives on adk.dev (HTTP 200, no redirect).
+# Do NOT use google.github.io/adk-docs/llms.txt — it 301-redirects and mcpdoc
+# does not follow redirects by default, breaking fetch_docs.
+_ADK_DOCS_LLMS_TXT = "AgentDevelopmentKit:https://adk.dev/llms.txt"
 
 
 def _build_adk_docs_mcp_toolset() -> McpToolset:
-    """Official ADK docs MCP server (mcpdoc over stdio).
+    """Official ADK docs MCP server (mcpdoc over stdio, launched via uvx).
 
     Exposes `list_doc_sources` and `fetch_docs` so the agent can pull
     authoritative ADK documentation on demand alongside its bundled skills.
+    Requires `uv` on PATH (already installed by the project Dockerfile).
     """
     return McpToolset(
         connection_params=StdioConnectionParams(
