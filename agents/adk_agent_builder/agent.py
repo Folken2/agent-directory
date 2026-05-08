@@ -28,6 +28,11 @@ _SKILLS_DIR = pathlib.Path(__file__).parent / "skills"
 # does not follow redirects by default, breaking fetch_docs.
 _ADK_DOCS_LLMS_TXT = "AgentDevelopmentKit:https://adk.dev/llms.txt"
 
+LANGUAGE_INSTRUCTION = (
+    "Respond in whatever language the user writes in. Mirror their language "
+    "exactly, including any mid-conversation switches.\n\n"
+)
+
 
 def _build_adk_docs_mcp_toolset() -> McpToolset:
     """Official ADK docs MCP server (mcpdoc over stdio, launched via uvx).
@@ -93,7 +98,7 @@ root_agent = Agent(
     model=FAST_MODEL,
     name="adk_agent_builder",
     description="Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in a curated library of ADK skills.",
-    instruction=prompt_v1,
+    instruction=LANGUAGE_INSTRUCTION + prompt_v1,
     tools=_build_tools(),
     before_agent_callback=before_agent_callback_update_tools,
 )

@@ -136,7 +136,14 @@ function loadAgentMetadata(agentName: string): {
           ? metadata.sample_prompts
           : [];
       const author = metadata.author || metadata.creator || undefined;
-      const githubUrl = metadata.githubUrl || metadata.github_url || undefined;
+      // Default to deriving the source link from the public repo when metadata
+      // doesn't override it. Lets new agents get a "View source" link for free.
+      const repoBase =
+        process.env.NEXT_PUBLIC_AGENTS_REPO_URL ||
+        'https://github.com/Folken2/agent-directory';
+      const derivedGithubUrl = `${repoBase.replace(/\/$/, '')}/tree/main/agents/${agentName}`;
+      const githubUrlRaw = metadata.githubUrl || metadata.github_url;
+      const githubUrl = githubUrlRaw && githubUrlRaw.trim() ? githubUrlRaw : derivedGithubUrl;
       const documentation = metadata.documentation || metadata.docs || undefined;
       const version = metadata.version || undefined;
       const lastUpdated = metadata.lastUpdated || metadata.last_updated || undefined;

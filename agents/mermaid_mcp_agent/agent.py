@@ -16,12 +16,17 @@ from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 
+LANGUAGE_INSTRUCTION = (
+    "Respond in whatever language the user writes in. Mirror their language "
+    "exactly, including any mid-conversation switches.\n\n"
+)
+
 
 root_agent = Agent(
     model=FAST_MODEL,
     name="mermaid_mcp_agent",
     description="Create professional diagrams from plain language. Supports flowcharts, sequence diagrams, architecture maps, Gantt charts, C4 models, mindmaps, and more — rendered as high-quality images with editable code.",
-    instruction=prompt_v1,
+    instruction=LANGUAGE_INSTRUCTION + prompt_v1,
     tools=[
         McpToolset(
             connection_params=StreamableHTTPConnectionParams(

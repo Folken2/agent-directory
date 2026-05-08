@@ -19,6 +19,11 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 
 EXA_API_KEY = os.getenv("EXA_API_KEY")
 
+LANGUAGE_INSTRUCTION = (
+    "Respond in whatever language the user writes in. Mirror their language "
+    "exactly, including any mid-conversation switches.\n\n"
+)
+
 # Enable all Exa tools
 # Default: web_search_exa, get_code_context_exa, company_research_exa
 # Optional: web_search_advanced_exa, deep_search_exa, crawling_exa,
@@ -41,7 +46,7 @@ root_agent = Agent(
     model=FAST_MODEL,
     name="exa_mcp_agent",
     description="Deep research across the web, code, companies, and people. Searches GitHub repos, crawls URLs, finds LinkedIn profiles, and generates comprehensive research reports with citations.",
-    instruction=prompt_v1,
+    instruction=LANGUAGE_INSTRUCTION + prompt_v1,
     tools=[
         McpToolset(
             connection_params=StreamableHTTPConnectionParams(

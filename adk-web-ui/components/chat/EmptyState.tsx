@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Bot, Sparkles } from 'lucide-react';
+import { Bot, Sparkles, Github } from 'lucide-react';
 import { Agent } from '@/lib/types';
 
 interface EmptyStateProps {
@@ -27,6 +27,18 @@ export default function EmptyState({ agent, onPromptClick }: EmptyStateProps) {
         {agent?.description || 'Start a conversation. Use sample prompts below or write your own.'}
       </p>
       <p className="mt-1.5 text-[11px] text-muted-foreground/60">Powered by Gemini 3 Flash</p>
+
+      {agent?.githubUrl && (
+        <a
+          href={agent.githubUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground/80 hover:text-foreground transition-colors"
+        >
+          <Github className="w-3 h-3" />
+          View source on GitHub
+        </a>
+      )}
 
       {prompts.length > 0 && (
         <div className="mt-8 flex flex-col gap-3 items-center w-full">

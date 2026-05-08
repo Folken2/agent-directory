@@ -36,6 +36,11 @@ from .tools.exit_loop import exit_loop
 
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY")
 
+LANGUAGE_INSTRUCTION = (
+    "Respond in whatever language the user writes in. Mirror their language "
+    "exactly, including any mid-conversation switches.\n\n"
+)
+
 
 # -----------------------------------------------------------------------------
 # Sub-agents
@@ -44,7 +49,7 @@ planner = LlmAgent(
     model=FAST_MODEL,
     name="planner",
     description="Decomposes the user's research question into a structured plan with subqueries and success criteria.",
-    instruction=planner_prompt,
+    instruction=LANGUAGE_INSTRUCTION + planner_prompt,
     output_key="research_plan",
 )
 
@@ -78,7 +83,7 @@ writer = LlmAgent(
     model=FAST_MODEL,
     name="writer",
     description="Composes the final cited markdown report from the accumulated findings.",
-    instruction=writer_prompt,
+    instruction=LANGUAGE_INSTRUCTION + writer_prompt,
     output_key="final_report",
 )
 
