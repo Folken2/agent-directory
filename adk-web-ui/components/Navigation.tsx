@@ -159,6 +159,17 @@ export default function Navigation() {
             <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-md-outline">
               {isAuthenticated ? (
                 <>
+                  <Link
+                    href="/me/sessions"
+                    className={cn(
+                      'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                      isActive('/me/sessions')
+                        ? 'text-md-primary'
+                        : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
+                    )}
+                  >
+                    Sessions
+                  </Link>
                   <UserProfile />
                   <SignOutButton />
                 </>
@@ -246,6 +257,13 @@ export default function Navigation() {
               {isAuthenticated ? (
                 <div className="px-4 py-3 space-y-2">
                   <UserProfile />
+                  <Link
+                    href="/me/sessions"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block py-2 text-sm font-medium text-md-on-surface-variant hover:text-md-on-surface"
+                  >
+                    Your sessions
+                  </Link>
                   <SignOutButton />
                 </div>
               ) : (
