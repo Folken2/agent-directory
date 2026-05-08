@@ -50,6 +50,45 @@ export type RateLimitInfo = {
   userType: 'authenticated' | 'anonymous';
 };
 
+/**
+ * Pulls a RateLimitInfo out of any of the three shapes our error payloads
+ * can take:
+ *   - error.rateLimit                       (thrown by adk-client)
+ *   - error.response.data.rateLimit         (axios-style nesting)
+ *   - error.rateLimit (on a result object)  (caller passes the result, not error)
+ *
+ * Returns null when the error isn't a 429 or doesn't carry a rate-limit
+ * payload. Centralizes the defaults so the three sites that previously did
+ * this inline can't drift apart.
+ */
+function extractRateLimit(source: unknown): RateLimitInfo | null {
+  if (!source || typeof source !== 'object') return null;
+  const s = source as Record<string, any>;
+  const raw =
+    s.rateLimit ??
+    s.response?.data?.rateLimit ??
+    null;
+  if (!raw) return null;
+  return {
+    count: Number(raw.count) || 0,
+    limit: Number(raw.limit) || ANON_RATE_LIMIT_FALLBACK,
+    userType: raw.userType === 'authenticated' ? 'authenticated' : 'anonymous',
+  };
+}
+
+/**
+ * True when the given error indicates a 429 / rate-limit response, regardless
+ * of which client surface emitted it (fetch error, axios-style, ADK custom).
+ */
+function isRateLimitError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as Record<string, any>;
+  if (e.status === 429) return true;
+  if (e.response?.status === 429) return true;
+  if (typeof e.message === 'string' && e.message.includes('429')) return true;
+  return false;
+}
+
 export type UseStreamingChatResult = {
   send: (input: { text: string; attachments: File[] }) => Promise<void>;
   stop: () => void;
@@ -412,20 +451,10 @@ export function useStreamingChat(): UseStreamingChatResult {
             return;
           }
 
-          if (
-            streamError?.status === 429 ||
-            streamError?.response?.status === 429 ||
-            streamError?.message?.includes('429')
-          ) {
-            let rateLimitData: any = null;
-            if (streamError?.response?.data?.rateLimit) rateLimitData = streamError.response.data.rateLimit;
-            else if (streamError?.rateLimit) rateLimitData = streamError.rateLimit;
-            if (rateLimitData) {
-              setRateLimitInfo({
-                count: rateLimitData.count || 0,
-                limit: rateLimitData.limit || ANON_RATE_LIMIT_FALLBACK,
-                userType: rateLimitData.userType || 'anonymous',
-              });
+          if (isRateLimitError(streamError)) {
+            const info = extractRateLimit(streamError);
+            if (info) {
+              setRateLimitInfo(info);
               setError(null);
               return;
             }
@@ -447,12 +476,9 @@ export function useStreamingChat(): UseStreamingChatResult {
           );
 
           if (result.status === 'error') {
-            if (result.rateLimit) {
-              setRateLimitInfo({
-                count: result.rateLimit.count || 0,
-                limit: result.rateLimit.limit || ANON_RATE_LIMIT_FALLBACK,
-                userType: result.rateLimit.userType || 'anonymous',
-              });
+            const info = extractRateLimit(result);
+            if (info) {
+              setRateLimitInfo(info);
               setError(null);
               return;
             }
@@ -493,16 +519,10 @@ export function useStreamingChat(): UseStreamingChatResult {
         }
       } catch (error: any) {
         console.error('Error sending message:', error);
-        if (error?.status === 429 || error?.response?.status === 429 || error?.message?.includes('429')) {
-          let rateLimitData: any = null;
-          if (error?.response?.data?.rateLimit) rateLimitData = error.response.data.rateLimit;
-          else if (error?.rateLimit) rateLimitData = error.rateLimit;
-          if (rateLimitData) {
-            setRateLimitInfo({
-              count: rateLimitData.count || 0,
-              limit: rateLimitData.limit || ANON_RATE_LIMIT_FALLBACK,
-              userType: rateLimitData.userType || 'anonymous',
-            });
+        if (isRateLimitError(error)) {
+          const info = extractRateLimit(error);
+          if (info) {
+            setRateLimitInfo(info);
             setError(null);
             return;
           }
