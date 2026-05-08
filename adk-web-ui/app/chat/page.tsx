@@ -6,16 +6,17 @@ import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
 import ChatHistory from '@/components/ChatHistory';
 import { useAppStore } from '@/lib/store';
-import { ChatConversation, Message } from '@/lib/types';
+import { Agent, ChatConversation, Message } from '@/lib/types';
 import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function ChatContent() {
-  const { error, setError, agents, setSelectedAgent, setCurrentConversation, addConversation, selectedAgent } = useAppStore();
+  const { error, setError, agents, setAgents, setSelectedAgent, setCurrentConversation, addConversation, selectedAgent } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const resumedSessionRef = useRef<string | null>(null);
+  const resolvedAgentRef = useRef<string | null>(null);
 
   // Initialize sidebar state based on screen size (mobile-first: closed by default)
   useEffect(() => {
@@ -40,72 +41,94 @@ function ChatContent() {
     // Conversations are session-only and start empty
     useAppStore.getState().loadConversations();
 
-    // Check if agent is specified in URL
     const agentName = searchParams.get('agent');
     const sessionParam = searchParams.get('session');
-
-    if (agentName && agents.length > 0) {
-      const agent = agents.find(a => a.name === agentName);
-      if (agent) {
-        setSelectedAgent(agent);
-
-        // Resume mode: hydrate a past ADK session from the transcript API and
-        // wire the conversation id so handleSend reuses the same session_id.
-        // ChatInterface derives session_id via id.replace('conv-', 'session-'),
-        // so the conversation id must be conv-<rawId> where rawId is the
-        // sessionParam without the leading 'session-'.
-        if (sessionParam && resumedSessionRef.current !== sessionParam) {
-          resumedSessionRef.current = sessionParam;
-          (async () => {
-            try {
-              const res = await fetch(`/api/me/sessions/${encodeURIComponent(sessionParam)}`);
-              if (!res.ok) {
-                if (res.status !== 404) {
-                  console.error('Failed to load session transcript:', res.status);
-                }
-                setCurrentConversation(null);
-                return;
-              }
-              const json = await res.json();
-              const turns: Array<{ author: 'user' | 'assistant'; text: string; at: string }> =
-                json?.transcript?.turns ?? [];
-
-              const messages: Message[] = turns.map((t, idx) => ({
-                id: `resumed-${sessionParam}-${idx}`,
-                role: t.author,
-                content: t.text,
-                timestamp: new Date(t.at),
-                agentName: agent.name,
-              }));
-
-              const rawId = sessionParam.replace(/^session-/, '');
-              const firstUser = turns.find((t) => t.author === 'user');
-              const conversation: ChatConversation = {
-                id: `conv-${rawId}`,
-                title: (firstUser?.text || 'Resumed conversation').slice(0, 50),
-                agentName: agent.name,
-                messages,
-                createdAt: turns[0] ? new Date(turns[0].at) : new Date(),
-                updatedAt: new Date(),
-                resumedFrom: turns[0] ? new Date(turns[0].at) : new Date(),
-              };
-              addConversation(conversation);
-              setCurrentConversation(conversation);
-            } catch (e) {
-              console.error('Error resuming session:', e);
-              setCurrentConversation(null);
-            }
-          })();
-        } else if (!sessionParam) {
-          // Clear current conversation when starting fresh from agent param
-          setCurrentConversation(null);
-        }
-      }
-    }
-
     const promptParam = searchParams.get('prompt');
     setInitialPrompt(promptParam || null);
-  }, [searchParams, agents, setSelectedAgent, setCurrentConversation, addConversation]);
+
+    if (!agentName) return;
+    // Important: the global agents array isn't reliably populated (AgentGrid
+    // uses local state, AgentSelector isn't mounted), so we can't gate on
+    // agents.length here. Resolve the agent from whichever source is fastest
+    // and fall back to fetching the directory if needed.
+    if (resolvedAgentRef.current === agentName) return;
+    resolvedAgentRef.current = agentName;
+
+    const resolveAgent = async (): Promise<Agent | null> => {
+      const fromList = agents.find(a => a.name === agentName);
+      if (fromList) return fromList;
+      if (selectedAgent?.name === agentName) return selectedAgent;
+      try {
+        const r = await fetch('/api/agents');
+        if (!r.ok) return null;
+        const j = await r.json();
+        const list: Agent[] = Array.isArray(j?.data) ? j.data : [];
+        if (list.length > 0) setAgents(list);
+        return list.find(a => a.name === agentName) ?? null;
+      } catch {
+        return null;
+      }
+    };
+
+    (async () => {
+      const agent = await resolveAgent();
+      if (!agent) {
+        // Couldn't find the agent at all — let downstream UI handle it.
+        return;
+      }
+      setSelectedAgent(agent);
+
+      // Resume mode: hydrate a past ADK session and wire the conversation id
+      // so handleSend reuses the same session_id. ChatInterface derives
+      // session_id via id.replace('conv-', 'session-'), so the conversation id
+      // must be conv-<rawId> where rawId is sessionParam without the leading
+      // 'session-' prefix.
+      if (sessionParam && resumedSessionRef.current !== sessionParam) {
+        resumedSessionRef.current = sessionParam;
+        try {
+          const res = await fetch(`/api/me/sessions/${encodeURIComponent(sessionParam)}`);
+          if (!res.ok) {
+            if (res.status !== 404) {
+              console.error('Failed to load session transcript:', res.status);
+            }
+            setCurrentConversation(null);
+            return;
+          }
+          const json = await res.json();
+          const turns: Array<{ author: 'user' | 'assistant'; text: string; at: string }> =
+            json?.transcript?.turns ?? [];
+
+          const messages: Message[] = turns.map((t, idx) => ({
+            id: `resumed-${sessionParam}-${idx}`,
+            role: t.author,
+            content: t.text,
+            timestamp: new Date(t.at),
+            agentName: agent.name,
+          }));
+
+          const rawId = sessionParam.replace(/^session-/, '');
+          const firstUser = turns.find((t) => t.author === 'user');
+          const conversation: ChatConversation = {
+            id: `conv-${rawId}`,
+            title: (firstUser?.text || 'Resumed conversation').slice(0, 50),
+            agentName: agent.name,
+            messages,
+            createdAt: turns[0] ? new Date(turns[0].at) : new Date(),
+            updatedAt: new Date(),
+            resumedFrom: turns[0] ? new Date(turns[0].at) : new Date(),
+          };
+          addConversation(conversation);
+          setCurrentConversation(conversation);
+        } catch (e) {
+          console.error('Error resuming session:', e);
+          setCurrentConversation(null);
+        }
+      } else if (!sessionParam) {
+        // Fresh chat for this agent
+        setCurrentConversation(null);
+      }
+    })();
+  }, [searchParams, agents, selectedAgent, setAgents, setSelectedAgent, setCurrentConversation, addConversation]);
 
   return (
     <div className="flex h-screen bg-background text-foreground">
