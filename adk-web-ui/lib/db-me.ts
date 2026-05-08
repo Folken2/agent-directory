@@ -40,8 +40,15 @@ export async function listUserSessions(authedUserId: string): Promise<UserSessio
   if (rows.length === 0) return [];
 
   // Pull first user message + count per session in one query, raw SQL for the
-  // jsonb extraction.
+  // jsonb extraction. We use IN (...) with sql.join because drizzle-orm's
+  // neon-http driver expands a JS array into a tuple of bind params, not a
+  // Postgres array — so `= ANY($arr)` errors with "requires array on right
+  // side". IN accepts the tuple form natively.
   const sessionIds = rows.map((r) => r.sessionId);
+  const sessionIdList = sql.join(
+    sessionIds.map((id) => sql`${id}`),
+    sql`, `
+  );
   const previews = await db.execute<{
     session_id: string;
     app_name: string;
@@ -77,7 +84,7 @@ export async function listUserSessions(authedUserId: string): Promise<UserSessio
           AND e3.author = 'user'
       ) AS message_count
     FROM events e
-    WHERE e.session_id = ANY(${sessionIds})
+    WHERE e.session_id IN (${sessionIdList})
     GROUP BY e.session_id, e.app_name, e.user_id
   `);
 
