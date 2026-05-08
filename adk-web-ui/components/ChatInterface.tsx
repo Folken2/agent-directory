@@ -584,6 +584,23 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           </div>
         )}
 
+        {currentConversation?.resumedFrom && (
+          <div className="px-4 pt-2">
+            <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
+              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+              <div>
+                Resumed from{' '}
+                {new Date(currentConversation.resumedFrom).toLocaleString(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+                . The agent has full context. Tool calls, sub-agent steps, and
+                attachments from the original session aren&apos;t re-rendered.
+              </div>
+            </div>
+          </div>
+        )}
+
         <MessageList
           messages={messages}
           agent={selectedAgent}

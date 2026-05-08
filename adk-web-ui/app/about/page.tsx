@@ -36,7 +36,7 @@ export default function AboutPage() {
             About ADK Agent Directory
           </h1>
           <p className="text-body-large text-md-on-surface-variant max-w-2xl mx-auto">
-            A directory of intelligent AI agents powered by Google Gemini 2.5 Flash. Discover, use, and contribute agents for various use cases.
+            A directory of intelligent AI agents powered by Google Gemini 3 Flash. Discover, use, and contribute agents for various use cases.
           </p>
         </div>
 
@@ -87,7 +87,7 @@ export default function AboutPage() {
             Agents in ADK Agent Directory are built using Google's Agent Development Kit (ADK), which provides:
           </p>
           <ul className="space-y-2 text-body-medium text-md-on-surface-variant list-disc list-inside">
-            <li>Integration with Google Gemini 2.5 Flash for natural language understanding</li>
+            <li>Integration with Google Gemini 3 Flash for natural language understanding</li>
             <li>Tool calling capabilities for interacting with external services</li>
             <li>Session management for maintaining conversation context</li>
             <li>Artifact handling for generating and managing outputs</li>

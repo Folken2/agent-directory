@@ -80,6 +80,10 @@ export interface ChatConversation {
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
+  // Set when a conversation is hydrated from a past ADK session — drives the
+  // "Resumed from {date}" banner and signals that earlier turns aren't fully
+  // re-rendered (text only, no artifacts/tool calls).
+  resumedFrom?: Date;
 }
 
 export interface ADKApiResponse<T = any> {

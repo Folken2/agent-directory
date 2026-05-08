@@ -78,7 +78,7 @@ export default async function MySessionsPage() {
           {sessions.map((s) => (
             <li key={s.sessionId}>
               <Link
-                href={`/me/sessions/${encodeURIComponent(s.sessionId)}`}
+                href={`/chat?agent=${encodeURIComponent(s.agentSlug)}&session=${encodeURIComponent(s.sessionId)}`}
                 className="block px-4 py-3.5 hover:bg-muted/40 transition-colors"
               >
                 <div className="flex items-center gap-3 mb-1.5">
