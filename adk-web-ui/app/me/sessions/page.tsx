@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
-import { listUserSessions } from '@/lib/db-me';
+import { listSessionsForUser } from '@/lib/sessions';
 import { formatAgentDisplayName } from '@/lib/agent-utils';
 import { MessageSquare, Clock } from 'lucide-react';
 
@@ -48,7 +48,7 @@ export default async function MySessionsPage() {
     );
   }
 
-  const sessions = await listUserSessions(session.user.id);
+  const sessions = await listSessionsForUser(session.user.id);
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">

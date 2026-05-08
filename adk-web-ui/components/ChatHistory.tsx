@@ -8,15 +8,7 @@ import { newConversationId, toConversationId } from '@/lib/ids';
 import { ChatConversation } from '@/lib/types';
 import { Plus, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-type DbSession = {
-  sessionId: string;
-  agentSlug: string;
-  firstMessage: string | null;
-  messageCount: number;
-  startedAt: string;
-  lastActivityAt: string;
-};
+import type { ChatSessionSummary } from '@/lib/sessions';
 
 function formatRelative(date: Date): string {
   const now = Date.now();
@@ -50,7 +42,7 @@ export default function ChatHistory() {
   const { data: session, status } = useSession();
   const isAuthed = status === 'authenticated' && !!session?.user;
 
-  const [dbSessions, setDbSessions] = useState<DbSession[]>([]);
+  const [dbSessions, setDbSessions] = useState<ChatSessionSummary[]>([]);
   const [loadingDb, setLoadingDb] = useState(false);
 
   // Per-agent DB sessions for authenticated users. Filtered server-side, so

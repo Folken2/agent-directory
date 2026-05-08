@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { listUserSessions } from '@/lib/db-me';
+import { listSessionsForUser } from '@/lib/sessions';
 
 export async function GET(req: NextRequest) {
   const session = await auth();
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   }
   try {
     const agent = req.nextUrl.searchParams.get('agent') || undefined;
-    const sessions = await listUserSessions(session.user.id, agent);
+    const sessions = await listSessionsForUser(session.user.id, agent);
     return NextResponse.json({ sessions });
   } catch (error) {
     console.error('Error listing user sessions:', error);
