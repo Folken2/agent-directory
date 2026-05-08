@@ -1,4 +1,5 @@
 // TypeScript types for ADK Web UI
+import type { ConversationId } from './ids';
 
 export interface UseCase {
   title: string;
@@ -74,7 +75,7 @@ export interface AgentRun {
 }
 
 export interface ChatConversation {
-  id: string;
+  id: ConversationId;
   title: string;
   agentName: string;
   messages: Message[];
