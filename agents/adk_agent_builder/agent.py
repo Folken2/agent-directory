@@ -8,6 +8,11 @@ import pathlib
 
 from google.adk.agents import Agent
 from google.adk.skills import load_skill_from_dir
+from google.adk.tools.mcp_tool.mcp_session_manager import (
+    StdioConnectionParams,
+    StdioServerParameters,
+)
+from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.skill_toolset import SkillToolset
 
 from .config.llm import FAST_MODEL
@@ -17,6 +22,37 @@ from .prompt.prompt import prompt_v1
 logger = logging.getLogger(__name__)
 
 _SKILLS_DIR = pathlib.Path(__file__).parent / "skills"
+
+# Canonical llms.txt lives on adk.dev (HTTP 200, no redirect).
+# Do NOT use google.github.io/adk-docs/llms.txt — it 301-redirects and mcpdoc
+# does not follow redirects by default, breaking fetch_docs.
+_ADK_DOCS_LLMS_TXT = "AgentDevelopmentKit:https://adk.dev/llms.txt"
+
+
+def _build_adk_docs_mcp_toolset() -> McpToolset:
+    """Official ADK docs MCP server (mcpdoc over stdio, launched via uvx).
+
+    Exposes `list_doc_sources` and `fetch_docs` so the agent can pull
+    authoritative ADK documentation on demand alongside its bundled skills.
+    Requires `uv` on PATH (already installed by the project Dockerfile).
+    """
+    return McpToolset(
+        connection_params=StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command="uvx",
+                args=[
+                    "--from",
+                    "mcpdoc",
+                    "mcpdoc",
+                    "--urls",
+                    _ADK_DOCS_LLMS_TXT,
+                    "--transport",
+                    "stdio",
+                ],
+            ),
+            timeout=30.0,
+        ),
+    )
 
 
 def _build_skill_toolset() -> SkillToolset | None:
@@ -46,6 +82,10 @@ def _build_tools():
     skill_toolset = _build_skill_toolset()
     if skill_toolset:
         tools.append(skill_toolset)
+    try:
+        tools.append(_build_adk_docs_mcp_toolset())
+    except Exception as e:
+        logger.warning("Failed to attach adk-docs MCP toolset: %s", e)
     return tools
 
 
