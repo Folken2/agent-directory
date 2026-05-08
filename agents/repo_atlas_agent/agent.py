@@ -24,6 +24,11 @@ from .tools import (
     read_repo_file,
 )
 
+LANGUAGE_INSTRUCTION = (
+    "Respond in whatever language the user writes in. Mirror their language "
+    "exactly, including any mid-conversation switches.\n\n"
+)
+
 root_agent = LlmAgent(
     model=FAST_MODEL,
     name="repo_atlas_agent",
@@ -32,7 +37,7 @@ root_agent = LlmAgent(
         "of its structure plus a concise overview — purpose, stack, layout, "
         "entry points, and use cases — all in a single turn."
     ),
-    instruction=prompt_v1,
+    instruction=LANGUAGE_INSTRUCTION + prompt_v1,
     tools=[
         fetch_repo_meta,
         fetch_repo_tree,

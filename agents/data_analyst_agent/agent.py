@@ -8,6 +8,11 @@ from google.adk.code_executors import BuiltInCodeExecutor
 from .config.llm import MODEL
 from .prompt.prompt import prompt_v2
 
+LANGUAGE_INSTRUCTION = (
+    "Respond in whatever language the user writes in. Mirror their language "
+    "exactly, including any mid-conversation switches.\n\n"
+)
+
 
 root_agent = LlmAgent(
     name="data_analyst_agent",
@@ -20,5 +25,5 @@ root_agent = LlmAgent(
         "effect sizes and sample-size context."
     ),
     code_executor=BuiltInCodeExecutor(),
-    instruction=prompt_v2,
+    instruction=LANGUAGE_INSTRUCTION + prompt_v2,
 )

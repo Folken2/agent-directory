@@ -15,6 +15,11 @@ from .prompt.prompt import coordinator_prompt_v1
 from .sub_agents import web_search_specialist, maps_specialist
 from .callbacks import after_model_callback_fix_parts
 
+LANGUAGE_INSTRUCTION = (
+    "Respond in whatever language the user writes in. Mirror their language "
+    "exactly, including any mid-conversation switches.\n\n"
+)
+
 
 root_agent = LlmAgent(
     name="google_explorer",
@@ -29,6 +34,6 @@ root_agent = LlmAgent(
         AgentTool(agent=web_search_specialist),
         AgentTool(agent=maps_specialist),
     ],
-    instruction=coordinator_prompt_v1,
+    instruction=LANGUAGE_INSTRUCTION + coordinator_prompt_v1,
     after_model_callback=after_model_callback_fix_parts,
 )
