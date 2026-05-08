@@ -16,8 +16,13 @@ from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from .callbacks import after_tool_validation_callback
 from .config.llm import FAST_MODEL
 from .config.utils import before_agent_callback_update_tools
-from .prompt.prompt import prompt_v0
-from .tools import fetch_repo_meta, fetch_repo_tree, read_repo_file
+from .prompt.prompt import prompt_v1
+from .tools import (
+    fetch_recent_releases,
+    fetch_repo_meta,
+    fetch_repo_tree,
+    read_repo_file,
+)
 
 root_agent = LlmAgent(
     model=FAST_MODEL,
@@ -27,11 +32,12 @@ root_agent = LlmAgent(
         "of its structure plus a concise overview — purpose, stack, layout, "
         "entry points, and use cases — all in a single turn."
     ),
-    instruction=prompt_v0,
+    instruction=prompt_v1,
     tools=[
         fetch_repo_meta,
         fetch_repo_tree,
         read_repo_file,
+        fetch_recent_releases,
         McpToolset(
             connection_params=StreamableHTTPConnectionParams(
                 url="https://mcp.mermaidchart.com/mcp",

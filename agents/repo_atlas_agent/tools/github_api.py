@@ -217,6 +217,88 @@ def fetch_repo_tree(url: str, max_entries: int = 400) -> dict[str, Any]:
     }
 
 
+def fetch_recent_releases(
+    url: str,
+    limit: int = 5,
+    body_max_chars: int = 3000,
+) -> dict[str, Any]:
+    """Fetch the most recent published releases for a GitHub repository.
+
+    Use this AFTER meta + tree to surface "what's new" — users want to know
+    what changed without reading every release page. Returns release notes
+    truncated per-release so the LLM can summarize across versions without
+    blowing the prompt budget.
+
+    Args:
+        url: A GitHub URL or `owner/repo` shorthand.
+        limit: Max releases to return (default 5). The API page size is 30,
+            so anything above that requires extra calls and is rarely useful.
+        body_max_chars: Per-release body truncation (default 3000). Release
+            notes can be enormous; we cap each entry rather than the total
+            so old releases don't crowd out the latest one.
+
+    Returns:
+        A dict with keys: owner, repo, total_seen (int), releases (list).
+        Each release: tag_name, name, published_at, is_prerelease, is_draft,
+        html_url, body, body_truncated (bool).
+        On no releases: `releases` is an empty list (not an error).
+        On failure: a dict with an `error` key.
+    """
+    parsed = _parse_repo_url(url)
+    if not parsed:
+        return {"error": f"Could not parse a GitHub repo from: {url!r}"}
+    owner, repo = parsed
+
+    try:
+        r = httpx.get(
+            f"{GITHUB_API}/repos/{owner}/{repo}/releases",
+            params={"per_page": min(max(limit, 1), 30)},
+            headers=_headers(),
+            timeout=DEFAULT_TIMEOUT,
+        )
+    except httpx.HTTPError as e:
+        return {"error": f"Network error fetching releases: {e}"}
+    if r.status_code == 404:
+        # 404 here means the repo itself is missing (releases endpoint always
+        # exists for accessible repos, even with zero releases).
+        return {"error": f"Repository {owner}/{repo} not found (or private)."}
+    if r.status_code == 403:
+        return {
+            "error": "GitHub rate limit hit. Set GITHUB_TOKEN to raise the quota.",
+            "rate_limit_remaining": r.headers.get("x-ratelimit-remaining"),
+            "rate_limit_reset": r.headers.get("x-ratelimit-reset"),
+        }
+    if r.status_code != 200:
+        return {"error": f"GitHub API returned {r.status_code}: {r.text[:200]}"}
+
+    payload = r.json() or []
+    releases = []
+    for rel in payload[:limit]:
+        body = rel.get("body") or ""
+        body_truncated = len(body) > body_max_chars
+        if body_truncated:
+            body = body[:body_max_chars]
+        releases.append(
+            {
+                "tag_name": rel.get("tag_name"),
+                "name": rel.get("name"),
+                "published_at": rel.get("published_at"),
+                "is_prerelease": bool(rel.get("prerelease")),
+                "is_draft": bool(rel.get("draft")),
+                "html_url": rel.get("html_url"),
+                "body": body,
+                "body_truncated": body_truncated,
+            }
+        )
+
+    return {
+        "owner": owner,
+        "repo": repo,
+        "total_seen": len(payload),
+        "releases": releases,
+    }
+
+
 def read_repo_file(url: str, path: str, max_chars: int = 12000) -> dict[str, Any]:
     """Read the text contents of a single file from a GitHub repository.
 
