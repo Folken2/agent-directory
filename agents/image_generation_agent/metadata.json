@@ -3,14 +3,14 @@
   "displayName": "Image Architect",
   "logo": "https://www.google.com/favicon.ico",
   "category": "Creative",
-  "description": "Generate studio-quality images from natural language. Handles e-commerce product shots, editorial covers, social media visuals, and architectural renders with precise control over lighting, composition, and style.",
-  "tools": ["generate_image"],
-  "tags": ["image-generation", "creative", "design", "marketing", "visual-content"],
+  "description": "Generate studio-quality images from natural language and refine them iteratively. Adjust lighting, composition, color, or remove elements while keeping the subject intact — like working with a creative director who never loses the brief.",
+  "tools": ["generate_image", "refine_image"],
+  "tags": ["image-generation", "image-editing", "creative", "design", "marketing", "visual-content", "iteration"],
   "useCases": [
-    { "title": "Product Photography", "description": "Create product photography for e-commerce listings" },
-    { "title": "Hero Images", "description": "Design hero images for landing pages and presentations" },
-    { "title": "Social Media Visuals", "description": "Generate social media visuals with scroll-stopping compositions" },
-    { "title": "Concept Visualization", "description": "Visualize interior design, architecture, and product concepts" }
+    { "title": "Product Photography", "description": "Create product photography for e-commerce listings, then iterate on lighting and surfaces without losing the product" },
+    { "title": "Hero Images", "description": "Design hero images for landing pages, then refine framing and color until the brief is nailed" },
+    { "title": "Social Media Visuals", "description": "Generate social media visuals with scroll-stopping compositions and tweak them to match brand direction" },
+    { "title": "Concept Iteration", "description": "Start with a rough concept and refine it conversationally — adjust mood, swap materials, change the time of day, all while preserving the subject" }
   ],
   "samplePrompts": [
     "Product hero shot of a matte black wireless earbud case on dark marble, studio rim lighting, 85mm lens, 1:1.",
