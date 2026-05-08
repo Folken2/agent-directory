@@ -11,7 +11,7 @@ import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function ChatContent() {
-  const { error, setError, agents, setAgents, setSelectedAgent, setCurrentConversation, addConversation, selectedAgent } = useAppStore();
+  const { error, setError, agents, setAgents, setSelectedAgent, setCurrentConversation, selectedAgent } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -117,7 +117,9 @@ function ChatContent() {
             updatedAt: new Date(),
             resumedFrom: turns[0] ? new Date(turns[0].at) : new Date(),
           };
-          addConversation(conversation);
+          // Don't push resumed conversations into the in-memory store —
+          // the sidebar pulls authed sessions from the DB directly, so adding
+          // them here would just create duplicates and cross-agent leakage.
           setCurrentConversation(conversation);
         } catch (e) {
           console.error('Error resuming session:', e);
@@ -128,7 +130,7 @@ function ChatContent() {
         setCurrentConversation(null);
       }
     })();
-  }, [searchParams, agents, selectedAgent, setAgents, setSelectedAgent, setCurrentConversation, addConversation]);
+  }, [searchParams, agents, selectedAgent, setAgents, setSelectedAgent, setCurrentConversation]);
 
   return (
     <div className="flex h-screen bg-background text-foreground">
