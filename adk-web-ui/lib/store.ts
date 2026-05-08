@@ -198,18 +198,24 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   addToolCall: (toolCall, messageId) => {
     const { activeTools, messageTools } = get();
+    const existingIds = messageTools[messageId] || [];
+    const alreadyTracked = existingIds.includes(toolCall.id);
     set({
       activeTools: {
         ...activeTools,
         [toolCall.id]: {
+          // Preserve any prior status (e.g. 'completed' from an earlier event)
+          ...activeTools[toolCall.id],
           ...toolCall,
-          startTime: toolCall.startTime || new Date(),
+          startTime: activeTools[toolCall.id]?.startTime || toolCall.startTime || new Date(),
         },
       },
-      messageTools: {
-        ...messageTools,
-        [messageId]: [...(messageTools[messageId] || []), toolCall.id],
-      },
+      messageTools: alreadyTracked
+        ? messageTools
+        : {
+            ...messageTools,
+            [messageId]: [...existingIds, toolCall.id],
+          },
     });
   },
 

@@ -10,6 +10,7 @@ import { MarkdownRenderer } from './markdown';
 import ToolStatusDisplay from '../ToolStatusDisplay';
 import ThinkingBlock from '../ThinkingBlock';
 import InlineArtifact from '../InlineArtifact';
+import { MapsEmbed } from './MapsEmbed';
 import SubAgentProgress from './SubAgentProgress';
 
 function safeParseDate(date: any): Date | undefined {
@@ -112,6 +113,14 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
               <div className={cn('space-y-3', displayContent && 'mt-4')}>
                 {message.artifacts!.map((artifact) => (
                   <InlineArtifact key={artifact.id} artifact={artifact} />
+                ))}
+              </div>
+            )}
+
+            {message.mapsCaptures && message.mapsCaptures.length > 0 && (
+              <div className={cn('space-y-3', displayContent && 'mt-4')}>
+                {message.mapsCaptures.map((capture, idx) => (
+                  <MapsEmbed key={`${capture.captured_at}-${idx}`} capture={capture} />
                 ))}
               </div>
             )}

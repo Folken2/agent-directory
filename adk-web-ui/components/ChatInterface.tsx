@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
-import { Message, Artifact, SubAgentStep } from '@/lib/types';
+import { Message, Artifact, SubAgentStep, MapsCapture } from '@/lib/types';
 import RateLimitBanner from './RateLimitBanner';
 import MessageList from './chat/MessageList';
 import Composer from './chat/Composer';
@@ -191,6 +191,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
       // author flips the previous step from "running" → "done".
       const finalAuthor = selectedAgent.finalSubAgent || selectedAgent.name;
       const subAgentSteps: SubAgentStep[] = [];
+      const mapsCaptures: MapsCapture[] = [];
       const isIntermediateAuthor = (author: string | undefined): boolean =>
         !!selectedAgent.finalSubAgent &&
         !!author &&
@@ -335,6 +336,8 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             );
           } else if (chunk.type === 'toolResponse' && chunk.toolResponse) {
             updateToolResponse(chunk.toolResponse.id, chunk.toolResponse.response, chunk.toolResponse.error);
+          } else if (chunk.type === 'mapsCapture' && chunk.mapsCapture) {
+            mapsCaptures.push(chunk.mapsCapture);
           } else if (chunk.type === 'error') {
             throw new Error(chunk.error || 'Streaming error');
           } else if (chunk.type === 'done') {
@@ -386,6 +389,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
             agentName: selectedAgent.name,
             artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
             subAgentSteps: subAgentSteps.length > 0 ? subAgentSteps.map((s) => ({ ...s })) : undefined,
+            mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
           };
           addMessage(assistantMessage);
           setCurrentMessageArtifacts([]);
@@ -417,6 +421,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
               agentName: selectedAgent.name,
               artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
               subAgentSteps: subAgentSteps.length > 0 ? subAgentSteps.map((s) => ({ ...s })) : undefined,
+              mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
             };
             addMessage(stoppedMessage);
             setCurrentMessageArtifacts([]);

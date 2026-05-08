@@ -763,6 +763,25 @@ class ADKClient {
                   yield { type: 'toolResponse', toolResponse };
                 }
 
+                // Surface Google Maps grounding captures from session state_delta.
+                // The maps_specialist's after_model_callback writes to
+                // state["maps:captures"] on each google_maps_grounding call;
+                // the most recently appended entry is what this event added.
+                const stateDelta = eventData.actions?.state_delta || eventData.actions?.stateDelta;
+                const captures = stateDelta?.['maps:captures'];
+                if (Array.isArray(captures) && captures.length > 0) {
+                  const latest = captures[captures.length - 1];
+                  yield {
+                    type: 'mapsCapture',
+                    mapsCapture: {
+                      token: latest?.token ?? null,
+                      places: Array.isArray(latest?.places) ? latest.places : [],
+                      captured_at: latest?.captured_at ?? new Date().toISOString(),
+                    },
+                    author: eventData.author,
+                  };
+                }
+
                 // Handle Event object - check content.parts first (ADK structure)
                 if (eventData.content && typeof eventData.content === 'object' && eventData.content.parts && Array.isArray(eventData.content.parts)) {
                   for (const part of eventData.content.parts) {

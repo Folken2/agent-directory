@@ -8,6 +8,7 @@ from ..prompt.prompt import maps_specialist_prompt_v1
 from ..callbacks import (
     after_tool_recovery_callback,
     after_model_callback_fix_parts,
+    capture_maps_widget_token,
 )
 
 
@@ -22,5 +23,8 @@ maps_specialist = LlmAgent(
     tools=[google_maps_grounding],
     instruction=maps_specialist_prompt_v1,
     after_tool_callback=after_tool_recovery_callback,
-    after_model_callback=after_model_callback_fix_parts,
+    after_model_callback=[
+        after_model_callback_fix_parts,
+        capture_maps_widget_token,
+    ],
 )

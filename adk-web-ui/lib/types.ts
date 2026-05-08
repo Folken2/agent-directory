@@ -46,6 +46,7 @@ export interface Message {
   agentName?: string;
   artifacts?: Artifact[];
   subAgentSteps?: SubAgentStep[];
+  mapsCaptures?: MapsCapture[];
 }
 
 export interface Artifact {
@@ -113,13 +114,26 @@ export interface ToolStatus {
   endTime?: Date;
 }
 
+export interface MapsPlace {
+  place_id: string | null;
+  title: string | null;
+  uri: string | null;
+}
+
+export interface MapsCapture {
+  token: string | null;
+  places: MapsPlace[];
+  captured_at: string;
+}
+
 export interface StreamChunk {
-  type: 'text' | 'thinking' | 'artifact' | 'done' | 'error' | 'toolCall' | 'toolResponse';
+  type: 'text' | 'thinking' | 'artifact' | 'done' | 'error' | 'toolCall' | 'toolResponse' | 'mapsCapture';
   content?: string;
   artifact?: Artifact;
   error?: string;
   toolCall?: ToolCall;
   toolResponse?: ToolResponse;
+  mapsCapture?: MapsCapture;
   author?: string;       // ADK event.author — which (sub-)agent produced this chunk
 }
 
