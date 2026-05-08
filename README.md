@@ -81,6 +81,7 @@ This is a **monorepo** containing both the Python backend (ADK agents) and the N
 │   ├── data_analyst_agent/     # Code execution & data analysis
 │   ├── deep_research_agent/    # Multi-agent loop research with Tavily
 │   ├── exa_mcp_agent/          # EXA AI research agent
+│   ├── google_explorer_agent/  # Local Guide — travel & places (Search + Maps grounding, embedded maps)
 │   ├── image_generation_agent/ # Image generation agent
 │   ├── mermaid_mcp_agent/      # Mermaid diagram generator
 │   ├── repo_atlas_agent/       # GitHub repo visualizer (Mermaid + overview)
