@@ -38,9 +38,10 @@ function ChatContent() {
   }, []);
 
   useEffect(() => {
-    // Load user preferences (selectedAgent, starredAgents) but not conversations
-    // Conversations are session-only and start empty
-    useAppStore.getState().loadConversations();
+    // Hydrate user preferences (selectedAgent, starredAgents) from
+    // localStorage. Past chat history is loaded from the DB by ChatHistory,
+    // not the store.
+    useAppStore.getState().loadPreferences();
 
     const agentName = searchParams.get('agent');
     const sessionParam = searchParams.get('session');

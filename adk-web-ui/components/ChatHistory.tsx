@@ -31,11 +31,9 @@ function truncate(s: string | null, max = 60): string {
 
 export default function ChatHistory() {
   const {
-    conversations,
     currentConversation,
     selectedAgent,
     setCurrentConversation,
-    addConversation,
   } = useAppStore();
 
   const router = useRouter();
@@ -81,16 +79,15 @@ export default function ChatHistory() {
       createdAt: new Date(),
       updatedAt: new Date(),
     };
-    addConversation(newConv);
     setCurrentConversation(newConv);
   };
 
-  // For anonymous users, fall back to per-tab in-memory conversations.
-  const localConversations = selectedAgent
-    ? conversations
-        .filter((c) => c.agentName === selectedAgent.name)
-        .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
-    : [];
+  // Anonymous users see only the currently active chat — there's no history
+  // to show, since past conversations live in the DB and are gated by auth.
+  const showActiveAnon =
+    !!currentConversation &&
+    selectedAgent !== null &&
+    currentConversation.agentName === selectedAgent.name;
 
   const renderEmpty = (
     <div className="px-2 py-10 text-center">
@@ -169,43 +166,32 @@ export default function ChatHistory() {
               </div>
             )}
           </>
-        ) : localConversations.length === 0 ? (
-          renderEmpty
+        ) : !showActiveAnon ? (
+          <>
+            {renderEmpty}
+            <p className="px-3 mt-4 text-[11px] text-muted-foreground/70 text-center">
+              Sign in to keep your chat history across sessions.
+            </p>
+          </>
         ) : (
           <>
             <div className="px-2 pb-2 text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
-              Recent · {selectedAgent.displayName || selectedAgent.name}
+              Active · {selectedAgent.displayName || selectedAgent.name}
             </div>
             <div className="space-y-0.5">
-              {localConversations.map((conversation) => {
-                const isActive = currentConversation?.id === conversation.id;
-                return (
-                  <button
-                    key={conversation.id}
-                    onClick={() => setCurrentConversation(conversation)}
-                    className={cn(
-                      'group w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2',
-                      isActive
-                        ? 'bg-muted text-foreground'
-                        : 'hover:bg-muted/60 text-muted-foreground hover:text-foreground',
-                    )}
-                  >
-                    <span className="flex-1 text-[13px] leading-snug truncate">
-                      {conversation.title || 'Untitled'}
-                    </span>
-                    <span
-                      className={cn(
-                        'shrink-0 text-[10px] tabular-nums transition-opacity',
-                        isActive
-                          ? 'text-muted-foreground'
-                          : 'text-muted-foreground/60 opacity-0 group-hover:opacity-100',
-                      )}
-                    >
-                      {formatRelative(conversation.updatedAt)}
-                    </span>
-                  </button>
-                );
-              })}
+              {currentConversation && (
+                <button
+                  onClick={() => setCurrentConversation(currentConversation)}
+                  className="group w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2 bg-muted text-foreground"
+                >
+                  <span className="flex-1 text-[13px] leading-snug truncate">
+                    {currentConversation.title || 'Untitled'}
+                  </span>
+                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                    {formatRelative(currentConversation.updatedAt)}
+                  </span>
+                </button>
+              )}
             </div>
           </>
         )}

@@ -20,10 +20,9 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     selectedAgent,
     currentConversation,
     setCurrentConversation,
+    patchCurrentConversation,
     addMessage,
     updateMessage,
-    addConversation,
-    updateConversation,
     setArtifacts,
     addArtifact,
     setLoading,
@@ -86,7 +85,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           if (assistantMessages.length > 0) {
             const last = assistantMessages[assistantMessages.length - 1];
             if (!last.artifacts || last.artifacts.length === 0) {
-              updateMessage(currentConversation.id, last.id, { artifacts: result.data });
+              updateMessage(last.id, { artifacts: result.data });
             }
           }
         } else {
@@ -153,13 +152,11 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      addConversation(conversation);
       setCurrentConversation(conversation);
     } else if ((!conversation.title || conversation.title === 'New Conversation') && input.trim()) {
       const updatedTitle = input.trim().slice(0, 50);
       conversation = { ...conversation, title: updatedTitle };
-      setCurrentConversation(conversation);
-      updateConversation(conversation.id, { title: updatedTitle });
+      patchCurrentConversation({ title: updatedTitle });
     }
 
     addMessage(userMessage);
