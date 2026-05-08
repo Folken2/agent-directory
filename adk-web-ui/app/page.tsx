@@ -42,7 +42,7 @@ export default function Home() {
           </div>
 
           <p className="text-label-small text-md-on-surface-variant/60 uppercase tracking-widest">
-            Powered by Google Gemini 2.5 Flash
+            Powered by Google Gemini 3 Flash
           </p>
         </div>
       </section>

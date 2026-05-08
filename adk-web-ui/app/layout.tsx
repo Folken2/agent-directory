@@ -25,7 +25,7 @@ const robotoMono = Inter({
 
 export const metadata: Metadata = {
   title: "ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents",
-  description: "Discover and interact with AI agents built on Google's Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 2.5 Flash.",
+  description: "Discover and interact with AI agents built on Google's Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash.",
   keywords: [
     "Google AI",
     "Google agents AI",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     "Google AI platform",
     "ADK agents",
     "Google AI tools",
-    "Gemini 2.5 Flash",
+    "Gemini 3 Flash",
     "AI agent directory",
   ],
   authors: [{ name: "Google" }],
@@ -57,7 +57,7 @@ export const metadata: Metadata = {
     url: '/',
     siteName: 'ADK Agent Directory',
     title: 'ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents',
-    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 2.5 Flash.',
+    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash.',
     images: [
       {
         url: '/adk_logo.png',
@@ -109,7 +109,7 @@ export default function RootLayout({
     name: 'ADK Agent Directory',
     alternateName: 'Google ADK Agent Directory',
     url: baseUrl,
-    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 2.5 Flash.',
+    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash.',
     publisher: {
       '@type': 'Organization',
       name: 'Google',
