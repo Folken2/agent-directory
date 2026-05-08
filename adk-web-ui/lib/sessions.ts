@@ -22,6 +22,7 @@
 import { db } from './drizzle/db';
 import { agentRunEvents } from './drizzle/schema';
 import { sql, and, eq, inArray, desc } from 'drizzle-orm';
+import { asSessionId, type SessionId } from './ids';
 
 const TERMINAL_STATUSES = ['completed', 'error'] as const;
 
@@ -30,7 +31,7 @@ const TERMINAL_STATUSES = ['completed', 'error'] as const;
 // ---------------------------------------------------------------------------
 
 export type ChatSessionSummary = {
-  sessionId: string;
+  sessionId: SessionId;
   agentSlug: string;
   /** ADK's user_id field — always 'default-user' today, but kept for clarity. */
   adkUserId: string;
@@ -49,7 +50,7 @@ export type ChatSessionTurn = {
 };
 
 export type ChatSessionTranscript = {
-  sessionId: string;
+  sessionId: SessionId;
   agentSlug: string;
   turns: ChatSessionTurn[];
 };
@@ -156,7 +157,7 @@ export async function listSessionsForUser(
   return summaries.map((r) => {
     const preview = previewByKey.get(`${r.sessionId}|${r.agentSlug}|${r.adkUserId}`);
     return {
-      sessionId: r.sessionId,
+      sessionId: asSessionId(r.sessionId),
       agentSlug: r.agentSlug,
       adkUserId: r.adkUserId,
       firstMessage: preview?.firstMessage ?? null,
@@ -231,7 +232,7 @@ export async function getSessionTranscriptForUser(
       at: new Date(r.timestamp).toISOString(),
     }));
 
-  return { sessionId, agentSlug, turns };
+  return { sessionId: asSessionId(sessionId), agentSlug, turns };
 }
 
 // ---------------------------------------------------------------------------
