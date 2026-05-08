@@ -4,6 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
 import { newConversationId, toSessionId } from '@/lib/ids';
+import { useDarkMode } from '@/lib/hooks/useDarkMode';
+import { useArtifactsForConversation } from '@/lib/hooks/useArtifactsForConversation';
 import { Message, Artifact, SubAgentStep, MapsCapture } from '@/lib/types';
 import RateLimitBanner from './RateLimitBanner';
 import MessageList from './chat/MessageList';
@@ -44,7 +46,6 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   const [streamingSubAgentSteps, setStreamingSubAgentSteps] = useState<SubAgentStep[]>([]);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [rateLimitInfo, setRateLimitInfo] = useState<{
     count: number;
     limit: number;
@@ -53,50 +54,12 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   const abortControllerRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
 
+  const isDarkMode = useDarkMode();
   // Info panel is closed by default — users open it on demand instead of
   // drowning the chat in agent metadata on first paint.
 
-  // Detect dark mode via .dark class on <html>
-  useEffect(() => {
-    const check = () => setIsDarkMode(document.documentElement.classList.contains('dark'));
-    check();
-    const observer = new MutationObserver(check);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
-  // Load existing artifacts when conversation changes
-  useEffect(() => {
-    const loadExistingArtifacts = async () => {
-      if (!currentConversation || !selectedAgent) return;
-      try {
-        const sessionId = toSessionId(currentConversation.id);
-        const response = await fetch(
-          `/api/artifacts?app_name=${selectedAgent.name}&user_id=default-user&session_id=${sessionId}`,
-        );
-        if (!response.ok) {
-          setArtifacts([]);
-          return;
-        }
-        const result = await response.json();
-        if (result.success && result.data && result.data.length > 0) {
-          setArtifacts(result.data);
-          const assistantMessages = currentConversation.messages.filter((m) => m.role === 'assistant');
-          if (assistantMessages.length > 0) {
-            const last = assistantMessages[assistantMessages.length - 1];
-            if (!last.artifacts || last.artifacts.length === 0) {
-              updateMessage(last.id, { artifacts: result.data });
-            }
-          }
-        } else {
-          setArtifacts([]);
-        }
-      } catch {
-        setArtifacts([]);
-      }
-    };
-    loadExistingArtifacts();
-  }, [currentConversation?.id, selectedAgent?.name, setArtifacts, updateMessage]);
+  // Hydrate artifacts from the ADK server when a conversation is loaded.
+  useArtifactsForConversation(currentConversation, selectedAgent);
 
   const handleAttachFiles = useCallback((files: File[]) => {
     setAttachments((prev) => [...prev, ...files]);
