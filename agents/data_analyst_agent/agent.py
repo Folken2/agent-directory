@@ -2,18 +2,23 @@
 Data Analyst Agent with Code Execution
 """
 
-## adk imports
 from google.adk.agents import LlmAgent
 from google.adk.code_executors import BuiltInCodeExecutor
 
-## prompt imports
-from .prompt.prompt import prompt_v1
+from .config.llm import MODEL
+from .prompt.prompt import prompt_v2
 
 
 root_agent = LlmAgent(
     name="data_analyst_agent",
-    model="gemini-2.5-flash",
-    description="Turn raw data into insights. Upload a CSV, get statistical analysis, visualizations, and ML-powered patterns — all executed in a sandboxed Python environment.",
+    model=MODEL,
+    description=(
+        "Turn raw data into insights with statistical rigor. Upload a CSV, "
+        "get exploratory analysis, visualizations, and ML-powered patterns — "
+        "every analysis ends with a structured Findings block (top insights, "
+        "data quality flags, open questions) and inferential claims carry "
+        "effect sizes and sample-size context."
+    ),
     code_executor=BuiltInCodeExecutor(),
-    instruction=prompt_v1,
+    instruction=prompt_v2,
 )

@@ -2,14 +2,14 @@
   "name": "data_analyst_agent",
   "displayName": "Data Analyst",
   "category": "Data",
-  "description": "Turn raw data into insights. Upload a CSV, get statistical analysis, visualizations, and ML-powered patterns — all executed in a sandboxed Python environment.",
+  "description": "Turn raw data into insights with statistical rigor. Upload a CSV, get exploratory analysis, ML-powered patterns, and publication-ready charts — every analysis ends with a structured Findings block (top insights, data quality flags, open questions) and inferential claims carry effect sizes and sample-size context.",
   "tools": ["code_execution"],
-  "tags": ["data", "analytics", "visualization", "python", "machine-learning", "charts"],
+  "tags": ["data", "analytics", "visualization", "python", "machine-learning", "charts", "statistics", "rigor"],
   "useCases": [
-    { "title": "Data Profiling", "description": "Explore and profile datasets — distributions, correlations, outliers" },
-    { "title": "Visualizations", "description": "Generate publication-ready charts (bar, scatter, heatmap, time series)" },
-    { "title": "Segmentation", "description": "Segment customers or records with clustering and classification" },
-    { "title": "Data Cleaning", "description": "Clean messy data — nulls, duplicates, type mismatches" }
+    { "title": "Data Profiling", "description": "Explore and profile datasets — distributions, correlations, outliers — with quantified data-quality flags" },
+    { "title": "Hypothesis Testing", "description": "Test group differences and relationships with proper test selection, effect sizes, and sample-size caveats" },
+    { "title": "Segmentation", "description": "Segment customers or records with clustering, then characterize each cluster with profile statistics" },
+    { "title": "Visualizations", "description": "Generate publication-ready charts (bar, scatter, heatmap, time series) with intentional chart selection" }
   ],
   "samplePrompts": [
     "Here's our Q1 sales CSV. Show me revenue trends by region and flag any anomalies.",
