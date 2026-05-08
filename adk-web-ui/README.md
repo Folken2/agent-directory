@@ -93,6 +93,7 @@ adk-web-ui/
 
 - `NEXT_PUBLIC_ADK_SERVER_URL`: URL of the ADK server (default: `http://localhost:8000`)
 - `NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS` (optional): Milliseconds the browser waits for `GET /api/agents` (default **180000**). Must stay above cold-start duration when the ADK API is on a sleeping host.
+- `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` (optional): Google Maps Embed API key. When set, the **Local Guide** agent renders an interactive Google Maps iframe inline with each assistant message that grounded on Maps. Without it, place blocks still render as Markdown links — the embed silently no-ops. Restrict the key to "Maps Embed API" only and to your domains (it ships in the iframe URL by design — security comes from referer restrictions, not secrecy).
 
 **Server-only (Next.js API route `app/api/agents`, not exposed to the browser):**
 
