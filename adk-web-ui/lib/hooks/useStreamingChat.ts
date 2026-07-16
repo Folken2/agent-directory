@@ -222,37 +222,105 @@ export function useStreamingChat(): UseStreamingChatResult {
           !!author &&
           author !== finalAuthor &&
           author !== selectedAgent.name;
-        const recordIntermediate = (author: string, content: string) => {
+
+        const cloneSubAgentSteps = (): SubAgentStep[] =>
+          subAgentSteps.map((s) => ({
+            ...s,
+            tools: s.tools ? s.tools.map((t) => ({ ...t })) : undefined,
+          }));
+
+        const publishSubAgentSteps = () => {
+          setStreamingSubAgentSteps(cloneSubAgentSteps());
+        };
+
+        /** Ensure a running step exists for this author (tools/thinking may arrive before text). */
+        const ensureIntermediateStep = (author: string): SubAgentStep => {
           const last = subAgentSteps[subAgentSteps.length - 1];
           if (last && last.author === author && last.status === 'running') {
-            // Continuation of the same step — append (or replace if it's a
-            // larger overlapping prefix, mirroring the main-content dedupe).
-            if (content === last.content) return;
-            if (content.length > last.content.length && content.startsWith(last.content)) {
-              last.content = content;
-            } else if (last.content.includes(content)) {
-              return;
-            } else {
-              last.content += content;
-            }
+            return last;
+          }
+          if (last && last.status === 'running' && last.author !== author) {
+            last.status = 'done';
+            last.completedAt = Date.now();
+          }
+          const priorRuns = subAgentSteps.filter((s) => s.author === author).length;
+          const step: SubAgentStep = {
+            author,
+            content: '',
+            status: 'running',
+            startedAt: Date.now(),
+            runIndex: priorRuns + 1,
+            tools: [],
+          };
+          subAgentSteps.push(step);
+          return step;
+        };
+
+        const appendThinking = (existing: string | undefined, incoming: string): string => {
+          if (!existing) return incoming;
+          if (incoming === existing) return existing;
+          if (incoming.length > existing.length && incoming.startsWith(existing)) return incoming;
+          if (existing.includes(incoming)) return existing;
+          return existing + incoming;
+        };
+
+        const recordIntermediate = (author: string, content: string) => {
+          const step = ensureIntermediateStep(author);
+          if (content === step.content) return;
+          if (content.length > step.content.length && content.startsWith(step.content)) {
+            step.content = content;
+          } else if (step.content.includes(content)) {
+            return;
           } else {
-            // New author OR same author after a finished run — close any open
-            // running step from a different author, then push a fresh step.
-            if (last && last.status === 'running' && last.author !== author) {
-              last.status = 'done';
-              last.completedAt = Date.now();
-            }
-            const priorRuns = subAgentSteps.filter((s) => s.author === author).length;
-            subAgentSteps.push({
-              author,
-              content,
-              status: 'running',
-              startedAt: Date.now(),
-              runIndex: priorRuns + 1,
+            step.content += content;
+          }
+          publishSubAgentSteps();
+        };
+
+        const recordIntermediateThinking = (author: string, content: string) => {
+          const step = ensureIntermediateStep(author);
+          const next = appendThinking(step.thinking, content);
+          if (next === step.thinking) return;
+          step.thinking = next;
+          publishSubAgentSteps();
+        };
+
+        const recordIntermediateToolCall = (
+          author: string,
+          tool: { id: string; name: string; args?: Record<string, unknown>; status: string },
+        ) => {
+          const step = ensureIntermediateStep(author);
+          if (!step.tools) step.tools = [];
+          const existing = step.tools.find((t) => t.id === tool.id);
+          if (existing) {
+            existing.name = tool.name;
+            existing.args = tool.args;
+            existing.status = tool.status === 'running' ? 'running' : 'pending';
+          } else {
+            step.tools.push({
+              id: tool.id,
+              name: tool.name,
+              args: tool.args,
+              status: tool.status === 'running' ? 'running' : 'pending',
             });
           }
-          setStreamingSubAgentSteps([...subAgentSteps]);
+          publishSubAgentSteps();
         };
+
+        const recordIntermediateToolResponse = (
+          toolResponse: { id: string; response: unknown; error?: string },
+        ) => {
+          for (let i = subAgentSteps.length - 1; i >= 0; i--) {
+            const tool = subAgentSteps[i].tools?.find((t) => t.id === toolResponse.id);
+            if (!tool) continue;
+            tool.response = toolResponse.response;
+            tool.error = toolResponse.error;
+            tool.status = toolResponse.error ? 'error' : 'completed';
+            publishSubAgentSteps();
+            return;
+          }
+        };
+
         const closeIntermediateOnFinalEmit = () => {
           // Whenever the final author emits text, all prior intermediate steps
           // are necessarily done.
@@ -264,7 +332,7 @@ export function useStreamingChat(): UseStreamingChatResult {
               mutated = true;
             }
           }
-          if (mutated) setStreamingSubAgentSteps([...subAgentSteps]);
+          if (mutated) publishSubAgentSteps();
         };
 
         const sessionId = toSessionId(conversation.id);
@@ -302,9 +370,10 @@ export function useStreamingChat(): UseStreamingChatResult {
             }
 
             if (chunk.type === 'thinking' && chunk.content) {
-              // Drop thinking from intermediate sub-agents — their visible text
-              // already represents the work, no need to surface internal CoT.
-              if (isIntermediateAuthor(chunk.author)) continue;
+              if (isIntermediateAuthor(chunk.author)) {
+                recordIntermediateThinking(chunk.author!, chunk.content);
+                continue;
+              }
               const newThinking = chunk.content;
               setIsThinking(true);
               if (newThinking === fullThinking && fullThinking.length > 0) continue;
@@ -348,6 +417,15 @@ export function useStreamingChat(): UseStreamingChatResult {
               addArtifact(chunk.artifact);
               setCurrentMessageArtifacts((prev) => [...prev, chunk.artifact!]);
             } else if (chunk.type === 'toolCall' && chunk.toolCall) {
+              if (isIntermediateAuthor(chunk.author)) {
+                recordIntermediateToolCall(chunk.author!, {
+                  id: chunk.toolCall.id,
+                  name: chunk.toolCall.name,
+                  args: chunk.toolCall.args,
+                  status: chunk.toolCall.status,
+                });
+                continue;
+              }
               addToolCall(
                 {
                   id: chunk.toolCall.id,
@@ -360,6 +438,19 @@ export function useStreamingChat(): UseStreamingChatResult {
                 assistantMessageId,
               );
             } else if (chunk.type === 'toolResponse' && chunk.toolResponse) {
+              // Prefer nesting under a sub-agent step when the id matches;
+              // otherwise update the flat tool list (root / final author).
+              const nested = subAgentSteps.some((s) =>
+                s.tools?.some((t) => t.id === chunk.toolResponse!.id),
+              );
+              if (nested) {
+                recordIntermediateToolResponse(chunk.toolResponse);
+                continue;
+              }
+              if (isIntermediateAuthor(chunk.author)) {
+                recordIntermediateToolResponse(chunk.toolResponse);
+                continue;
+              }
               updateToolResponse(chunk.toolResponse.id, chunk.toolResponse.response, chunk.toolResponse.error);
             } else if (chunk.type === 'mapsCapture' && chunk.mapsCapture) {
               mapsCaptures.push(chunk.mapsCapture);
@@ -370,13 +461,6 @@ export function useStreamingChat(): UseStreamingChatResult {
               break;
             }
           }
-
-          setIsStreaming(false);
-          setIsThinking(false);
-          setIsInitializing(false);
-          setStreamingContent('');
-          setStreamingThinking('');
-          setCurrentAssistantMessageId(null);
 
           if (fullResponse && streamDone) {
             let finalArtifacts = currentMessageArtifacts;
@@ -413,13 +497,23 @@ export function useStreamingChat(): UseStreamingChatResult {
               timestamp: new Date(),
               agentName: selectedAgent.name,
               artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
-              subAgentSteps: subAgentSteps.length > 0 ? subAgentSteps.map((s) => ({ ...s })) : undefined,
+              subAgentSteps: subAgentSteps.length > 0 ? cloneSubAgentSteps() : undefined,
               mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
             };
+            // Commit the saved message BEFORE tearing down the streaming bubble
+            // so SubAgentProgress doesn't remount through an empty gap (which
+            // reset expand state and looked like an auto-collapse).
             addMessage(assistantMessage);
             setCurrentMessageArtifacts([]);
-            setStreamingSubAgentSteps([]);
           }
+
+          setIsStreaming(false);
+          setIsThinking(false);
+          setIsInitializing(false);
+          setStreamingContent('');
+          setStreamingThinking('');
+          setCurrentAssistantMessageId(null);
+          setStreamingSubAgentSteps([]);
         } catch (streamError: any) {
           // User clicked stop — commit whatever we streamed and exit cleanly.
           if (stoppedRef.current || streamError?.name === 'AbortError') {
@@ -445,7 +539,7 @@ export function useStreamingChat(): UseStreamingChatResult {
                 timestamp: new Date(),
                 agentName: selectedAgent.name,
                 artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
-                subAgentSteps: subAgentSteps.length > 0 ? subAgentSteps.map((s) => ({ ...s })) : undefined,
+                subAgentSteps: subAgentSteps.length > 0 ? cloneSubAgentSteps() : undefined,
                 mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
               };
               addMessage(stoppedMessage);

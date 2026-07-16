@@ -183,16 +183,13 @@ function ChatContent() {
                   <span className="text-[15px] font-semibold tracking-tight text-foreground leading-tight truncate max-w-[60vw] sm:max-w-md">
                     {selectedAgent.displayName || selectedAgent.name}
                   </span>
-                  <span className="text-label-small text-md-on-surface-variant/60 uppercase tracking-widest mt-1">
-                    Powered by Gemini 3 Flash
-                  </span>
                 </Link>
               ) : (
                 <div className="ml-2 flex flex-col">
                   <span className="text-[15px] font-semibold tracking-tight text-foreground leading-tight">
                     Chat
                   </span>
-                  <span className="text-label-small text-md-on-surface-variant/60 uppercase tracking-widest mt-1">
+                  <span className="text-xs text-muted-foreground mt-0.5">
                     Select an agent to begin
                   </span>
                 </div>

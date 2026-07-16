@@ -93,12 +93,12 @@ export default function Composer({
   return (
     <div className="px-4 pb-4 pt-2">
       <div className="pointer-events-none absolute inset-x-0 -top-4 h-6 bg-linear-to-t from-background to-transparent" />
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-3xl">
         <div
           className={cn(
-            'group rounded-3xl border bg-card shadow-sm transition-all',
+            'group rounded-3xl border bg-card shadow-sm transition-all duration-200',
             focused
-              ? 'border-ring/70 shadow-md ring-1 ring-ring/30'
+              ? 'border-ring/70 shadow-md ring-2 ring-ring/25'
               : 'border-border/70 hover:border-border',
             disabled && 'opacity-95',
           )}
@@ -205,7 +205,7 @@ export default function Composer({
           </div>
         </div>
 
-        <p className="text-center text-label-small text-md-on-surface-variant/60 uppercase tracking-widest mt-3">
+        <p className="text-center text-xs text-muted-foreground/70 mt-3">
           AI can make mistakes. Please verify important information.
         </p>
       </div>
