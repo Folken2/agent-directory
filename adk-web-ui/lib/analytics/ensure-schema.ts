@@ -8,6 +8,7 @@ let ensured: Promise<void> | null = null;
  * Idempotent schema bootstrap for analytics tables.
  * Prefer this over drizzle-kit migrate in the Vercel build — existing Neon DBs
  * often predate a clean __drizzle_migrations history.
+ * (Build must stay `next build` only — no migrate step.)
  */
 export async function ensurePageViewsSchema(): Promise<void> {
   if (!isAnalyticsDbAvailable()) return;
