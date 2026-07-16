@@ -1,0 +1,26 @@
+{
+  "name": "xquik_mcp_agent",
+  "displayName": "Xquik MCP Agent",
+  "logo": "https://xquik.com/logo-square.png",
+  "category": "Social Data",
+  "description": "Connects ADK agents to Xquik MCP for X search, follower exports, monitors, webhooks, compose workflows, and giveaway draws.",
+  "tools": ["search-x-posts", "extract-followers", "compose-post", "draw-giveaway", "monitor-keyword"],
+  "tags": ["mcp", "x", "social-data", "monitoring", "webhooks", "automation"],
+  "useCases": [
+    { "title": "Search X Posts", "description": "Find posts by keyword, account, or operator query." },
+    { "title": "Export Followers", "description": "Collect follower datasets for an account with pagination support." },
+    { "title": "Monitor Keywords", "description": "Create keyword monitors and route events to webhooks." },
+    { "title": "Run Giveaway Draws", "description": "Draw winners from post engagement with transparent filters." }
+  ],
+  "samplePrompts": [
+    "Search recent X posts about open source agent frameworks and summarize the strongest themes.",
+    "Extract followers for an account and return the first page as structured JSON.",
+    "Create a keyword monitor for a launch term and explain the webhook payload shape.",
+    "Run a giveaway draw from this post URL and describe the selected filters before execution."
+  ],
+  "author": "Xquik",
+  "githubUrl": "https://github.com/Xquik-dev/x-twitter-scraper",
+  "documentation": "https://docs.xquik.com/mcp/overview",
+  "version": "1.0.0",
+  "lastUpdated": "2026-07-08"
+}
