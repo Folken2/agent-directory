@@ -170,6 +170,17 @@ export default function Navigation() {
                   >
                     Sessions
                   </Link>
+                  <Link
+                    href="/settings"
+                    className={cn(
+                      'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                      isActive('/settings')
+                        ? 'text-md-primary'
+                        : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
+                    )}
+                  >
+                    Settings
+                  </Link>
                   <UserProfile />
                   <SignOutButton />
                 </>
@@ -263,6 +274,13 @@ export default function Navigation() {
                     className="block py-2 text-sm font-medium text-md-on-surface-variant hover:text-md-on-surface"
                   >
                     Your sessions
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block py-2 text-sm font-medium text-md-on-surface-variant hover:text-md-on-surface"
+                  >
+                    Settings
                   </Link>
                   <SignOutButton />
                 </div>
