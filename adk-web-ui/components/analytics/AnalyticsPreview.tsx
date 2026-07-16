@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { PageviewStats } from '@/lib/analytics/stats';
+import VisitsTimeline from '@/components/analytics/VisitsTimeline';
 
 function formatCount(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
@@ -110,6 +111,8 @@ export default function AnalyticsPreview() {
           {humanPct}% human · {formatCompact(stats.bots)} bots
         </p>
       </div>
+
+      {stats.timeline?.length ? <VisitsTimeline timeline={stats.timeline} /> : null}
 
       <div className="grid md:grid-cols-2 gap-6">
         <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">
