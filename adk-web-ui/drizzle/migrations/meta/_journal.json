@@ -29,6 +29,20 @@
       "when": 1766317000000,
       "tag": "0003_fix_sessions_table",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1752698400000,
+      "tag": "0012_page_views",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784247600000,
+      "tag": "0013_page_view_analytics_v2",
+      "breakpoints": true
     }
   ]
 }
