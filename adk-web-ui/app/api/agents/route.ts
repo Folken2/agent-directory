@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { formatAgentDisplayName } from '@/lib/agent-utils';
-import { loadAgentMetadata } from '@/lib/agent-metadata';
+import {
+  asPublicAgents,
+  resolveAgentsByName,
+  resolveFallbackAgents,
+  setLastGoodAgents,
+  type AgentsListSource,
+} from '@/lib/agent-catalog';
 import { getAgentStatsMap, isDbEnabled } from '@/lib/db';
+
+export const maxDuration = 300;
 
 const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
 
@@ -88,14 +95,29 @@ async function fetchAdkListApps(): Promise<Response> {
   throw lastError ?? new Error('list-apps failed after retries');
 }
 
-// Fallback agents list
-const FALLBACK_AGENTS = [
-  {
-    name: 'image_agent',
-    description: 'AI assistant that generates images based on a prompt',
-    tools: ['generate_image', 'load_artifacts'],
-  },
-];
+function fallbackWarning(reason: string, source: Exclude<AgentsListSource, 'live'>): string {
+  const where =
+    source === 'cache'
+      ? 'Showing the last successful live directory.'
+      : 'Showing the offline agent catalog.';
+  return `${reason} ${where}`;
+}
+
+async function respondWithFallback(reason: string) {
+  const { agents, source } = resolveFallbackAgents();
+  const agentsWithStats = await enrichWithStats(asPublicAgents(agents));
+  const warning = fallbackWarning(reason, source);
+
+  console.warn(`[api/agents] ${warning} (source=${source}, count=${agentsWithStats.length})`);
+
+  return NextResponse.json({
+    success: true,
+    data: agentsWithStats,
+    source,
+    stale: true,
+    warning,
+  });
+}
 
 export async function GET(_request: NextRequest) {
   void _request;
@@ -105,66 +127,23 @@ export async function GET(_request: NextRequest) {
 
     if (response.ok) {
       const data = await response.json();
-      // Convert list of strings to Agent objects and enrich with metadata
-      const agents = Array.isArray(data)
-        ? data.map((appName: string) => {
-          // First, try to load metadata from metadata.json file
-          const fileMetadata = loadAgentMetadata(appName);
-          if (fileMetadata) {
-            return fileMetadata;
-          }
-
-          // Second, try to find metadata in fallback list
-          const fallbackAgent = FALLBACK_AGENTS.find(a => a.name === appName);
-          if (fallbackAgent) {
-            return {
-              ...fallbackAgent,
-              displayName: formatAgentDisplayName(fallbackAgent.name)
-            };
-          }
-
-          // If not found, return basic agent info with formatted display name
-          return {
-            name: appName,
-            displayName: formatAgentDisplayName(appName),
-            description: `Agent: ${formatAgentDisplayName(appName)}`,
-            tools: [],
-            tags: [],
-            useCases: [],
-            samplePrompts: [],
-          };
-        })
+      const names = Array.isArray(data)
+        ? data.filter((name): name is string => typeof name === 'string' && name.trim().length > 0)
         : [];
+      const agents = resolveAgentsByName(names);
+      setLastGoodAgents(agents);
 
-      const agentsWithStats = await enrichWithStats(agents);
+      const agentsWithStats = await enrichWithStats(asPublicAgents(agents));
 
       return NextResponse.json({
         success: true,
         data: agentsWithStats,
+        source: 'live' satisfies AgentsListSource,
+        stale: false,
       });
     }
 
-    // If ADK server returned an error, log it but still return fallback agents
-    console.warn(`ADK server returned ${response.status} for /list-apps, using fallback agents`);
-
-    // Enrich fallback agents with metadata from files
-    const enrichedFallbackAgents = FALLBACK_AGENTS.map(agent => {
-      const fileMetadata = loadAgentMetadata(agent.name);
-      return fileMetadata || {
-        ...agent,
-        displayName: formatAgentDisplayName(agent.name),
-        tags: [],
-        useCases: [],
-        samplePrompts: [],
-      };
-    });
-
-    const agentsWithStats = await enrichWithStats(enrichedFallbackAgents);
-
-    return NextResponse.json({
-      success: true,
-      data: agentsWithStats,
-    });
+    return respondWithFallback(`ADK server returned ${response.status} for /list-apps.`);
   } catch (error: unknown) {
     const isError = error instanceof Error;
     const message = isError ? error.message : '';
@@ -179,37 +158,17 @@ export async function GET(_request: NextRequest) {
 
     let errorMessage = message || 'Unknown error';
 
-    // Provide more specific error messages
     if (name === 'AbortError') {
       errorMessage = `Request timeout - ADK server did not respond within ${LIST_APPS_TIMEOUT_MS / 1000}s (after ${LIST_APPS_MAX_ATTEMPTS} attempt(s))`;
     } else if (message?.includes('fetch failed') || message?.includes('ECONNREFUSED') || causeCode === 'ECONNREFUSED') {
-      errorMessage = `Cannot connect to ADK server at ${ADK_SERVER_URL}. Make sure the ADK server is running. Start it with: adk api_server`;
+      errorMessage = `Cannot connect to ADK server at ${ADK_SERVER_URL}`;
     } else if (message?.includes('ENOTFOUND') || causeCode === 'ENOTFOUND') {
-      errorMessage = `Cannot resolve hostname for ${ADK_SERVER_URL}. Check your network connection and server URL.`;
+      errorMessage = `Cannot resolve hostname for ${ADK_SERVER_URL}`;
     }
 
     console.error('Error fetching agents from ADK server:', errorMessage, error);
 
-    // If ADK server is not available, return fallback agents instead of error
-    // This allows the UI to work even when ADK server is down
-    // Enrich fallback agents with metadata from files
-    const enrichedFallbackAgents = FALLBACK_AGENTS.map(agent => {
-      const fileMetadata = loadAgentMetadata(agent.name);
-      return fileMetadata || {
-        ...agent,
-        tags: [],
-        useCases: [],
-        samplePrompts: [],
-      };
-    });
-
-    const agentsWithStats = await enrichWithStats(enrichedFallbackAgents);
-
-    return NextResponse.json({
-      success: true,
-      data: agentsWithStats,
-      warning: `ADK server unavailable: ${errorMessage}. Using fallback agents. Start the ADK server with: adk api_server`,
-    });
+    return respondWithFallback(`ADK server unavailable: ${errorMessage}.`);
   }
 }
 

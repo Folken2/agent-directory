@@ -101,7 +101,9 @@ adk-web-ui/
 - `ADK_LIST_APPS_MAX_ATTEMPTS` (default **3**): Retries after timeout, 502, 503, 504, or connection errors.
 - `ADK_LIST_APPS_RETRY_DELAY_MS` (default **2500**): Pause between retries.
 
-Previously the route used a **5s** timeout, which returned stale fallback agents when Railway (or similar) was waking up.
+Previously the route used a **5s** timeout, which returned a stale singleton fallback when Railway (or similar) was waking up.
+
+If `/list-apps` still fails after retries, `GET /api/agents` serves (in order): **last successful live list** (warm instance cache) → **offline catalog** from `agents/*/metadata.json` or `lib/agent-catalog.snapshot.json`. The response includes `source` (`live` | `cache` | `catalog`), `stale`, and an optional `warning`. After adding or removing agents, refresh the snapshot with `npm run sync:agent-catalog`.
 
 The application uses Next.js API routes to proxy requests to the ADK server, eliminating the need for CORS configuration.
 
@@ -146,9 +148,11 @@ The application uses Next.js API routes as a proxy layer, so all requests from t
 - Verify the ADK server is running
 - Check `NEXT_PUBLIC_ADK_SERVER_URL` is correct
 - If the API host sleeps (e.g. Railway free tier), wait for cold start or raise `ADK_LIST_APPS_TIMEOUT_MS` / `NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS`
-- On Vercel, ensure the **API route max duration** allows long `list-apps` waits (Pro: increase in `vercel.json` if needed)
+- On Vercel, ensure the **API route max duration** allows long `list-apps` waits (`maxDuration` is set on `/api/agents`; Pro plans can use the full window)
+- During an outage you should still see the full offline catalog (not a single wrong agent). Check the `/api/agents` JSON for `source` / `warning`
 - Verify `/list-apps` endpoint returns data
 - Check browser console for errors
+- If the catalog is missing a new agent, run `npm run sync:agent-catalog` and redeploy
 
 ### Streaming not working
 - The application will fallback to non-streaming requests automatically

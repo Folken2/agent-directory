@@ -1,6 +1,15 @@
 // ADK Server Client - Updated to match adk_web_server.py API
 import axios, { AxiosInstance } from 'axios';
-import { Agent, AgentRun, Artifact, StreamChunk, ToolCall, ToolResponse } from './types';
+import {
+  Agent,
+  AgentRun,
+  AgentsListResult,
+  AgentsListSource,
+  Artifact,
+  StreamChunk,
+  ToolCall,
+  ToolResponse,
+} from './types';
 
 const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
 
@@ -157,22 +166,31 @@ class ADKClient {
   /**
    * List all available agents (apps)
    * Endpoint: GET /list-apps (via /api/agents proxy)
+   *
+   * Cold-start hardening lives on the Next.js `/api/agents` route (last-good
+   * cache + offline catalog). This client never invents a stale singleton list.
    */
   async listAgents(): Promise<Agent[]> {
+    const { agents } = await this.listAgentsDetailed();
+    return agents;
+  }
+
+  async listAgentsDetailed(): Promise<AgentsListResult> {
     try {
-      // Use Next.js API route as proxy when in browser
       const endpoint = USE_API_PROXY ? '/api/agents' : '/list-apps';
       const response = await this.client.get(endpoint, {
         timeout: LIST_AGENTS_CLIENT_TIMEOUT_MS,
       });
 
-      // If using proxy, extract data from response
-      const data = USE_API_PROXY && response.data?.data ? response.data.data : response.data;
+      const payload = response.data;
+      const data = USE_API_PROXY && payload?.data ? payload.data : payload;
+      const source = normalizeAgentsSource(USE_API_PROXY ? payload?.source : 'live');
+      const warning =
+        USE_API_PROXY && typeof payload?.warning === 'string' ? payload.warning : undefined;
+      const stale = USE_API_PROXY ? Boolean(payload?.stale) : false;
 
       if (data && Array.isArray(data)) {
-        // Convert list of strings to Agent objects (if from /list-apps)
-        // or use Agent objects directly (if from proxy)
-        return data.map((item: string | Agent) => {
+        const agents = data.map((item: string | Agent) => {
           if (typeof item === 'string') {
             return {
               name: item,
@@ -186,26 +204,22 @@ class ADKClient {
           return {
             ...item,
             tags: item.tags ?? [],
-            useCases: (item as any).useCases ?? (item as any).use_cases ?? [],
-            samplePrompts: (item as any).samplePrompts ?? (item as any).sample_prompts ?? [],
+            useCases: item.useCases ?? [],
+            samplePrompts: item.samplePrompts ?? [],
           };
         });
+        return { agents, source, stale, warning };
       }
 
-      return [];
+      return { agents: [], source, stale, warning };
     } catch (error) {
       console.error('Error listing agents:', error);
-      // Fallback: return hardcoded agents from the project
-      return [
-        {
-          name: 'image_agent',
-          description: 'AI assistant that generates images based on a prompt',
-          tools: ['generate_image', 'load_artifacts'],
-          tags: [],
-          useCases: [],
-          samplePrompts: [],
-        },
-      ];
+      return {
+        agents: [],
+        source: undefined,
+        stale: true,
+        warning: 'Could not load the agent directory. Please try again in a moment.',
+      };
     }
   }
 
@@ -214,9 +228,8 @@ class ADKClient {
    */
   async getAgentInfo(agentName: string): Promise<Agent | null> {
     try {
-      // Get from list
       const agents = await this.listAgents();
-      return agents.find(a => a.name === agentName) || null;
+      return agents.find((a) => a.name === agentName) || null;
     } catch (error) {
       console.error('Error getting agent info:', error);
       return null;
@@ -1007,3 +1020,8 @@ class ADKClient {
 }
 
 export const adkClient = new ADKClient();
+
+function normalizeAgentsSource(value: unknown): AgentsListSource | undefined {
+  if (value === 'live' || value === 'cache' || value === 'catalog') return value;
+  return undefined;
+}

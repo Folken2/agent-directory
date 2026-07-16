@@ -1,0 +1,425 @@
+{
+  "generatedAt": "2026-07-16",
+  "agents": [
+    {
+      "name": "adk_agent_builder",
+      "displayName": "ADK Agent Builder",
+      "description": "Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in a curated library of ADK skills shipped with the agent.",
+      "tools": [
+        "SkillToolset"
+      ],
+      "tags": [
+        "adk",
+        "agent-development",
+        "multi-agent",
+        "orchestration",
+        "skills"
+      ],
+      "useCases": [
+        {
+          "title": "Build From Scratch",
+          "description": "Design and build ADK agents from scratch"
+        },
+        {
+          "title": "Architecture Advice",
+          "description": "Choose the right agent architecture (LlmAgent, Sequential, Parallel, Loop)"
+        },
+        {
+          "title": "Tool Integration",
+          "description": "Write function tools and integrate built-in or MCP tools"
+        },
+        {
+          "title": "Prompts & Callbacks",
+          "description": "Design system prompts and add callbacks / human-in-the-loop gates"
+        },
+        {
+          "title": "Streaming",
+          "description": "Build voice and video agents on the Gemini Live API"
+        },
+        {
+          "title": "Skill Authoring",
+          "description": "Create SKILL.md knowledge for your own agents"
+        }
+      ],
+      "samplePrompts": [
+        "Build me a simple agent that searches the web and summarizes results.",
+        "What's the best architecture for an agent that needs both code execution and web search?",
+        "How do I write a function tool that calls an external API and updates session state?",
+        "Show me how to add a human-in-the-loop approval step before a destructive action.",
+        "How should I structure a SKILL.md for my agent's domain knowledge?"
+      ],
+      "author": "Albert Folch",
+      "category": "Code",
+      "logo": "https://www.google.com/favicon.ico"
+    },
+    {
+      "name": "data_analyst_agent",
+      "displayName": "Data Analyst",
+      "description": "Turn raw data into insights with statistical rigor. Upload a CSV, get exploratory analysis, ML-powered patterns, and publication-ready charts — every analysis ends with a structured Findings block (top insights, data quality flags, open questions) and inferential claims carry effect sizes and sample-size context.",
+      "tools": [
+        "code_execution"
+      ],
+      "tags": [
+        "data",
+        "analytics",
+        "visualization",
+        "python",
+        "machine-learning",
+        "charts",
+        "statistics",
+        "rigor"
+      ],
+      "useCases": [
+        {
+          "title": "Data Profiling",
+          "description": "Explore and profile datasets — distributions, correlations, outliers — with quantified data-quality flags"
+        },
+        {
+          "title": "Hypothesis Testing",
+          "description": "Test group differences and relationships with proper test selection, effect sizes, and sample-size caveats"
+        },
+        {
+          "title": "Segmentation",
+          "description": "Segment customers or records with clustering, then characterize each cluster with profile statistics"
+        },
+        {
+          "title": "Visualizations",
+          "description": "Generate publication-ready charts (bar, scatter, heatmap, time series) with intentional chart selection"
+        }
+      ],
+      "samplePrompts": [
+        "Here's our Q1 sales CSV. Show me revenue trends by region and flag any anomalies.",
+        "Analyze this dataset: find the strongest predictors of churn and visualize the top 5.",
+        "Segment these 10K customers by behavior and describe each cluster.",
+        "Profile this dataset — show me data quality issues, distributions, and correlations."
+      ],
+      "author": "Albert Folch",
+      "category": "Data"
+    },
+    {
+      "name": "deep_research_agent",
+      "displayName": "Deep Research Agent",
+      "description": "Autonomous multi-agent research pipeline. Decomposes a question into a plan, iteratively gathers evidence with Tavily, critiques coverage, and composes a fully cited markdown report — all in one turn.",
+      "tools": [
+        "tavily-search",
+        "tavily-extract",
+        "exit_loop"
+      ],
+      "tags": [
+        "research",
+        "multi-agent",
+        "loop-agent",
+        "deep-research",
+        "citations",
+        "synthesis"
+      ],
+      "useCases": [
+        {
+          "title": "Comparative Analysis",
+          "description": "Side-by-side comparison reports across vendors, products, or technologies"
+        },
+        {
+          "title": "Market Reports",
+          "description": "Multi-angle market research with sourced statistics and trends"
+        },
+        {
+          "title": "Technical Deep-Dives",
+          "description": "In-depth technical investigations covering architecture, pricing, and adoption"
+        },
+        {
+          "title": "Due Diligence",
+          "description": "Background research on companies, frameworks, or claims with citation trails"
+        }
+      ],
+      "samplePrompts": [
+        "Compare Postgres logical vs physical replication for a 5-node cluster — operational complexity, failover behavior, and tooling maturity in 2026.",
+        "Research the state of right-to-repair legislation across the EU, US, and UK — which laws passed, what they cover, and how manufacturers are responding.",
+        "Investigate the post-RISC-V landscape: which silicon vendors shipped production chips in the last 18 months and where adoption stands beyond hobbyist boards.",
+        "Compile a brief on home solar + battery economics in Spain in 2026 — payback periods, regulatory shifts, and the state of community self-consumption schemes."
+      ],
+      "author": "Albert Folch",
+      "category": "Research",
+      "logo": "https://tavily.com/favicon.ico",
+      "finalSubAgent": "writer"
+    },
+    {
+      "name": "exa_mcp_agent",
+      "displayName": "Exa Research Assistant",
+      "description": "Deep research across the web, code, companies, and people. Searches GitHub repos, crawls URLs, finds LinkedIn profiles, and generates comprehensive research reports with citations.",
+      "tools": [
+        "web_search_exa",
+        "web_search_advanced_exa",
+        "get_code_context_exa",
+        "deep_search_exa",
+        "crawling_exa",
+        "company_research_exa",
+        "linkedin_search_exa",
+        "deep_researcher_start",
+        "deep_researcher_check"
+      ],
+      "tags": [
+        "research",
+        "web-search",
+        "code-search",
+        "competitive-intelligence",
+        "deep-research",
+        "citations"
+      ],
+      "useCases": [
+        {
+          "title": "Company Research",
+          "description": "Research companies — pricing, products, market position, leadership"
+        },
+        {
+          "title": "Code Examples",
+          "description": "Find code examples and documentation across GitHub and StackOverflow"
+        },
+        {
+          "title": "Research Reports",
+          "description": "Generate multi-source research reports on complex topics"
+        },
+        {
+          "title": "People Search",
+          "description": "Discover professionals and experts on LinkedIn"
+        }
+      ],
+      "samplePrompts": [
+        "Research Anthropic's current pricing, products, and recent launches — cite everything.",
+        "Find production examples of MCP server implementations in TypeScript on GitHub.",
+        "Start a deep research report on agentic AI adoption in enterprise, March 2026.",
+        "Find AI infrastructure engineers at Google DeepMind on LinkedIn."
+      ],
+      "author": "Albert Folch",
+      "category": "Research",
+      "logo": "https://exa.ai/images/favicon-32x32.png"
+    },
+    {
+      "name": "google_explorer_agent",
+      "displayName": "Local Guide",
+      "description": "Multi-step travel and local research. Plans trips, scouts neighborhoods, and recommends places — by chaining live Google Search with Google Maps in a single coordinated answer.",
+      "tools": [
+        "google search",
+        "google maps"
+      ],
+      "tags": [
+        "research",
+        "travel",
+        "trip-planning",
+        "local-search",
+        "places",
+        "web-search",
+        "citations",
+        "grounded"
+      ],
+      "useCases": [
+        {
+          "title": "Trip Itineraries",
+          "description": "Multi-day plans with neighborhoods, restaurants, and venues — sourced and mapped"
+        },
+        {
+          "title": "Neighborhood Research",
+          "description": "What's a place really like? Reviews, vibe, and concrete spots in one answer"
+        },
+        {
+          "title": "Local Discovery",
+          "description": "Find the best places for a specific need, with web context plus addresses, hours, and ratings"
+        },
+        {
+          "title": "City Comparisons",
+          "description": "Compare cities or neighborhoods across food, nightlife, safety, and points of interest"
+        }
+      ],
+      "samplePrompts": [
+        "Plan a 4-day Lisbon itinerary: coolest neighborhoods, one rooftop bar per night, vegan-friendly lunch each day.",
+        "Find top-rated vegan lunch spots in Bairro Alto, Lisbon — top 3 with hours and ratings.",
+        "Compare Tokyo's Shibuya vs Shinjuku for a first-time visitor and recommend a hotel area with concrete options.",
+        "What's the current vibe of Mexico City's Roma Norte in 2026, and which 5 cafés should I actually visit?"
+      ],
+      "author": "Albert Folch",
+      "category": "Research",
+      "logo": "https://www.google.com/favicon.ico"
+    },
+    {
+      "name": "image_generation_agent",
+      "displayName": "Image Architect",
+      "description": "Generate studio-quality images from natural language and refine them iteratively. Adjust lighting, composition, color, or remove elements while keeping the subject intact — like working with a creative director who never loses the brief.",
+      "tools": [
+        "generate_image",
+        "refine_image"
+      ],
+      "tags": [
+        "image-generation",
+        "image-editing",
+        "creative",
+        "design",
+        "marketing",
+        "visual-content",
+        "iteration"
+      ],
+      "useCases": [
+        {
+          "title": "Product Photography",
+          "description": "Create product photography for e-commerce listings, then iterate on lighting and surfaces without losing the product"
+        },
+        {
+          "title": "Hero Images",
+          "description": "Design hero images for landing pages, then refine framing and color until the brief is nailed"
+        },
+        {
+          "title": "Social Media Visuals",
+          "description": "Generate social media visuals with scroll-stopping compositions and tweak them to match brand direction"
+        },
+        {
+          "title": "Concept Iteration",
+          "description": "Start with a rough concept and refine it conversationally — adjust mood, swap materials, change the time of day, all while preserving the subject"
+        }
+      ],
+      "samplePrompts": [
+        "Product hero shot of a matte black wireless earbud case on dark marble, studio rim lighting, 85mm lens, 1:1.",
+        "Editorial magazine cover: futuristic organic chair in a brutalist concrete hall, cinematic blue hour, 24mm wide-angle, 3:4.",
+        "Social media visual for a healthy snack brand: split-screen of fresh fruit vs packaged product, hyper-saturated, 9:16.",
+        "Scandinavian reading nook, sun-drenched, realistic wood and linen textures, soft window light, 35mm, eye-level."
+      ],
+      "author": "Albert Folch",
+      "category": "Creative",
+      "logo": "https://www.google.com/favicon.ico"
+    },
+    {
+      "name": "mermaid_mcp_agent",
+      "displayName": "Diagram Creator",
+      "description": "Create professional diagrams from plain language. Supports flowcharts, sequence diagrams, architecture maps, Gantt charts, C4 models, mindmaps, and more — rendered as high-quality images with editable code.",
+      "tools": [
+        "mermaid-create",
+        "mermaid-render",
+        "mermaid-validate"
+      ],
+      "tags": [
+        "diagrams",
+        "visualization",
+        "flowcharts",
+        "architecture",
+        "documentation"
+      ],
+      "useCases": [
+        {
+          "title": "Process Mapping",
+          "description": "Map business processes and decision trees for documentation"
+        },
+        {
+          "title": "System Architecture",
+          "description": "Design system architecture and microservice interactions"
+        },
+        {
+          "title": "Project Timelines",
+          "description": "Build project timelines and roadmap Gantt charts"
+        },
+        {
+          "title": "Visual Models",
+          "description": "Create org charts, user journeys, and state machines"
+        }
+      ],
+      "samplePrompts": [
+        "Flowchart for a SaaS signup: landing page → pricing → checkout → onboarding → activation loop.",
+        "Microservices architecture for an e-commerce platform: Auth, Catalog, Cart, Payments (Stripe), Fulfillment.",
+        "Gantt chart for a 6-month AI product roadmap: model selection, fine-tuning, beta, marketing, launch.",
+        "Sequence diagram showing OAuth 2.1 authorization code flow with PKCE between client, auth server, and API."
+      ],
+      "author": "Albert Folch",
+      "category": "Creative",
+      "logo": "https://mermaid.js.org/favicon.svg"
+    },
+    {
+      "name": "repo_atlas_agent",
+      "displayName": "Repo Atlas",
+      "description": "Map any public GitHub repository in seconds. Pass a URL and get a Mermaid diagram of the codebase structure plus a concise overview of purpose, stack, and entry points — all from the GitHub REST API, no cloning required.",
+      "tools": [
+        "fetch_repo_meta",
+        "fetch_repo_tree",
+        "read_repo_file"
+      ],
+      "tags": [
+        "github",
+        "code-analysis",
+        "mermaid",
+        "repo-explorer",
+        "developer-tools",
+        "diagram"
+      ],
+      "useCases": [
+        {
+          "title": "Onboarding to a Codebase",
+          "description": "Quick orientation to an unfamiliar repo before diving in"
+        },
+        {
+          "title": "Architecture Documentation",
+          "description": "Generate Mermaid diagrams to drop into READMEs or wikis"
+        },
+        {
+          "title": "Tech Stack Audit",
+          "description": "Identify language, framework, and key dependencies at a glance"
+        },
+        {
+          "title": "Repo Triage",
+          "description": "Decide whether a candidate library fits before cloning"
+        }
+      ],
+      "samplePrompts": [
+        "Map https://github.com/earendil-works/pi — how is this AI agent toolkit split across the coding-agent CLI, unified LLM API, and Slack bot?",
+        "Visualize https://github.com/openclaw/openclaw — what are the components of this cross-platform personal AI assistant?",
+        "Generate a structural diagram for https://github.com/redis/redis — point out the core data-structure modules, the cluster layer, and the vector-query engine.",
+        "Give me an atlas of https://github.com/Shubhamsaboo/awesome-llm-apps — how are the 100+ AI agent and RAG apps organized in this collection?"
+      ],
+      "author": "Albert Folch",
+      "category": "Developer Tools",
+      "logo": "https://github.githubassets.com/favicons/favicon.svg"
+    },
+    {
+      "name": "xquik_mcp_agent",
+      "displayName": "Xquik MCP Agent",
+      "description": "Connects ADK agents to Xquik MCP for X search, follower exports, monitors, webhooks, compose workflows, and giveaway draws.",
+      "tools": [
+        "search-x-posts",
+        "extract-followers",
+        "compose-post",
+        "draw-giveaway",
+        "monitor-keyword"
+      ],
+      "tags": [
+        "mcp",
+        "x",
+        "social-data",
+        "monitoring",
+        "webhooks",
+        "automation"
+      ],
+      "useCases": [
+        {
+          "title": "Search X Posts",
+          "description": "Find posts by keyword, account, or operator query."
+        },
+        {
+          "title": "Export Followers",
+          "description": "Collect follower datasets for an account with pagination support."
+        },
+        {
+          "title": "Monitor Keywords",
+          "description": "Create keyword monitors and route events to webhooks."
+        },
+        {
+          "title": "Run Giveaway Draws",
+          "description": "Draw winners from post engagement with transparent filters."
+        }
+      ],
+      "samplePrompts": [
+        "Search recent X posts about open source agent frameworks and summarize the strongest themes.",
+        "Extract followers for an account and return the first page as structured JSON.",
+        "Create a keyword monitor for a launch term and explain the webhook payload shape.",
+        "Run a giveaway draw from this post URL and describe the selected filters before execution."
+      ],
+      "author": "Xquik",
+      "category": "Social Data",
+      "logo": "https://xquik.com/logo-square.png",
+      "githubUrl": "https://github.com/Xquik-dev/x-twitter-scraper"
+    }
+  ]
+}

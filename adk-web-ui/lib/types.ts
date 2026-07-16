@@ -29,6 +29,16 @@ export interface Agent {
   finalSubAgent?: string;
 }
 
+/** How `/api/agents` produced the list (live ADK vs cold-start fallbacks). */
+export type AgentsListSource = 'live' | 'cache' | 'catalog';
+
+export interface AgentsListResult {
+  agents: Agent[];
+  source?: AgentsListSource;
+  stale?: boolean;
+  warning?: string;
+}
+
 /** Tool activity nested under a sub-agent step (Cursor-style timeline). */
 export interface SubAgentTool {
   id: string;

@@ -57,7 +57,7 @@ Agents are AI assistants built using Google's Agent Development Kit (ADK). Each 
 - May have GitHub repositories and documentation links
 
 ### Agent Structure
-- **Name**: Unique identifier (e.g., `image_agent`, `resume_screener`)
+- **Name**: Unique identifier (e.g., `image_generation_agent`, `deep_research_agent`)
 - **Display Name**: Human-readable name
 - **Description**: What the agent does
 - **Tools**: List of capabilities/tools the agent uses

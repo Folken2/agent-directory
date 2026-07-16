@@ -4,7 +4,7 @@ test.describe('Chat chrome', () => {
   test('empty chat does not show Gemini powered-by clutter', async ({ page }) => {
     // Prefer a live agent from the directory; fall back to the known stub name
     // used when the ADK backend is unavailable during local e2e.
-    let agentName = 'image_agent';
+    let agentName = 'image_generation_agent';
     const res = await page.request.get('/api/agents');
     if (res.ok()) {
       const json = await res.json();

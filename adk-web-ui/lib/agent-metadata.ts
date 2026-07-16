@@ -14,6 +14,18 @@ import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { formatAgentDisplayName } from './agent-utils';
 
+function resolveAgentsDir(cwd: string = process.cwd()): string | null {
+  const candidates = [
+    join(cwd, '..', 'agents'),
+    join(cwd, 'agents'),
+    join(cwd, '..', '..', 'agents'),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(dir)) return dir;
+  }
+  return null;
+}
+
 export interface AgentMetadata {
   name: string;
   displayName: string;
@@ -34,7 +46,9 @@ export interface AgentMetadata {
 
 export function loadAgentMetadata(agentName: string): AgentMetadata | null {
   try {
-    const metadataPath = join(process.cwd(), '..', 'agents', agentName, 'metadata.json');
+    const agentsDir = resolveAgentsDir();
+    if (!agentsDir) return null;
+    const metadataPath = join(agentsDir, agentName, 'metadata.json');
     if (!existsSync(metadataPath)) return null;
 
     const metadata = JSON.parse(readFileSync(metadataPath, 'utf-8'));
