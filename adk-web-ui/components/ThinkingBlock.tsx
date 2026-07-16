@@ -31,12 +31,14 @@ export default function ThinkingBlock({ content, isStreaming = false }: Thinking
             isStreaming && 'animate-pulse',
           )}
         />
-        <span className="text-xs text-muted-foreground flex-1">
-          {isStreaming ? 'Thinking…' : 'Thought process'}
+        <span
+          className={cn(
+            'text-xs flex-1',
+            isStreaming ? 'stream-shimmer' : 'text-muted-foreground',
+          )}
+        >
+          {isStreaming ? 'Thinking' : 'Thought process'}
         </span>
-        {isStreaming && (
-          <span className="w-1.5 h-1.5 bg-muted-foreground/60 rounded-full animate-pulse" />
-        )}
         {isExpanded ? (
           <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         ) : (

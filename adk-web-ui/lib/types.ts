@@ -29,9 +29,21 @@ export interface Agent {
   finalSubAgent?: string;
 }
 
+/** Tool activity nested under a sub-agent step (Cursor-style timeline). */
+export interface SubAgentTool {
+  id: string;
+  name: string;
+  args?: Record<string, unknown>;
+  status: 'pending' | 'running' | 'completed' | 'error';
+  response?: unknown;
+  error?: string;
+}
+
 export interface SubAgentStep {
   author: string;       // sub-agent name as emitted by ADK (e.g., "planner")
   content: string;      // accumulated text from this sub-agent (latest run only)
+  thinking?: string;    // accumulated reasoning / CoT for this step
+  tools?: SubAgentTool[];
   status: 'running' | 'done';
   startedAt: number;    // ms epoch
   completedAt?: number;

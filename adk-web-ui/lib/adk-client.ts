@@ -754,13 +754,14 @@ class ADKClient {
                     toolCall: {
                       ...toolCall,
                       status: isLongRunning ? 'running' : 'pending',
-                    }
+                    },
+                    author: eventData.author,
                   };
                 }
 
                 // Yield tool responses
                 for (const toolResponse of functionResponses) {
-                  yield { type: 'toolResponse', toolResponse };
+                  yield { type: 'toolResponse', toolResponse, author: eventData.author };
                 }
 
                 // Surface Google Maps grounding captures from session state_delta.

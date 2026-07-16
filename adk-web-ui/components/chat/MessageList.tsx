@@ -43,9 +43,20 @@ export default function MessageList({
 }: MessageListProps) {
   const endRef = useRef<HTMLDivElement>(null);
 
+  // Stick to bottom while streaming (including sub-agent step updates).
+  // Use instant scroll during live updates so long tool/sub-agent runs don't lag.
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, streamingContent, streamingThinking]);
+    const live = isStreaming || isInitializing || streamingSubAgentSteps.length > 0;
+    endRef.current?.scrollIntoView({ behavior: live ? 'auto' : 'smooth', block: 'end' });
+  }, [
+    messages,
+    streamingContent,
+    streamingThinking,
+    streamingSubAgentSteps,
+    currentMessageArtifacts,
+    isStreaming,
+    isInitializing,
+  ]);
 
   const showStreamingBubble =
     isStreaming &&

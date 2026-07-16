@@ -97,10 +97,13 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
       title={timestamp?.toLocaleString()}
     >
       <div className="max-w-3xl w-full space-y-2">
-        <ToolStatusDisplay messageId={message.id} />
-        {message.thinking && <ThinkingBlock content={message.thinking} />}
-        {message.subAgentSteps && message.subAgentSteps.length > 0 && (
-          <SubAgentProgress steps={message.subAgentSteps} />
+        {message.subAgentSteps && message.subAgentSteps.length > 0 ? (
+          <SubAgentProgress steps={message.subAgentSteps} isDarkMode={isDarkMode} />
+        ) : (
+          <>
+            <ToolStatusDisplay messageId={message.id} />
+            {message.thinking && <ThinkingBlock content={message.thinking} />}
+          </>
         )}
 
         {showAnything && (
