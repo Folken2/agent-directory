@@ -11,7 +11,8 @@
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
     "db:studio": "dotenv -e .env.local -- drizzle-kit studio",
     "db:push": "dotenv -e .env.local -- drizzle-kit push",
-    "test:unit": "node --import tsx --test lib/analytics/**/*.test.ts",
+    "sync:agent-catalog": "node scripts/sync-agent-catalog-snapshot.mjs",
+    "test:unit": "node --import tsx --test lib/analytics/**/*.test.ts lib/agent-catalog.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

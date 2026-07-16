@@ -24,6 +24,7 @@ type SortOption = 'featured' | 'mostStarred' | 'name';
 export default function AgentGrid() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [listWarning, setListWarning] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('featured');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
@@ -62,7 +63,8 @@ export default function AgentGrid() {
     const loadAgents = async () => {
       setIsLoading(true);
       try {
-        const agentList = await adkClient.listAgents();
+        const { agents: agentList, warning } = await adkClient.listAgentsDetailed();
+        setListWarning(warning ?? null);
         setAgents(
           agentList.map((agent) => ({
             ...agent,
@@ -75,6 +77,7 @@ export default function AgentGrid() {
         loadStarredAgents();
       } catch (error) {
         console.error('Error loading agents:', error);
+        setListWarning('Could not load the agent directory. Please try again in a moment.');
       } finally {
         setIsLoading(false);
       }
@@ -280,7 +283,8 @@ export default function AgentGrid() {
           <div>
             <p className="text-lg font-medium text-foreground">No agents available</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Make sure the ADK server is running and agents are registered.
+              {listWarning ||
+                'The directory backend may still be warming up. Refresh in a moment.'}
             </p>
           </div>
         </div>
@@ -290,6 +294,14 @@ export default function AgentGrid() {
 
   return (
     <>
+      {listWarning ? (
+        <p
+          role="status"
+          className="mb-4 text-sm text-muted-foreground border border-border/70 bg-muted/30 rounded-xl px-4 py-3"
+        >
+          {listWarning}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
         <div className="relative w-full md:max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-md-on-surface-variant/70" />
