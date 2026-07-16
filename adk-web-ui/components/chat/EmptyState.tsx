@@ -26,7 +26,6 @@ export default function EmptyState({ agent, onPromptClick }: EmptyStateProps) {
       <p className="mt-2 text-sm text-muted-foreground max-w-md">
         {agent?.description || 'Start a conversation. Use sample prompts below or write your own.'}
       </p>
-      <p className="mt-1.5 text-[11px] text-muted-foreground/60">Powered by Gemini 3 Flash</p>
 
       {agent?.githubUrl && (
         <a
