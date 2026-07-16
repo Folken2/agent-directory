@@ -21,8 +21,9 @@ Store rich pageview events in Neon for later homepage stats and a country/bot br
 
 ## Deploy / Neon
 
-- Vercel already has `DATABASE_URL`; it does **not** auto-migrate by itself.
-- `npm run build` runs `scripts/migrate-if-database.mjs` so deploys apply pending Drizzle migrations when `DATABASE_URL` is real.
+- Vercel already has `DATABASE_URL`.
+- `page_views` is created idempotently at runtime via `ensurePageViewsSchema()` (avoids brittle drizzle-kit migrate on existing Neon history).
+- SQL migrations under `drizzle/migrations/0012_*` / `0013_*` remain for local/manual use.
 - All visits stay in `page_views` (no retention/rollup for now).
 
 ## Out of scope

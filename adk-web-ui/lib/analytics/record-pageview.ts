@@ -3,6 +3,7 @@ import { db } from '@/lib/drizzle/db';
 import { pageViews, type NewPageView } from '@/lib/drizzle/schema/page-views';
 import { identifyBot } from './bots';
 import { isAnalyticsDbAvailable } from './db-available';
+import { ensurePageViewsSchema } from './ensure-schema';
 import { extractClientIp, hashIp } from './hash-ip';
 import { parseUserAgent } from './parse-ua';
 import {
@@ -41,6 +42,13 @@ export async function recordPageview(input: PageviewInput): Promise<{
 }> {
   if (!isAnalyticsDbAvailable()) {
     return { recorded: false, reason: 'no_database' };
+  }
+
+  try {
+    await ensurePageViewsSchema();
+  } catch (error) {
+    console.error('[analytics] schema ensure failed', error);
+    return { recorded: false, reason: 'db_error' };
   }
 
   const path = input.path.split('?')[0] || '/';

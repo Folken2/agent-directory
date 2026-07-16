@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { pageViews } from '@/lib/drizzle/schema/page-views';
 import { isAnalyticsDbAvailable } from './db-available';
+import { ensurePageViewsSchema } from './ensure-schema';
 
 export type PageviewStats = {
   total: number;
@@ -24,6 +25,8 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
   if (!isAnalyticsDbAvailable()) return null;
 
   try {
+    await ensurePageViewsSchema();
+
     const [totals] = await db
       .select({
         total: sql<number>`count(*)::int`,
