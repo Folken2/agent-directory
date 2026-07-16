@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import SessionProvider from "@/components/providers/SessionProvider";
+import PageViewTracker from "@/components/analytics/PageViewTracker";
 import { Analytics } from "@vercel/analytics/next";
 
 // Google Sans is not available via next/font/google, so we use Inter as the closest alternative
@@ -156,6 +158,9 @@ export default function RootLayout({
             {children}
           </main>
           <Footer />
+          <Suspense fallback={null}>
+            <PageViewTracker />
+          </Suspense>
         </SessionProvider>
         <Analytics />
       </body>

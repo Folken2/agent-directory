@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import AgentGrid from '@/components/AgentGrid';
+import DirectoryPulse from '@/components/analytics/DirectoryPulse';
 import { ArrowRight } from 'lucide-react';
 
 export default function Home() {
@@ -22,6 +23,9 @@ export default function Home() {
           {/* Decorative blur */}
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-md-primary/5 rounded-full blur-3xl -z-10" />
 
+          <div className="flex justify-center mb-5">
+            <DirectoryPulse />
+          </div>
           <h2 className="text-display-medium sm:text-display-large font-bold text-md-on-surface mb-6 tracking-tight">
             Discover Google AI Agents
           </h2>
