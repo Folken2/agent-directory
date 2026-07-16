@@ -34,9 +34,9 @@ export default function StreamingBubble({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: 0.16 }}
       className="flex justify-start"
     >
       <div className="max-w-3xl w-full space-y-2">
@@ -46,15 +46,15 @@ export default function StreamingBubble({
           <SubAgentProgress steps={subAgentSteps} isStreaming={true} />
         )}
 
-        <div className="text-foreground">
+        <div className="text-[15px] leading-relaxed text-foreground">
           {displayContent ? (
             <div className="relative">
               <MarkdownRenderer content={displayContent} isStreaming={true} isDarkMode={isDarkMode} />
               <span className="streaming-cursor" aria-hidden="true" />
             </div>
           ) : isThinking && streamingThinking ? null : (
-            <div className="flex items-center gap-2 py-2">
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+            <div className="flex items-center gap-2 py-1 min-h-[1.75rem]">
+              <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
               <span className="text-sm text-muted-foreground">Thinking…</span>
             </div>
           )}

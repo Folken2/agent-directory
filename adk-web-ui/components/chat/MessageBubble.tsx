@@ -66,13 +66,13 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
     const text = typeof message.content === 'string' ? message.content : JSON.stringify(message.content);
     return (
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.18 }}
+        transition={{ duration: 0.16 }}
         className="flex w-full justify-end"
         title={timestamp?.toLocaleString()}
       >
-        <div className="max-w-[85%] rounded-2xl bg-muted/60 px-4 py-2 text-foreground/90 text-left">
+        <div className="max-w-[min(85%,36rem)] rounded-2xl bg-muted/40 px-3.5 py-2 text-[15px] leading-relaxed text-foreground/90 text-left">
           <MarkdownRenderer
             content={text}
             isStreaming={false}
@@ -90,9 +90,9 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.18 }}
+      transition={{ duration: 0.16 }}
       className="group/msg flex w-full justify-start"
       title={timestamp?.toLocaleString()}
     >
@@ -104,7 +104,7 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
         )}
 
         {showAnything && (
-          <div className="text-foreground">
+          <div className="text-[15px] leading-relaxed text-foreground">
             {displayContent && (
               <MarkdownRenderer content={displayContent} isStreaming={false} isDarkMode={isDarkMode} />
             )}
