@@ -51,9 +51,9 @@ function ToolItem({ tool }: { tool: ToolStatus }) {
     <div className="text-xs">
       <div
         className={cn(
-          "flex items-center gap-2 py-1.5 transition-colors rounded px-2 -mx-2",
-          hasDetails && "cursor-pointer hover:bg-muted/50",
-          getStatusColor(tool.status)
+          'flex items-center gap-2 py-1 transition-colors rounded px-1',
+          hasDetails && 'cursor-pointer hover:bg-muted/40',
+          getStatusColor(tool.status),
         )}
         onClick={() => hasDetails && setIsExpanded(!isExpanded)}
       >
@@ -144,14 +144,13 @@ export default function ToolStatusDisplay({ messageId }: ToolStatusDisplayProps 
   const allTools = [...runningTools, ...completedTools, ...errorTools];
 
   return (
-    <div className="py-1">
-      <div className="flex items-center gap-1.5 mb-1.5 px-2">
-        <Wrench className="w-3 h-3 text-muted-foreground" />
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Tools
-        </span>
-        <span className="text-[10px] text-muted-foreground">
-          ({allTools.length})
+    <div className="py-0.5">
+      <div className="flex items-center gap-1.5 mb-1 px-1 text-muted-foreground">
+        <Wrench className="w-3 h-3" />
+        <span className="text-[11px]">
+          {runningTools.length > 0
+            ? `Using tools · ${allTools.length}`
+            : `Used ${allTools.length} tool${allTools.length === 1 ? '' : 's'}`}
         </span>
       </div>
 
