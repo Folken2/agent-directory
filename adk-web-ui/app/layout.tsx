@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -24,6 +24,14 @@ const robotoMono = Inter({
   display: "swap",
   weight: ["400", "500"],
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Resize the layout (and therefore 100dvh) when the on-screen keyboard opens
+  // so the chat composer stays above the keyboard instead of being covered by it.
+  interactiveWidget: "resizes-content",
+};
 
 export const metadata: Metadata = {
   title: "ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents",
