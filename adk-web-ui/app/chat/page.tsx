@@ -133,7 +133,7 @@ function ChatContent() {
   }, [searchParams, agents, selectedAgent, setAgents, setSelectedAgent, setCurrentConversation]);
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden bg-background text-foreground">
       {/* Sidebar — snap toggle (no width transition) avoids reflowing the message list every frame */}
       <div
         className={cn(
@@ -240,7 +240,7 @@ function ChatContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-[calc(100dvh-4rem)] items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     }>
