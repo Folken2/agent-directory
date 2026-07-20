@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
 import type { GuidePlace } from '@/lib/guide/types';
 
@@ -59,9 +59,12 @@ function SelectionPan({ place }: { place: Positioned | undefined }) {
 
 function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
   const [geocoded, setGeocoded] = useState<Record<string, { lat: number; lng: number }>>({});
+  const geocodeAttemptsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const toGeocode = places.filter((p) => !hasCoords(p) && !geocoded[p.id]);
+    const toGeocode = places.filter(
+      (p) => !hasCoords(p) && !geocoded[p.id] && !geocodeAttemptsRef.current.has(p.id),
+    );
     if (toGeocode.length === 0) return;
     if (typeof google === 'undefined' || !google.maps?.Geocoder) return;
 
@@ -70,7 +73,11 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
 
     toGeocode.forEach((place) => {
       const query = place.address || place.name;
-      if (!query) return;
+      if (!query) {
+        geocodeAttemptsRef.current.add(place.id);
+        return;
+      }
+      geocodeAttemptsRef.current.add(place.id);
       geocoder
         .geocode({ address: query })
         .then((result) => {
@@ -111,7 +118,7 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
   return (
     <div className="overflow-hidden rounded-lg border border-border" style={{ height: 300 }}>
       <Map
-        mapId="guide-overview-map"
+        mapId="DEMO_MAP_ID"
         defaultCenter={defaultCenter}
         defaultZoom={13}
         gestureHandling="greedy"
