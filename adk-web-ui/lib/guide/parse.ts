@@ -83,3 +83,21 @@ export function extractGuideFence(text: string): { document: GuideDocument | nul
   const displayText = text.replace(FENCE_RE, '').trim();
   return { document, displayText };
 }
+
+/**
+ * Resolves the message `content` + `guideDocument` pair from a full response
+ * string, used by every commit path (stream-done, stop/abort, and the
+ * non-streaming fallback) so they can't drift apart. Prefers an
+ * already-known `guideDocument` (e.g. from a `guideDocument` stream event)
+ * over re-parsing the ```guidejson``` fence, but always strips the fence out
+ * of the displayed text when a document is present.
+ */
+export function resolveGuideMessageContent(
+  fullResponse: string,
+  existingGuideDocument?: GuideDocument | null,
+): { content: string; guideDocument: GuideDocument | undefined } {
+  const fenced = extractGuideFence(fullResponse);
+  const guideDocument = existingGuideDocument ?? fenced.document ?? undefined;
+  const content = guideDocument ? fenced.displayText || guideDocument.lead : fullResponse;
+  return { content, guideDocument };
+}

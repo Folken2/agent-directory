@@ -43,7 +43,7 @@ import {
   SubAgentStep,
 } from '@/lib/types';
 import type { GuideDocument } from '@/lib/guide/types';
-import { extractGuideFence } from '@/lib/guide/parse';
+import { resolveGuideMessageContent } from '@/lib/guide/parse';
 
 const ANON_RATE_LIMIT_FALLBACK = 5;
 
@@ -500,11 +500,9 @@ export function useStreamingChat(): UseStreamingChatResult {
             // text. When a guide document is present, store its lead as
             // `content` (not the raw fenced text) so copy/chrome affordances
             // that read `message.content` show the lead instead of JSON.
-            const fenced = extractGuideFence(fullResponse);
-            if (!guideDocument && fenced.document) guideDocument = fenced.document;
-            const contentForMessage = guideDocument
-              ? fenced.displayText || guideDocument.lead
-              : fullResponse;
+            const resolved = resolveGuideMessageContent(fullResponse, guideDocument);
+            guideDocument = resolved.guideDocument;
+            const contentForMessage = resolved.content;
 
             const assistantMessage: Message = {
               id: assistantMessageId,
@@ -549,11 +547,9 @@ export function useStreamingChat(): UseStreamingChatResult {
                   s.completedAt = Date.now();
                 }
               }
-              const stoppedFenced = extractGuideFence(fullResponse);
-              if (!guideDocument && stoppedFenced.document) guideDocument = stoppedFenced.document;
-              const stoppedContent = guideDocument
-                ? stoppedFenced.displayText || guideDocument.lead
-                : fullResponse;
+              const stoppedResolved = resolveGuideMessageContent(fullResponse, guideDocument);
+              guideDocument = stoppedResolved.guideDocument;
+              const stoppedContent = stoppedResolved.content;
               const stoppedMessage: Message = {
                 id: assistantMessageId,
                 role: 'assistant',
@@ -627,13 +623,18 @@ export function useStreamingChat(): UseStreamingChatResult {
             }
           }
 
+          // Same fence-extraction + lead-preference logic as the streaming
+          // commit path above — the non-streaming fallback can also receive
+          // a raw ```guidejson``` fence and must not surface it verbatim.
+          const fallbackResolved = resolveGuideMessageContent(result.response || '');
           const assistantMessage: Message = {
             id: assistantMessageId,
             role: 'assistant',
-            content: result.response || '',
+            content: fallbackResolved.content,
             timestamp: new Date(),
             agentName: selectedAgent.name,
             artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
+            guideDocument: fallbackResolved.guideDocument,
           };
           addMessage(assistantMessage);
           setCurrentMessageArtifacts([]);

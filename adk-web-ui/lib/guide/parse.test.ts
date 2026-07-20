@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseGuideDocument, extractGuideFence } from './parse.ts';
+import { parseGuideDocument, extractGuideFence, resolveGuideMessageContent } from './parse.ts';
 
 const valid = {
   shape: 'neighborhood',
@@ -50,5 +50,27 @@ describe('extractGuideFence', () => {
     const { document, displayText } = extractGuideFence('Just prose');
     assert.equal(document, null);
     assert.equal(displayText, 'Just prose');
+  });
+});
+
+describe('resolveGuideMessageContent', () => {
+  it('extracts fence and prefers the lead over raw guidejson when no display text remains', () => {
+    const text = `\`\`\`guidejson\n${JSON.stringify(valid)}\n\`\`\``;
+    const { content, guideDocument } = resolveGuideMessageContent(text);
+    assert.ok(guideDocument);
+    assert.equal(content, valid.lead);
+  });
+
+  it('reuses an already-known guideDocument instead of re-parsing the fence', () => {
+    const known = parseGuideDocument(valid)!;
+    const { content, guideDocument } = resolveGuideMessageContent('Just prose, no fence', known);
+    assert.equal(guideDocument, known);
+    assert.equal(content, 'Just prose, no fence');
+  });
+
+  it('falls back to the raw response when no fence and no known document', () => {
+    const { content, guideDocument } = resolveGuideMessageContent('Plain non-streaming response');
+    assert.equal(guideDocument, undefined);
+    assert.equal(content, 'Plain non-streaming response');
   });
 });
