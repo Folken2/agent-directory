@@ -1,5 +1,6 @@
 'use client';
 
+import type { KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
 import type { GuidePlace } from '@/lib/guide/types';
 
@@ -10,12 +11,22 @@ type Props = {
 };
 
 export function PlaceCard({ place, selected, onSelect }: Props) {
+  function handleKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onSelect();
+    }
+  }
+
   return (
-    <button
-      type="button"
+    <div
+      role="button"
+      tabIndex={0}
+      aria-pressed={selected}
       onClick={onSelect}
+      onKeyDown={handleKeyDown}
       className={cn(
-        'w-full text-left rounded-lg border px-3 py-2.5 transition-colors',
+        'w-full text-left rounded-lg border px-3 py-2.5 transition-colors cursor-pointer',
         selected ? 'border-foreground/40 bg-muted/50' : 'border-border/60 hover:bg-muted/30',
       )}
     >
@@ -46,6 +57,6 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
           Open in Google Maps
         </a>
       )}
-    </button>
+    </div>
   );
 }
