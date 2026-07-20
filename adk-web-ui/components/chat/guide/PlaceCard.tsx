@@ -37,11 +37,14 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
               className={cn(
                 'shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums',
                 selected
-                  ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
-                  : 'bg-muted text-muted-foreground',
+                  ? 'bg-blue-500/15 text-foreground'
+                  : 'bg-muted text-foreground/80',
               )}
             >
-              ★ {place.rating.toFixed(1)}
+              <span className="text-amber-500" aria-hidden>
+                ★
+              </span>{' '}
+              {place.rating.toFixed(1)}
             </div>
           )}
         </div>
