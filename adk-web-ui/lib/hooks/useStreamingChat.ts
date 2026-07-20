@@ -42,6 +42,8 @@ import {
   Message,
   SubAgentStep,
 } from '@/lib/types';
+import type { GuideDocument } from '@/lib/guide/types';
+import { resolveGuideMessageContent } from '@/lib/guide/parse';
 
 const ANON_RATE_LIMIT_FALLBACK = 5;
 
@@ -217,6 +219,7 @@ export function useStreamingChat(): UseStreamingChatResult {
         const finalAuthor = selectedAgent.finalSubAgent || selectedAgent.name;
         const subAgentSteps: SubAgentStep[] = [];
         const mapsCaptures: MapsCapture[] = [];
+        let guideDocument: GuideDocument | undefined;
         const isIntermediateAuthor = (author: string | undefined): boolean =>
           !!selectedAgent.finalSubAgent &&
           !!author &&
@@ -454,6 +457,8 @@ export function useStreamingChat(): UseStreamingChatResult {
               updateToolResponse(chunk.toolResponse.id, chunk.toolResponse.response, chunk.toolResponse.error);
             } else if (chunk.type === 'mapsCapture' && chunk.mapsCapture) {
               mapsCaptures.push(chunk.mapsCapture);
+            } else if (chunk.type === 'guideDocument' && chunk.guideDocument) {
+              guideDocument = chunk.guideDocument;
             } else if (chunk.type === 'error') {
               throw new Error(chunk.error || 'Streaming error');
             } else if (chunk.type === 'done') {
@@ -489,16 +494,27 @@ export function useStreamingChat(): UseStreamingChatResult {
               }
             }
 
+            // Client-side backup: if the guide_agent's state_delta never
+            // surfaced (e.g. non-streaming fallback, dropped event), fall
+            // back to parsing the ```guidejson``` fence out of the final
+            // text. When a guide document is present, store its lead as
+            // `content` (not the raw fenced text) so copy/chrome affordances
+            // that read `message.content` show the lead instead of JSON.
+            const resolved = resolveGuideMessageContent(fullResponse, guideDocument);
+            guideDocument = resolved.guideDocument;
+            const contentForMessage = resolved.content;
+
             const assistantMessage: Message = {
               id: assistantMessageId,
               role: 'assistant',
-              content: fullResponse,
+              content: contentForMessage,
               thinking: fullThinking || undefined,
               timestamp: new Date(),
               agentName: selectedAgent.name,
               artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
               subAgentSteps: subAgentSteps.length > 0 ? cloneSubAgentSteps() : undefined,
               mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
+              guideDocument,
             };
             // Commit the saved message BEFORE tearing down the streaming bubble
             // so SubAgentProgress doesn't remount through an empty gap (which
@@ -531,16 +547,20 @@ export function useStreamingChat(): UseStreamingChatResult {
                   s.completedAt = Date.now();
                 }
               }
+              const stoppedResolved = resolveGuideMessageContent(fullResponse, guideDocument);
+              guideDocument = stoppedResolved.guideDocument;
+              const stoppedContent = stoppedResolved.content;
               const stoppedMessage: Message = {
                 id: assistantMessageId,
                 role: 'assistant',
-                content: fullResponse,
+                content: stoppedContent,
                 thinking: fullThinking || undefined,
                 timestamp: new Date(),
                 agentName: selectedAgent.name,
                 artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
                 subAgentSteps: subAgentSteps.length > 0 ? cloneSubAgentSteps() : undefined,
                 mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
+                guideDocument,
               };
               addMessage(stoppedMessage);
               setCurrentMessageArtifacts([]);
@@ -603,13 +623,22 @@ export function useStreamingChat(): UseStreamingChatResult {
             }
           }
 
+          // Same fence-extraction + lead-preference logic as the streaming
+          // commit path above. Pass any guideDocument accumulated before the
+          // stream failed — the backend often strips the fence from /run text,
+          // so the accumulated doc is the only way to keep PlaceCards + map.
+          const fallbackResolved = resolveGuideMessageContent(
+            result.response || '',
+            guideDocument,
+          );
           const assistantMessage: Message = {
             id: assistantMessageId,
             role: 'assistant',
-            content: result.response || '',
+            content: fallbackResolved.content,
             timestamp: new Date(),
             agentName: selectedAgent.name,
             artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
+            guideDocument: fallbackResolved.guideDocument,
           };
           addMessage(assistantMessage);
           setCurrentMessageArtifacts([]);

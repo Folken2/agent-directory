@@ -11,9 +11,9 @@ from google.adk.agents import LlmAgent
 from google.adk.tools.agent_tool import AgentTool
 
 from .config.llm import MODEL
-from .prompt.prompt import coordinator_prompt_v1
+from .prompt.prompt import coordinator_prompt_v2
 from .sub_agents import web_search_specialist, maps_specialist
-from .callbacks import after_model_callback_fix_parts
+from .callbacks import after_model_callback_fix_parts, capture_guide_document
 
 LANGUAGE_INSTRUCTION = (
     "Respond in whatever language the user writes in. Mirror their language "
@@ -34,6 +34,9 @@ root_agent = LlmAgent(
         AgentTool(agent=web_search_specialist),
         AgentTool(agent=maps_specialist),
     ],
-    instruction=LANGUAGE_INSTRUCTION + coordinator_prompt_v1,
-    after_model_callback=after_model_callback_fix_parts,
+    instruction=LANGUAGE_INSTRUCTION + coordinator_prompt_v2,
+    after_model_callback=[
+        after_model_callback_fix_parts,
+        capture_guide_document,
+    ],
 )
