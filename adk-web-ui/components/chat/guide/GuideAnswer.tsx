@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { GuideDocument } from '@/lib/guide/types';
 import { GuideSectionList } from './GuideSection';
 import { GuideSources } from './GuideSources';
@@ -22,9 +22,15 @@ export function GuideAnswer({ document: guide, mapSlot }: Props) {
     () => new Map(guide.places.map((p) => [p.id, p])),
     [guide.places],
   );
+  const skipScrollRef = useRef(true);
 
-  // Keep the selected card in view when the user taps a map pin (mobile).
+  // Scroll selected card into view only after the user changes selection
+  // (e.g. map pin) — never on first mount (that was jumping the chat).
   useEffect(() => {
+    if (skipScrollRef.current) {
+      skipScrollRef.current = false;
+      return;
+    }
     if (!selectedPlaceId) return;
     const el = globalThis.document.querySelector(
       `[data-place-id="${CSS.escape(selectedPlaceId)}"]`,
