@@ -21,10 +21,10 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
     <div
       data-place-id={place.id}
       className={cn(
-        'w-full rounded-lg border border-l-4 pl-2.5 pr-2.5 py-2 transition-colors',
+        'w-full rounded-lg border px-2.5 py-2 transition-colors',
         selected
-          ? 'border-blue-500/45 border-l-blue-500 bg-blue-500/[0.07]'
-          : 'border-border/70 border-l-zinc-200 dark:border-l-zinc-700 active:bg-muted/40',
+          ? 'border-foreground/35 bg-muted/50'
+          : 'border-border/70 active:bg-muted/40',
       )}
     >
       <button
@@ -50,7 +50,7 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
             <div
               className={cn(
                 'shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums',
-                selected ? 'bg-blue-500/15 text-foreground' : 'bg-muted text-foreground/80',
+                selected ? 'bg-muted text-foreground' : 'bg-muted text-foreground/80',
               )}
             >
               <span className="text-amber-500" aria-hidden>
