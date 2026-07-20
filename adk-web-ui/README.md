@@ -93,7 +93,8 @@ adk-web-ui/
 
 - `NEXT_PUBLIC_ADK_SERVER_URL`: URL of the ADK server (default: `http://localhost:8000`)
 - `NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS` (optional): Milliseconds the browser waits for `GET /api/agents` (default **180000**). Must stay above cold-start duration when the ADK API is on a sleeping host.
-- `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` (optional): Google Maps Embed API key. When set, the **Local Guide** agent renders an interactive Google Maps iframe inline with each assistant message that grounded on Maps. Without it, place blocks still render as Markdown links — the embed silently no-ops. Restrict the key to "Maps Embed API" only and to your domains (it ships in the iframe URL by design — security comes from referer restrictions, not secrecy).
+- `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` (optional): Google Maps Embed API key. This is the legacy/single-place fallback — when set, agents that ground on a single Maps result render an interactive Google Maps iframe inline with the assistant message. Without it, place blocks still render as Markdown links — the embed silently no-ops. Restrict the key to "Maps Embed API" only and to your domains (it ships in the iframe URL by design — security comes from referer restrictions, not secrecy).
+- `NEXT_PUBLIC_GOOGLE_MAPS_JS_KEY` (optional): Google Maps JavaScript API key. Powers `GuideMap`, the multi-marker overview map used by the **Local Guide** agent's neighborhood/itinerary/comparison answers (one map, one pin per place, click a pin or card to select). Without it, `GuideMap` renders nothing — place cards and "Open in Google Maps" links still work. Restrict the key to "Maps JavaScript API" only and to your domains (HTTP referrer restrictions).
 
 **Server-only (Next.js API route `app/api/agents`, not exposed to the browser):**
 
