@@ -1,7 +1,14 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { APIProvider, Map, AdvancedMarker, Pin, useMap } from '@vis.gl/react-google-maps';
+import {
+  APIProvider,
+  Map,
+  AdvancedMarker,
+  Pin,
+  useMap,
+  useMapsLibrary,
+} from '@vis.gl/react-google-maps';
 import type { GuidePlace } from '@/lib/guide/types';
 
 const JS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_KEY;
@@ -58,11 +65,19 @@ function SelectionPan({ place }: { place: Positioned | undefined }) {
 }
 
 function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
+  const geocodingLibrary = useMapsLibrary('geocoding');
   const [geocoded, setGeocoded] = useState<Record<string, { lat: number; lng: number }>>({});
   const geocodeAttemptsRef = useRef<Set<string>>(new Set());
   const geocodeInFlightRef = useRef<Set<string>>(new Set());
+  // Per-place-id generation token: a result/error/finally only "counts" if it
+  // still matches the token issued for the latest request for that id. This
+  // stops a stale (cancelled) request from clobbering state a newer request
+  // for the same id currently owns.
+  const geocodeTokensRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
+    if (!geocodingLibrary) return;
+
     const toGeocode = places.filter(
       (p) =>
         !hasCoords(p) &&
@@ -71,11 +86,8 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
         !geocodeInFlightRef.current.has(p.id),
     );
     if (toGeocode.length === 0) return;
-    if (typeof google === 'undefined' || !google.maps?.Geocoder) return;
 
-    const geocoder = new google.maps.Geocoder();
-    let cancelled = false;
-    const startedIds: string[] = [];
+    const geocoder = new geocodingLibrary.Geocoder();
 
     toGeocode.forEach((place) => {
       const query = place.address || place.name;
@@ -83,12 +95,15 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
         geocodeAttemptsRef.current.add(place.id);
         return;
       }
+      const token = (geocodeTokensRef.current.get(place.id) ?? 0) + 1;
+      geocodeTokensRef.current.set(place.id, token);
       geocodeInFlightRef.current.add(place.id);
-      startedIds.push(place.id);
+      const isCurrent = () => geocodeTokensRef.current.get(place.id) === token;
+
       geocoder
         .geocode({ address: query })
         .then((result) => {
-          if (cancelled) return;
+          if (!isCurrent()) return;
           const location = result.results[0]?.geometry?.location;
           if (!location) {
             geocodeAttemptsRef.current.add(place.id);
@@ -100,22 +115,17 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
           }));
         })
         .catch(() => {
-          if (cancelled) return;
+          if (!isCurrent()) return;
           geocodeAttemptsRef.current.add(place.id);
         })
         .finally(() => {
-          geocodeInFlightRef.current.delete(place.id);
+          if (isCurrent()) {
+            geocodeInFlightRef.current.delete(place.id);
+          }
         });
     });
-
-    return () => {
-      cancelled = true;
-      for (const id of startedIds) {
-        geocodeInFlightRef.current.delete(id);
-      }
-    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [places]);
+  }, [places, geocodingLibrary]);
 
   const positioned = useMemo<Positioned[]>(
     () =>
