@@ -153,6 +153,7 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
         gestureHandling="greedy"
         disableDefaultUI
         zoomControl
+        fullscreenControl
         style={{ width: '100%', height: '100%' }}
       >
         {positioned.map((place) => (
