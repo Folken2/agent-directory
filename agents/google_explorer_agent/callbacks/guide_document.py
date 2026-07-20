@@ -9,6 +9,7 @@ from typing import Any, Optional
 
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -64,6 +65,24 @@ def _extract_from_text(text: str) -> tuple[Optional[dict], str]:
     return doc, display if doc else text
 
 
+def _is_prose_text_part(part: Any) -> bool:
+    """True for genuine user-visible prose parts only.
+
+    Mirrors the `part.text and not part.thought` idiom used throughout ADK
+    (e.g. `llm_agent.py`, `flows/llm_flows/contents.py`) so we never treat
+    model "thinking" text, function calls, or function responses as prose
+    eligible for fence extraction or display rewriting.
+    """
+    text = getattr(part, "text", None)
+    if not isinstance(text, str) or not text.strip():
+        return False
+    if getattr(part, "thought", False):
+        return False
+    if getattr(part, "function_call", None) or getattr(part, "function_response", None):
+        return False
+    return True
+
+
 async def capture_guide_document(
     callback_context: CallbackContext,
     llm_response: LlmResponse,
@@ -72,12 +91,10 @@ async def capture_guide_document(
     try:
         if not llm_response or not llm_response.content or not llm_response.content.parts:
             return None
-        # Skip if this turn is only function calls
-        texts = []
-        for part in llm_response.content.parts:
-            t = getattr(part, "text", None)
-            if isinstance(t, str) and t.strip():
-                texts.append(t)
+        all_parts = llm_response.content.parts
+        # Skip thought/tool parts entirely — never a source of the fence, and
+        # never a target for the display-text rewrite below.
+        texts = [part.text for part in all_parts if _is_prose_text_part(part)]
         if not texts:
             return None
         combined = "\n".join(texts)
@@ -85,13 +102,24 @@ async def capture_guide_document(
         if not doc:
             return None
         callback_context.state["guide:document"] = doc
-        # Rewrite parts to display text only (lead / short prose)
-        if display != combined and llm_response.content.parts:
-            # Keep a single text part with display; drop duplicate fences
-            first = llm_response.content.parts[0]
-            if hasattr(first, "text"):
-                first.text = display or doc.get("lead", "")
-                llm_response.content.parts = [first]
+
+        if display == combined:
+            logger.info(
+                "📘 Captured guide:document shape=%s places=%s",
+                doc.get("shape"),
+                len(doc.get("places") or []),
+            )
+            return None
+
+        # Only rewrite the visible transcript once this is truly the final
+        # answer for the turn: no pending function calls anywhere in the
+        # response. Otherwise leave parts untouched — mid-turn text (e.g.
+        # right before/after a tool call) must not be clobbered.
+        has_pending_function_call = any(getattr(p, "function_call", None) for p in all_parts)
+        if not has_pending_function_call:
+            clean_text = display or doc.get("lead") or ""
+            llm_response.content.parts = [types.Part(text=clean_text)]
+
         logger.info("📘 Captured guide:document shape=%s places=%s", doc.get("shape"), len(doc.get("places") or []))
     except Exception as e:
         logger.error("Error in capture_guide_document: %s", e)
