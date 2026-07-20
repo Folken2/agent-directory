@@ -1,5 +1,6 @@
 // TypeScript types for ADK Web UI
 import type { ConversationId, MessageId } from './ids';
+import type { GuideDocument } from './guide/types';
 
 export interface UseCase {
   title: string;
@@ -70,6 +71,7 @@ export interface Message {
   artifacts?: Artifact[];
   subAgentSteps?: SubAgentStep[];
   mapsCaptures?: MapsCapture[];
+  guideDocument?: GuideDocument;
 }
 
 export interface Artifact {

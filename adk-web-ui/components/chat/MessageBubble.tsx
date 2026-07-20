@@ -12,6 +12,15 @@ import ThinkingBlock from '../ThinkingBlock';
 import InlineArtifact from '../InlineArtifact';
 import { MapsEmbed } from './MapsEmbed';
 import SubAgentProgress from './SubAgentProgress';
+import { GuideAnswer } from './guide/GuideAnswer';
+import { GuideMap } from './guide/GuideMap';
+import { mergeGuideWithCaptures } from '@/lib/guide/merge';
+import { parseGuideDocument } from '@/lib/guide/parse';
+
+// Note: the optional P1 detail of stacking a single MapsEmbed (attribution
+// iframe) under the JS map for the selected place is intentionally omitted —
+// default off per brief; the JS map + PlaceCard already carry enough
+// context, and it would require lifting GuideAnswer's selection state.
 
 function safeParseDate(date: any): Date | undefined {
   if (!date) return undefined;
@@ -85,8 +94,16 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
 
   const displayContent = getDisplayContent(message.content);
   const hasArtifacts = !!(message.artifacts && message.artifacts.length > 0);
-  const showAnything = !!displayContent || hasArtifacts;
   const isCopied = copiedMessageId === message.id;
+
+  // Re-validate on every render rather than trusting the stored shape: the
+  // document may have been persisted/rehydrated (e.g. from history), and a
+  // parse failure here must fall back to the legacy markdown + embeds path
+  // rather than throwing.
+  const guideDoc = message.guideDocument ? parseGuideDocument(message.guideDocument) : null;
+  const mergedGuide = guideDoc ? mergeGuideWithCaptures(guideDoc, message.mapsCaptures ?? []) : null;
+
+  const showAnything = !!displayContent || hasArtifacts || !!mergedGuide;
 
   return (
     <motion.div
@@ -108,24 +125,39 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
 
         {showAnything && (
           <div className="text-[15px] leading-relaxed text-foreground">
-            {displayContent && (
-              <MarkdownRenderer content={displayContent} isStreaming={false} isDarkMode={isDarkMode} />
-            )}
+            {mergedGuide ? (
+              <GuideAnswer
+                document={mergedGuide}
+                mapSlot={({ places, selectedPlaceId, onSelectPlace }) => (
+                  <GuideMap
+                    places={places}
+                    selectedPlaceId={selectedPlaceId}
+                    onSelectPlace={onSelectPlace}
+                  />
+                )}
+              />
+            ) : (
+              <>
+                {displayContent && (
+                  <MarkdownRenderer content={displayContent} isStreaming={false} isDarkMode={isDarkMode} />
+                )}
 
-            {hasArtifacts && (
-              <div className={cn('space-y-3', displayContent && 'mt-4')}>
-                {message.artifacts!.map((artifact) => (
-                  <InlineArtifact key={artifact.id} artifact={artifact} />
-                ))}
-              </div>
-            )}
+                {hasArtifacts && (
+                  <div className={cn('space-y-3', displayContent && 'mt-4')}>
+                    {message.artifacts!.map((artifact) => (
+                      <InlineArtifact key={artifact.id} artifact={artifact} />
+                    ))}
+                  </div>
+                )}
 
-            {message.mapsCaptures && message.mapsCaptures.length > 0 && (
-              <div className={cn('space-y-3', displayContent && 'mt-4')}>
-                {message.mapsCaptures.map((capture, idx) => (
-                  <MapsEmbed key={`${capture.captured_at}-${idx}`} capture={capture} />
-                ))}
-              </div>
+                {message.mapsCaptures && message.mapsCaptures.length > 0 && (
+                  <div className={cn('space-y-3', displayContent && 'mt-4')}>
+                    {message.mapsCaptures.map((capture, idx) => (
+                      <MapsEmbed key={`${capture.captured_at}-${idx}`} capture={capture} />
+                    ))}
+                  </div>
+                )}
+              </>
             )}
 
             {(displayContent || (hasArtifacts && message.artifacts!.length > 1)) && (
