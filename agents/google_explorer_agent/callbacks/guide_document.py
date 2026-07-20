@@ -101,6 +101,13 @@ async def capture_guide_document(
         doc, display = _extract_from_text(combined)
         if not doc:
             return None
+
+        # Mixed tool turns: if any part still has a pending function_call,
+        # full no-op — don't write state and don't rewrite parts.
+        has_pending_function_call = any(getattr(p, "function_call", None) for p in all_parts)
+        if has_pending_function_call:
+            return None
+
         callback_context.state["guide:document"] = doc
 
         if display == combined:
@@ -111,14 +118,8 @@ async def capture_guide_document(
             )
             return None
 
-        # Only rewrite the visible transcript once this is truly the final
-        # answer for the turn: no pending function calls anywhere in the
-        # response. Otherwise leave parts untouched — mid-turn text (e.g.
-        # right before/after a tool call) must not be clobbered.
-        has_pending_function_call = any(getattr(p, "function_call", None) for p in all_parts)
-        if not has_pending_function_call:
-            clean_text = display or doc.get("lead") or ""
-            llm_response.content.parts = [types.Part(text=clean_text)]
+        clean_text = display or doc.get("lead") or ""
+        llm_response.content.parts = [types.Part(text=clean_text)]
 
         logger.info("📘 Captured guide:document shape=%s places=%s", doc.get("shape"), len(doc.get("places") or []))
     except Exception as e:
