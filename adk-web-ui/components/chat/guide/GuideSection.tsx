@@ -19,11 +19,15 @@ export function GuideSectionList({ section, placeById, selectedPlaceId, onSelect
 
   return (
     <div>
-      <div className="mb-2">
-        <h3 className="text-[15px] font-medium text-foreground">{section.title}</h3>
-        {section.blurb && <p className="text-sm text-muted-foreground mt-0.5">{section.blurb}</p>}
+      <div className="mb-1.5">
+        <h3 className="text-[15px] font-medium leading-snug text-foreground">{section.title}</h3>
+        {section.blurb && (
+          <p className="mt-0.5 text-sm leading-snug text-muted-foreground line-clamp-2">
+            {section.blurb}
+          </p>
+        )}
       </div>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         {places.map((place) => (
           <PlaceCard
             key={place.id}
