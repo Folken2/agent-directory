@@ -23,7 +23,7 @@ function hasCoords(place: GuidePlace): place is Positioned {
 
 function FitBounds({ places }: { places: Positioned[] }) {
   const map = useMap();
-  const key = places.map((p) => p.id).join(',');
+  const key = places.map((p) => `${p.id}:${p.lat},${p.lng}`).join('|');
 
   useEffect(() => {
     if (!map || places.length === 0) return;
@@ -52,7 +52,7 @@ function SelectionPan({ place }: { place: Positioned | undefined }) {
       map.setZoom(15);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, place?.id]);
+  }, [map, place?.id, place?.lat, place?.lng]);
 
   return null;
 }
@@ -60,16 +60,22 @@ function SelectionPan({ place }: { place: Positioned | undefined }) {
 function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
   const [geocoded, setGeocoded] = useState<Record<string, { lat: number; lng: number }>>({});
   const geocodeAttemptsRef = useRef<Set<string>>(new Set());
+  const geocodeInFlightRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const toGeocode = places.filter(
-      (p) => !hasCoords(p) && !geocoded[p.id] && !geocodeAttemptsRef.current.has(p.id),
+      (p) =>
+        !hasCoords(p) &&
+        !geocoded[p.id] &&
+        !geocodeAttemptsRef.current.has(p.id) &&
+        !geocodeInFlightRef.current.has(p.id),
     );
     if (toGeocode.length === 0) return;
     if (typeof google === 'undefined' || !google.maps?.Geocoder) return;
 
     const geocoder = new google.maps.Geocoder();
     let cancelled = false;
+    const startedIds: string[] = [];
 
     toGeocode.forEach((place) => {
       const query = place.address || place.name;
@@ -77,25 +83,36 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
         geocodeAttemptsRef.current.add(place.id);
         return;
       }
-      geocodeAttemptsRef.current.add(place.id);
+      geocodeInFlightRef.current.add(place.id);
+      startedIds.push(place.id);
       geocoder
         .geocode({ address: query })
         .then((result) => {
           if (cancelled) return;
           const location = result.results[0]?.geometry?.location;
-          if (!location) return;
+          if (!location) {
+            geocodeAttemptsRef.current.add(place.id);
+            return;
+          }
           setGeocoded((prev) => ({
             ...prev,
             [place.id]: { lat: location.lat(), lng: location.lng() },
           }));
         })
         .catch(() => {
-          // Skip places that fail to geocode; they simply won't get a marker.
+          if (cancelled) return;
+          geocodeAttemptsRef.current.add(place.id);
+        })
+        .finally(() => {
+          geocodeInFlightRef.current.delete(place.id);
         });
     });
 
     return () => {
       cancelled = true;
+      for (const id of startedIds) {
+        geocodeInFlightRef.current.delete(id);
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [places]);
