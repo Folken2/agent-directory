@@ -28,7 +28,7 @@ def _validate(doc: Any) -> Optional[dict]:
     sections = doc.get("sections")
     if not isinstance(places, list) or not places:
         return None
-    if not isinstance(sections, list):
+    if not isinstance(sections, list) or not sections:
         return None
     ids = set()
     for p in places:

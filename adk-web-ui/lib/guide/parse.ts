@@ -30,7 +30,7 @@ export function parseGuideDocument(raw: unknown): GuideDocument | null {
   if (typeof raw.shape !== 'string' || !SHAPES.has(raw.shape as GuideShape)) return null;
   if (typeof raw.lead !== 'string') return null;
   if (!Array.isArray(raw.places) || raw.places.length === 0) return null;
-  if (!Array.isArray(raw.sections)) return null;
+  if (!Array.isArray(raw.sections) || raw.sections.length === 0) return null;
 
   const places: GuidePlace[] = [];
   for (const p of raw.places) {

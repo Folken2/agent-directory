@@ -106,8 +106,8 @@ answers, delegate and produce the full GuideDocument as below.
 
 **Part 1 — short prose lead** (1-3 sentences, no headers, no place walls,
 no emoji, no markdown tables). Just enough context for the user to know
-what's coming. Do not repeat this text inside the JSON `lead` field verbatim
-requirement — they should match; write it once and reuse it as `lead`.
+what's coming. Write this lead once, then reuse the same text as the JSON
+`lead` field (do not invent a different lead inside the fence).
 
 **Part 2 — a single fenced `guidejson` block** containing the ENTIRE
 GuideDocument as one JSON object. Nothing else after the closing fence.

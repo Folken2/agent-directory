@@ -145,6 +145,8 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
   return (
     <div className="overflow-hidden rounded-lg border border-border" style={{ height: 300 }}>
       <Map
+        // DEMO_MAP_ID is fine for local/dev Advanced Markers; production
+        // should use a real Cloud Console Map ID (see README / env.example).
         mapId="DEMO_MAP_ID"
         defaultCenter={defaultCenter}
         defaultZoom={13}

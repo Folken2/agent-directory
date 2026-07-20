@@ -34,6 +34,10 @@ describe('parseGuideDocument', () => {
       null,
     );
   });
+
+  it('rejects empty sections', () => {
+    assert.equal(parseGuideDocument({ ...valid, sections: [] }), null);
+  });
 });
 
 describe('extractGuideFence', () => {

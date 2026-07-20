@@ -624,9 +624,13 @@ export function useStreamingChat(): UseStreamingChatResult {
           }
 
           // Same fence-extraction + lead-preference logic as the streaming
-          // commit path above — the non-streaming fallback can also receive
-          // a raw ```guidejson``` fence and must not surface it verbatim.
-          const fallbackResolved = resolveGuideMessageContent(result.response || '');
+          // commit path above. Pass any guideDocument accumulated before the
+          // stream failed — the backend often strips the fence from /run text,
+          // so the accumulated doc is the only way to keep PlaceCards + map.
+          const fallbackResolved = resolveGuideMessageContent(
+            result.response || '',
+            guideDocument,
+          );
           const assistantMessage: Message = {
             id: assistantMessageId,
             role: 'assistant',
