@@ -171,6 +171,7 @@ export type StreamChunk =
   | { type: 'toolCall'; toolCall: ToolCall; author?: string }
   | { type: 'toolResponse'; toolResponse: ToolResponse; author?: string }
   | { type: 'mapsCapture'; mapsCapture: MapsCapture; author?: string }
+  | { type: 'guideDocument'; guideDocument: GuideDocument; author?: string }
   | { type: 'error'; error: string }
   | { type: 'done' };
 

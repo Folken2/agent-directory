@@ -10,6 +10,7 @@ import {
   ToolCall,
   ToolResponse,
 } from './types';
+import { parseGuideDocument } from './guide/parse';
 
 const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
 
@@ -794,6 +795,16 @@ class ADKClient {
                     },
                     author: eventData.author,
                   };
+                }
+
+                // Surface the guide_agent's structured document once it lands
+                // in state["guide:document"] (see backend guide tool output_key).
+                const guideRaw = stateDelta?.['guide:document'];
+                if (guideRaw) {
+                  const doc = parseGuideDocument(guideRaw);
+                  if (doc) {
+                    yield { type: 'guideDocument', guideDocument: doc, author: eventData.author };
+                  }
                 }
 
                 // Handle Event object - check content.parts first (ADK structure)
