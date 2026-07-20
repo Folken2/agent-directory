@@ -13,8 +13,10 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
   return (
     <div
       className={cn(
-        'w-full rounded-lg border px-3 py-2.5 transition-colors',
-        selected ? 'border-foreground/40 bg-muted/50' : 'border-border/60 hover:bg-muted/30',
+        'w-full rounded-lg border-l-[3px] border border-l-transparent pl-[calc(0.75rem-1px)] pr-3 py-2.5 transition-colors',
+        selected
+          ? 'border-blue-500/50 border-l-blue-500 bg-blue-500/[0.06] shadow-[inset_0_0_0_1px_rgba(37,99,235,0.12)]'
+          : 'border-border/80 border-l-zinc-300 dark:border-l-zinc-600 hover:border-blue-500/35 hover:border-l-blue-400/80 hover:bg-blue-500/[0.03]',
       )}
     >
       <button
@@ -31,7 +33,16 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
             )}
           </div>
           {typeof place.rating === 'number' && (
-            <div className="text-xs text-muted-foreground shrink-0">★ {place.rating.toFixed(1)}</div>
+            <div
+              className={cn(
+                'shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums',
+                selected
+                  ? 'bg-blue-500/15 text-blue-700 dark:text-blue-300'
+                  : 'bg-muted text-muted-foreground',
+              )}
+            >
+              ★ {place.rating.toFixed(1)}
+            </div>
           )}
         </div>
         {place.summary && <p className="mt-1.5 text-sm text-foreground/80">{place.summary}</p>}
@@ -45,7 +56,7 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
           href={place.mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-block mt-2 text-xs text-foreground/70 underline-offset-2 hover:underline"
+          className="inline-block mt-2 text-xs text-blue-600/90 dark:text-blue-400 underline-offset-2 hover:underline"
         >
           Open in Google Maps
         </a>
