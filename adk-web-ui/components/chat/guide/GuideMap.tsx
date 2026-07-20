@@ -73,7 +73,7 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
   // still matches the token issued for the latest request for that id. This
   // stops a stale (cancelled) request from clobbering state a newer request
   // for the same id currently owns.
-  const geocodeTokensRef = useRef<Map<string, number>>(new Map());
+  const geocodeTokensRef = useRef<globalThis.Map<string, number>>(new globalThis.Map());
 
   useEffect(() => {
     if (!geocodingLibrary) return;
