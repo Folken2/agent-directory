@@ -54,7 +54,8 @@ google_explorer_agent/
 │   └── maps_specialist.py          # google_maps_grounding worker
 ├── callbacks/
 │   ├── recovery.py                 # Tool-failure retry + ADK 1.18 parts fix
-│   └── maps_widget.py              # Captures Maps widget token + place chunks into state
+│   ├── maps_widget.py              # Captures Maps widget token + place chunks into state
+│   └── guide_document.py           # Parses coordinator's guidejson fence into state
 ├── config/
 │   ├── llm.py                      # Shared model id (Gemini 3 Flash)
 │   └── utils.py                    # Date helper
@@ -84,6 +85,36 @@ one `<MapsEmbed/>` iframe per capture beneath the message body.
 The `context=<token>` query param on the embed URL is what makes the rendered
 view legally compliant with Google's grounding-with-Maps terms — the token
 authorizes the contextual view tied to that specific grounded response.
+
+## Structured Answers — `guide:document`
+
+The coordinator's final answer (v2 prompt) is two parts: a short prose
+`lead`, then a single fenced ` ```guidejson ` block containing the entire
+`GuideDocument` as one JSON object (`shape`, `lead`, `sections`, `places`,
+optional `sources`).
+
+The `capture_guide_document` callback (registered after
+`after_model_callback_fix_parts` on the coordinator's `after_model_callback`)
+runs on every model turn:
+
+- Validates the JSON against the `GuideDocument` shape (rejects anything
+  missing `shape`/`lead`/`places`, or with `sections[].placeIds` that don't
+  resolve to a real `places[].id`).
+- On success, reassigns `state["guide:document"]` to the parsed dict (ADK
+  requires reassigning state, not mutating an existing value in place, for
+  the change to persist) and strips the fence out of the response parts so
+  the chat bubble only ever shows the prose `lead` — never raw JSON.
+- No-ops (returns `None`, leaves parts untouched) when the turn has no text,
+  is a specialist's own output, or the JSON doesn't validate — the raw text
+  still gets streamed through unchanged.
+
+| State key         | Shape                                             |
+| ------------------ | -------------------------------------------------- |
+| `guide:document`   | `GuideDocument` — `{shape, lead, sections, places, sources?}` |
+
+The frontend (`adk-web-ui`) reads this off `actions.state_delta` and emits
+a `guideDocument` stream chunk, which the UI uses to render place cards /
+sections instead of parsing markdown.
 
 ## Routing Cheat Sheet
 
