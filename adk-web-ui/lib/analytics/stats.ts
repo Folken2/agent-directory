@@ -2,10 +2,19 @@ import { unstable_cache } from 'next/cache';
 import { eq, gte, sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { pageViews } from '@/lib/drizzle/schema/page-views';
+import {
+  rollUpBotCompanies,
+  toBotAgentStat,
+  type BotAgentStat,
+  type BotCompanyStat,
+} from './bot-companies';
+import { countryFlag, countryName } from './countries';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 
 export const TIMELINE_DAYS = 30;
+/** How many countries the analytics page surfaces for human traffic. */
+export const TOP_COUNTRIES = 5;
 
 export type TimelineDay = {
   day: string; // YYYY-MM-DD (UTC)
@@ -14,12 +23,27 @@ export type TimelineDay = {
   bots: number;
 };
 
+export type CountryStat = {
+  country: string; // ISO 3166-1 alpha-2, or 'ZZ'
+  name: string;
+  flag: string;
+  count: number;
+  /** Percent of human visits, 0–100. */
+  share: number;
+};
+
+export type { BotAgentStat, BotCompanyStat };
+
 export type PageviewStats = {
   total: number;
   humans: number;
   bots: number;
-  byCountry: { country: string; label?: string; count: number }[];
-  byBot: { botName: string; category?: string; count: number }[];
+  /** Human visits only, top {@link TOP_COUNTRIES} by volume. */
+  topCountries: CountryStat[];
+  /** Crawlers rolled up to the company that operates them. */
+  botCompanies: BotCompanyStat[];
+  /** Individual crawler user agents, most active first. */
+  byBot: BotAgentStat[];
   timeline: TimelineDay[];
 };
 
@@ -27,13 +51,19 @@ const EMPTY: PageviewStats = {
   total: 0,
   humans: 0,
   bots: 0,
-  byCountry: [],
+  topCountries: [],
+  botCompanies: [],
   byBot: [],
   timeline: [],
 };
 
 function utcDayString(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+function share(count: number, of: number): number {
+  if (of <= 0) return 0;
+  return Math.round((count / of) * 1000) / 10;
 }
 
 function buildEmptyTimeline(days: number): TimelineDay[] {
@@ -62,15 +92,20 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
       })
       .from(pageViews);
 
+    const humanTotal = Number(totals?.humans ?? 0);
+    const botTotal = Number(totals?.bots ?? 0);
+
+    // Countries: humans only — bot geo says where the crawler egresses, not who read us.
     const byCountry = await db
       .select({
-        country: sql<string>`coalesce(${pageViews.country}, 'ZZ')`,
+        country: sql<string>`coalesce(nullif(${pageViews.country}, ''), 'ZZ')`,
         count: sql<number>`count(*)::int`,
       })
       .from(pageViews)
-      .groupBy(sql`coalesce(${pageViews.country}, 'ZZ')`)
+      .where(eq(pageViews.isBot, false))
+      .groupBy(sql`coalesce(nullif(${pageViews.country}, ''), 'ZZ')`)
       .orderBy(sql`count(*) desc`)
-      .limit(50);
+      .limit(TOP_COUNTRIES);
 
     const byBot = await db
       .select({
@@ -81,7 +116,7 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
       .where(eq(pageViews.isBot, true))
       .groupBy(sql`coalesce(${pageViews.botName}, 'UnknownBot')`)
       .orderBy(sql`count(*) desc`)
-      .limit(50);
+      .limit(100);
 
     const since = new Date();
     since.setUTCHours(0, 0, 0, 0);
@@ -119,18 +154,23 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
       }
     }
 
+    const agents: BotAgentStat[] = byBot.map((r) =>
+      toBotAgentStat(r.botName, Number(r.count))
+    );
+
     return {
       total: Number(totals?.total ?? 0),
-      humans: Number(totals?.humans ?? 0),
-      bots: Number(totals?.bots ?? 0),
-      byCountry: byCountry.map((r) => ({
+      humans: humanTotal,
+      bots: botTotal,
+      topCountries: byCountry.map((r) => ({
         country: r.country,
+        name: countryName(r.country),
+        flag: countryFlag(r.country),
         count: Number(r.count),
+        share: share(Number(r.count), humanTotal),
       })),
-      byBot: byBot.map((r) => ({
-        botName: r.botName,
-        count: Number(r.count),
-      })),
+      botCompanies: rollUpBotCompanies(agents, botTotal),
+      byBot: agents,
       timeline,
     };
   } catch (error) {
@@ -142,7 +182,7 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
 /** Cached 60s — safe for homepage pill + analytics page. */
 export const getPageviewStats = unstable_cache(
   fetchPageviewStatsUncached,
-  ['pageview-stats-v2'],
+  ['pageview-stats-v3'],
   { revalidate: 60, tags: ['pageview-stats'] }
 );
 
