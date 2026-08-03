@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { PageviewStats } from '@/lib/analytics/stats';
+import type { PageviewStats } from '@/lib/analytics/stats-types';
 import { fetchPageviewStats } from '@/lib/analytics/fetch-stats-client';
+import type { TimelineRange } from '@/lib/analytics/timeline-range';
 
 /**
  * Delay before a second stats pull so middleware/client pageview ingest
@@ -15,7 +16,7 @@ const FOLLOW_UP_MS = 1200;
  * First paint may still race the concurrent pageview; the follow-up picks it up
  * without requiring a manual refresh.
  */
-export function usePageviewStats(): {
+export function usePageviewStats(range: TimelineRange = '30'): {
   stats: PageviewStats | null;
   loaded: boolean;
 } {
@@ -24,10 +25,11 @@ export function usePageviewStats(): {
 
   useEffect(() => {
     let cancelled = false;
+    setLoaded(false);
 
     const load = async () => {
       try {
-        const next = await fetchPageviewStats();
+        const next = await fetchPageviewStats(range);
         if (!cancelled) {
           setStats(next);
           setLoaded(true);
@@ -49,7 +51,7 @@ export function usePageviewStats(): {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [range]);
 
   return { stats, loaded };
 }

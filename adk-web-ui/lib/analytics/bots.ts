@@ -43,9 +43,11 @@ const BOT_RULES: BotRule[] = [
   { name: 'Diffbot', category: 'ai', patterns: ['Diffbot'] },
   { name: 'YouBot', category: 'ai', patterns: ['YouBot'] },
   { name: 'MistralAI-User', category: 'ai', patterns: ['MistralAI-User'] },
+  { name: 'DeepSeekBot', category: 'ai', patterns: ['DeepSeekBot'] },
   { name: 'meta-externalagent', category: 'ai', patterns: ['meta-externalagent'] },
   { name: 'meta-externalfetcher', category: 'ai', patterns: ['meta-externalfetcher'] },
   { name: 'FacebookBot', category: 'ai', patterns: ['FacebookBot'] },
+  { name: 'MetaCrawler', category: 'ai', patterns: ['MetaCrawler'] },
 
   { name: 'Googlebot', category: 'search', patterns: ['Googlebot', 'Googlebot-Image', 'Googlebot-News', 'Storebot-Google', 'AdsBot-Google', 'Mediapartners-Google'] },
   { name: 'Bingbot', category: 'search', patterns: ['bingbot', 'BingPreview', 'adidxbot'] },
@@ -53,6 +55,7 @@ const BOT_RULES: BotRule[] = [
   { name: 'DuckAssistBot', category: 'ai', patterns: ['DuckAssistBot'] },
   { name: 'YandexBot', category: 'search', patterns: ['YandexBot', 'YandexImages'] },
   { name: 'Baiduspider', category: 'search', patterns: ['Baiduspider'] },
+  { name: 'SeznamBot', category: 'search', patterns: ['SeznamBot'] },
   // Applebot-Extended before Applebot so the more specific UA wins
   { name: 'Applebot-Extended', category: 'ai', patterns: ['Applebot-Extended'] },
   { name: 'Applebot', category: 'search', patterns: ['Applebot'] },
@@ -69,6 +72,7 @@ const BOT_RULES: BotRule[] = [
 
   { name: 'AhrefsBot', category: 'seo', patterns: ['AhrefsBot'] },
   { name: 'SemrushBot', category: 'seo', patterns: ['SemrushBot'] },
+  { name: 'SERankingBacklinksBot', category: 'seo', patterns: ['SERankingBacklinksBot'] },
   { name: 'DotBot', category: 'seo', patterns: ['DotBot'] },
   { name: 'MJ12bot', category: 'seo', patterns: ['MJ12bot'] },
   { name: 'DataForSeoBot', category: 'seo', patterns: ['DataForSeoBot'] },
@@ -82,6 +86,45 @@ const BOT_RULES: BotRule[] = [
 
 const GENERIC_BOT_PATTERN =
   /\b(bot|crawler|spider|crawl|slurp|fetcher|preview|monitor|headless|phantomjs|selenium)\b/i;
+
+/**
+ * Pull a readable crawler token from a UA when we only know it's "some bot".
+ * Avoids dumping everything into a useless UnknownBot bucket.
+ */
+export function extractBotTokenFromUa(userAgent: string): string | null {
+  const ua = userAgent.trim();
+  if (!ua) return null;
+
+  const compact = ua.match(
+    /\b([A-Za-z][\w.-]*(?:bot|crawler|spider|slurp|fetcher)[\w.-]*)\b/i
+  );
+  if (compact?.[1]) return compact[1];
+
+  const spaced = ua.match(
+    /\b([A-Za-z][\w.-]+)\s+(crawler|spider|bot|slurp|fetcher)\b/i
+  );
+  if (spaced) return `${spaced[1]}-${spaced[2]}`;
+
+  return null;
+}
+
+/** Re-label stored UnknownBot / null using the original user-agent. */
+export function resolveStoredBotName(
+  stored: string | null | undefined,
+  userAgent: string | null | undefined
+): string {
+  if (stored && stored !== 'UnknownBot' && stored !== 'Probe') return stored;
+  if (!userAgent?.trim()) return 'UnknownBot';
+
+  // Re-run rules in case the catalog gained a match after the row was written.
+  for (const rule of BOT_RULES) {
+    for (const pattern of rule.patterns) {
+      if (userAgent.includes(pattern)) return rule.name;
+    }
+  }
+
+  return extractBotTokenFromUa(userAgent) ?? 'UnknownBot';
+}
 
 export type IdentifyBotOptions = {
   /** Accept-Language header value */
@@ -149,7 +192,7 @@ export function identifyBot(
     if (GENERIC_BOT_PATTERN.test(userAgent)) {
       return {
         isBot: true,
-        botName: 'UnknownBot',
+        botName: extractBotTokenFromUa(userAgent) ?? 'UnknownBot',
         botCategory: 'other',
         confidence: 'medium',
         signals: ['ua_generic', ...softSignals],
@@ -160,7 +203,9 @@ export function identifyBot(
   if (softSignals.length >= 2) {
     return {
       isBot: true,
-      botName: 'UnknownBot',
+      botName: userAgent?.trim()
+        ? extractBotTokenFromUa(userAgent) ?? 'UnknownBot'
+        : 'UnknownBot',
       botCategory: 'other',
       confidence: 'medium',
       signals: softSignals,

@@ -1,11 +1,15 @@
 'use client';
 
+import { useState } from 'react';
 import type {
   BotCompanyStat,
   CountryStat,
-} from '@/lib/analytics/stats';
+} from '@/lib/analytics/stats-types';
+import type { TimelineRange } from '@/lib/analytics/timeline-range';
+import { getCatalogAgent } from '@/lib/agent-catalog-client';
 import BrandMark from '@/components/analytics/BrandMark';
 import VisitsTimeline from '@/components/analytics/VisitsTimeline';
+import AnalyticsAgentCard from '@/components/analytics/AnalyticsAgentCard';
 import { usePageviewStats } from '@/lib/analytics/use-pageview-stats';
 
 /** Companies shown before the tail is collapsed into a count. */
@@ -25,12 +29,6 @@ function formatShare(share: number): string {
   return `${share % 1 === 0 ? share.toFixed(0) : share.toFixed(1)}%`;
 }
 
-function formatActiveLabel(ms: number): string {
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
-  return `${(ms / 3_600_000).toFixed(1)}h`;
-}
-
 function Bar({ width, tint }: { width: number; tint?: string }) {
   return (
     <div className="h-px bg-md-outline overflow-hidden">
@@ -42,37 +40,6 @@ function Bar({ width, tint }: { width: number; tint?: string }) {
         }}
       />
     </div>
-  );
-}
-
-function RankRow({
-  label,
-  meta,
-  count,
-  max,
-}: {
-  label: string;
-  meta?: string;
-  count: number;
-  max: number;
-}) {
-  return (
-    <li className="py-3 first:pt-0 last:pb-0">
-      <div className="flex items-baseline justify-between gap-4 mb-2">
-        <div className="min-w-0 flex items-baseline gap-2">
-          <span className="text-title-medium text-md-on-surface truncate">{label}</span>
-          {meta ? (
-            <span className="text-label-small text-md-on-surface-variant/50 shrink-0">
-              {meta}
-            </span>
-          ) : null}
-        </div>
-        <span className="text-label-large text-md-on-surface-variant tabular-nums shrink-0">
-          {formatCount(count)}
-        </span>
-      </div>
-      <Bar width={(count / max) * 100} />
-    </li>
   );
 }
 
@@ -143,9 +110,10 @@ function CompanyRow({ company, max }: { company: BotCompanyStat; max: number }) 
 }
 
 export default function AnalyticsPreview() {
-  const { stats, loaded } = usePageviewStats();
+  const [range, setRange] = useState<TimelineRange>('30');
+  const { stats, loaded } = usePageviewStats(range);
 
-  if (!loaded) {
+  if (!loaded && !stats) {
     return (
       <div className="h-40 flex items-center justify-center">
         <p className="text-body-medium text-md-on-surface-variant">Loading…</p>
@@ -155,7 +123,7 @@ export default function AnalyticsPreview() {
 
   if (!stats || stats.total <= 0) {
     return (
-      <div className="bg-md-surface-container elevation-1 rounded-2xl px-8 py-16 text-center">
+      <div className="rounded-2xl border border-md-outline/40 bg-md-surface-container/40 px-8 py-16 text-center">
         <p className="text-title-medium text-md-on-surface mb-2">No visits yet</p>
         <p className="text-body-medium text-md-on-surface-variant max-w-sm mx-auto">
           Counts appear here once Neon is connected and the directory starts receiving traffic.
@@ -170,30 +138,59 @@ export default function AnalyticsPreview() {
   const topAgents = stats.topAgents ?? [];
   const maxCountry = topCountries[0]?.count || 1;
   const maxCompany = botCompanies[0]?.count || 1;
-  const maxAgent = topAgents[0]?.messages || topAgents[0]?.activeMs || 1;
   const humanPct = Math.round((stats.humans / stats.total) * 100);
   const aiCompanies = allCompanies.filter((c) => c.ai).length;
   const hiddenCompanies = allCompanies.length - botCompanies.length;
 
   return (
-    <div className="space-y-10">
-      <div className="bg-md-surface-container elevation-1 rounded-2xl px-8 py-10 text-center">
-        <p className="text-label-small uppercase tracking-widest text-md-on-surface-variant/60 mb-3">
-          Total visits
-        </p>
-        <p className="text-display-medium sm:text-display-large font-bold text-md-on-surface tracking-tight tabular-nums">
-          {formatCompact(stats.total)}
-        </p>
-        <p className="mt-4 text-body-medium text-md-on-surface-variant">
-          {humanPct}% human · {formatCompact(stats.bots)} bots
-        </p>
-      </div>
+    <div className="space-y-8">
+      {/* Pulse strip */}
+      <section className="rounded-2xl border border-md-outline/40 bg-md-surface px-5 py-6 sm:px-8 sm:py-7">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <p className="text-label-small uppercase tracking-widest text-md-on-surface-variant/60 mb-2">
+              Total visits
+            </p>
+            <p className="text-display-small sm:text-display-medium font-semibold text-md-on-surface tracking-tight tabular-nums">
+              {formatCompact(stats.total)}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-x-6 gap-y-2 text-body-medium text-md-on-surface-variant">
+            <p>
+              <span className="text-md-on-surface tabular-nums font-medium">
+                {humanPct}%
+              </span>{' '}
+              human
+            </p>
+            <p>
+              <span className="text-md-on-surface tabular-nums font-medium">
+                {formatCompact(stats.bots)}
+              </span>{' '}
+              bots
+            </p>
+            <p>
+              <span className="text-md-on-surface tabular-nums font-medium">
+                {formatCompact(stats.humans)}
+              </span>{' '}
+              people
+            </p>
+          </div>
+        </div>
+      </section>
 
-      {stats.timeline?.length ? <VisitsTimeline timeline={stats.timeline} /> : null}
+      {stats.timeline?.length ? (
+        <VisitsTimeline
+          timeline={stats.timeline}
+          range={range}
+          onRangeChange={setRange}
+        />
+      ) : null}
 
-      <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">
-        <h2 className="text-title-medium text-md-on-surface mb-1">Agents people use</h2>
-        <p className="text-body-small text-md-on-surface-variant mb-6">
+      <section className="rounded-2xl border border-md-outline/40 bg-md-surface px-5 py-6 sm:px-7 sm:py-8">
+        <h2 className="text-title-medium text-md-on-surface mb-1">
+          Agents people use
+        </h2>
+        <p className="text-body-small text-md-on-surface-variant mb-5">
           Active use after analytics consent — messages and time in chat
         </p>
         {topAgents.length === 0 ? (
@@ -201,22 +198,20 @@ export default function AnalyticsPreview() {
             No consented engagement yet. Visit counts above still include everyone.
           </p>
         ) : (
-          <ul>
+          <div className="grid sm:grid-cols-2 gap-3">
             {topAgents.map((a) => (
-              <RankRow
+              <AnalyticsAgentCard
                 key={a.agentSlug}
-                label={a.agentSlug}
-                meta={`${formatCount(a.messages)} msgs · ${formatActiveLabel(a.activeMs)}`}
-                count={a.messages > 0 ? a.messages : a.activeMs}
-                max={maxAgent}
+                agent={a}
+                catalogAgent={getCatalogAgent(a.agentSlug)}
               />
             ))}
-          </ul>
+          </div>
         )}
       </section>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">
+        <section className="rounded-2xl border border-md-outline/40 bg-md-surface px-5 py-6 sm:px-7 sm:py-8">
           <h2 className="text-title-medium text-md-on-surface mb-1">Top countries</h2>
           <p className="text-body-small text-md-on-surface-variant mb-6">
             Human visits · {formatCompact(stats.humans)} total
@@ -234,8 +229,10 @@ export default function AnalyticsPreview() {
           )}
         </section>
 
-        <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">
-          <h2 className="text-title-medium text-md-on-surface mb-1">Crawlers by company</h2>
+        <section className="rounded-2xl border border-md-outline/40 bg-md-surface px-5 py-6 sm:px-7 sm:py-8">
+          <h2 className="text-title-medium text-md-on-surface mb-1">
+            Crawlers by company
+          </h2>
           <p className="text-body-small text-md-on-surface-variant mb-6">
             {formatCompact(stats.bots)} crawls
             {aiCompanies > 0

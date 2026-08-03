@@ -1,7 +1,12 @@
 'use client';
 
 import { useId, useMemo, useState } from 'react';
-import type { TimelineDay } from '@/lib/analytics/stats';
+import type { TimelineDay } from '@/lib/analytics/stats-types';
+import {
+  TIMELINE_RANGE_LABELS,
+  TIMELINE_RANGES,
+  type TimelineRange,
+} from '@/lib/analytics/timeline-range';
 
 function formatCount(n: number): string {
   return new Intl.NumberFormat('en-US').format(n);
@@ -18,12 +23,18 @@ function formatDayLabel(day: string): string {
 
 type Props = {
   timeline: TimelineDay[];
+  range: TimelineRange;
+  onRangeChange: (range: TimelineRange) => void;
 };
 
 /**
  * Minimal area chart for daily visits — no chart library.
  */
-export default function VisitsTimeline({ timeline }: Props) {
+export default function VisitsTimeline({
+  timeline,
+  range,
+  onRangeChange,
+}: Props) {
   const gradId = useId().replace(/:/g, '');
   const [active, setActive] = useState<number | null>(null);
 
@@ -59,19 +70,51 @@ export default function VisitsTimeline({ timeline }: Props) {
   const first = timeline[0]?.day;
   const last = timeline[timeline.length - 1]?.day;
   const periodTotal = timeline.reduce((sum, t) => sum + t.total, 0);
+  const rangeLabel =
+    range === 'all'
+      ? 'All time'
+      : `Last ${timeline.length} days`;
 
   return (
-    <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
+    <section className="rounded-2xl border border-md-outline/40 bg-md-surface px-5 py-6 sm:px-7 sm:py-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div>
           <h2 className="text-title-medium text-md-on-surface mb-1">Timeline</h2>
           <p className="text-body-small text-md-on-surface-variant">
-            Last {timeline.length} days · UTC
+            {rangeLabel} · UTC
+            {max > 0 ? (
+              <span className="text-md-on-surface-variant/70">
+                {' '}
+                · peak {formatCount(max)}/day
+              </span>
+            ) : null}
           </p>
         </div>
-        <p className="text-label-large text-md-on-surface-variant tabular-nums">
-          {formatCount(periodTotal)} in period
-        </p>
+        <div className="flex flex-col items-stretch sm:items-end gap-3">
+          <div
+            className="inline-flex rounded-lg border border-md-outline/50 bg-md-surface-container/50 p-0.5"
+            role="group"
+            aria-label="Timeline range"
+          >
+            {TIMELINE_RANGES.map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => onRangeChange(r)}
+                className={
+                  r === range
+                    ? 'px-2.5 py-1 rounded-md text-label-small font-medium bg-md-surface text-md-on-surface shadow-sm'
+                    : 'px-2.5 py-1 rounded-md text-label-small text-md-on-surface-variant hover:text-md-on-surface'
+                }
+              >
+                {TIMELINE_RANGE_LABELS[r]}
+              </button>
+            ))}
+          </div>
+          <p className="text-label-large text-md-on-surface-variant tabular-nums">
+            {formatCount(periodTotal)} in period
+          </p>
+        </div>
       </div>
 
       <div className="relative">
@@ -93,7 +136,7 @@ export default function VisitsTimeline({ timeline }: Props) {
           viewBox="0 0 1000 280"
           className="w-full h-[200px] sm:h-[240px] overflow-visible"
           role="img"
-          aria-label="Daily visits over the last month"
+          aria-label={`Daily visits — ${TIMELINE_RANGE_LABELS[range]}`}
           onMouseLeave={() => setActive(null)}
         >
           <defs>
@@ -103,7 +146,6 @@ export default function VisitsTimeline({ timeline }: Props) {
             </linearGradient>
           </defs>
 
-          {/* Baseline */}
           <line
             x1="8"
             x2="992"
@@ -160,7 +202,6 @@ export default function VisitsTimeline({ timeline }: Props) {
 
         <div className="flex justify-between mt-3 text-label-small text-md-on-surface-variant/60">
           <span>{first ? formatDayLabel(first) : ''}</span>
-          <span className="tabular-nums">peak {formatCount(max)}</span>
           <span>{last ? formatDayLabel(last) : ''}</span>
         </div>
       </div>
