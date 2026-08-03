@@ -8,6 +8,7 @@ import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import RateLimitBanner from './RateLimitBanner';
 import MessageList from './chat/MessageList';
 import Composer from './chat/Composer';
+import AgentEngagementTracker from '@/components/analytics/AgentEngagementTracker';
 import { cn } from '@/lib/utils';
 import { Info } from 'lucide-react';
 
@@ -84,6 +85,10 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
 
   return (
     <div className={cn('grid h-full', gridColsClass)}>
+      <AgentEngagementTracker
+        agentSlug={selectedAgent?.name}
+        sessionKey={currentConversation?.id ?? null}
+      />
       <div className="flex flex-col h-full min-h-0 bg-background relative">
         <div className="px-4 pt-3 flex items-center justify-end gap-3">
           <button

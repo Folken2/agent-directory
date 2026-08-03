@@ -25,6 +25,12 @@ function formatShare(share: number): string {
   return `${share % 1 === 0 ? share.toFixed(0) : share.toFixed(1)}%`;
 }
 
+function formatActiveLabel(ms: number): string {
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
+  return `${(ms / 3_600_000).toFixed(1)}h`;
+}
+
 function Bar({ width, tint }: { width: number; tint?: string }) {
   return (
     <div className="h-px bg-md-outline overflow-hidden">
@@ -36,6 +42,37 @@ function Bar({ width, tint }: { width: number; tint?: string }) {
         }}
       />
     </div>
+  );
+}
+
+function RankRow({
+  label,
+  meta,
+  count,
+  max,
+}: {
+  label: string;
+  meta?: string;
+  count: number;
+  max: number;
+}) {
+  return (
+    <li className="py-3 first:pt-0 last:pb-0">
+      <div className="flex items-baseline justify-between gap-4 mb-2">
+        <div className="min-w-0 flex items-baseline gap-2">
+          <span className="text-title-medium text-md-on-surface truncate">{label}</span>
+          {meta ? (
+            <span className="text-label-small text-md-on-surface-variant/50 shrink-0">
+              {meta}
+            </span>
+          ) : null}
+        </div>
+        <span className="text-label-large text-md-on-surface-variant tabular-nums shrink-0">
+          {formatCount(count)}
+        </span>
+      </div>
+      <Bar width={(count / max) * 100} />
+    </li>
   );
 }
 
@@ -130,8 +167,10 @@ export default function AnalyticsPreview() {
   const topCountries = stats.topCountries ?? [];
   const allCompanies = stats.botCompanies ?? [];
   const botCompanies = allCompanies.slice(0, MAX_COMPANIES);
+  const topAgents = stats.topAgents ?? [];
   const maxCountry = topCountries[0]?.count || 1;
   const maxCompany = botCompanies[0]?.count || 1;
+  const maxAgent = topAgents[0]?.messages || topAgents[0]?.activeMs || 1;
   const humanPct = Math.round((stats.humans / stats.total) * 100);
   const aiCompanies = allCompanies.filter((c) => c.ai).length;
   const hiddenCompanies = allCompanies.length - botCompanies.length;
@@ -151,6 +190,30 @@ export default function AnalyticsPreview() {
       </div>
 
       {stats.timeline?.length ? <VisitsTimeline timeline={stats.timeline} /> : null}
+
+      <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">
+        <h2 className="text-title-medium text-md-on-surface mb-1">Agents people use</h2>
+        <p className="text-body-small text-md-on-surface-variant mb-6">
+          Active use after analytics consent — messages and time in chat
+        </p>
+        {topAgents.length === 0 ? (
+          <p className="text-body-small text-md-on-surface-variant">
+            No consented engagement yet. Visit counts above still include everyone.
+          </p>
+        ) : (
+          <ul>
+            {topAgents.map((a) => (
+              <RankRow
+                key={a.agentSlug}
+                label={a.agentSlug}
+                meta={`${formatCount(a.messages)} msgs · ${formatActiveLabel(a.activeMs)}`}
+                count={a.messages > 0 ? a.messages : a.activeMs}
+                max={maxAgent}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="grid md:grid-cols-2 gap-6">
         <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">

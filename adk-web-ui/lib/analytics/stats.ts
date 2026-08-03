@@ -2,6 +2,7 @@ import { unstable_cache } from 'next/cache';
 import { eq, gte, sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { pageViews } from '@/lib/drizzle/schema/page-views';
+import { engagementEvents } from '@/lib/drizzle/schema/engagement-events';
 import {
   rollUpBotCompanies,
   toBotAgentStat,
@@ -13,6 +14,7 @@ import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 
 export const TIMELINE_DAYS = 30;
+export const TOP_AGENTS = 8;
 /** How many countries the analytics page surfaces for human traffic. */
 export const TOP_COUNTRIES = 5;
 
@@ -21,6 +23,12 @@ export type TimelineDay = {
   total: number;
   humans: number;
   bots: number;
+};
+
+export type AgentEngagementStat = {
+  agentSlug: string;
+  messages: number;
+  activeMs: number;
 };
 
 export type CountryStat = {
@@ -44,6 +52,8 @@ export type PageviewStats = {
   botCompanies: BotCompanyStat[];
   /** Individual crawler user agents, most active first. */
   byBot: BotAgentStat[];
+  /** Consent-gated active use — empty until users Accept analytics. */
+  topAgents: AgentEngagementStat[];
   timeline: TimelineDay[];
 };
 
@@ -54,6 +64,7 @@ const EMPTY: PageviewStats = {
   topCountries: [],
   botCompanies: [],
   byBot: [],
+  topAgents: [],
   timeline: [],
 };
 
@@ -76,6 +87,12 @@ function buildEmptyTimeline(days: number): TimelineDay[] {
     out.push({ day: utcDayString(day), total: 0, humans: 0, bots: 0 });
   }
   return out;
+}
+
+export function formatActiveLabel(ms: number): string {
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
+  return `${(ms / 3_600_000).toFixed(1)}h`;
 }
 
 async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
@@ -134,6 +151,20 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
       .groupBy(sql`(${pageViews.createdAt} AT TIME ZONE 'UTC')::date`)
       .orderBy(sql`(${pageViews.createdAt} AT TIME ZONE 'UTC')::date asc`);
 
+    const topAgentRows = await db
+      .select({
+        agentSlug: sql<string>`coalesce(${engagementEvents.agentSlug}, 'unknown')`,
+        messages: sql<number>`count(*) filter (where ${engagementEvents.eventType} = 'message_sent')::int`,
+        activeMs: sql<number>`coalesce(sum(${engagementEvents.durationMs}) filter (where ${engagementEvents.eventType} = 'heartbeat'), 0)::int`,
+      })
+      .from(engagementEvents)
+      .where(gte(engagementEvents.createdAt, since))
+      .groupBy(sql`coalesce(${engagementEvents.agentSlug}, 'unknown')`)
+      .orderBy(
+        sql`count(*) filter (where ${engagementEvents.eventType} = 'message_sent') desc`
+      )
+      .limit(TOP_AGENTS);
+
     const timeline = buildEmptyTimeline(TIMELINE_DAYS);
     const byDayMap = new Map(
       byDay.map((r) => [
@@ -171,6 +202,13 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
       })),
       botCompanies: rollUpBotCompanies(agents, botTotal),
       byBot: agents,
+      topAgents: topAgentRows
+        .map((r) => ({
+          agentSlug: r.agentSlug,
+          messages: Number(r.messages),
+          activeMs: Number(r.activeMs),
+        }))
+        .filter((r) => r.messages > 0 || r.activeMs > 0),
       timeline,
     };
   } catch (error) {
@@ -185,7 +223,7 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
  */
 export const getPageviewStats = unstable_cache(
   fetchPageviewStatsUncached,
-  ['pageview-stats-v4'],
+  ['pageview-stats-v6'],
   { revalidate: 15, tags: ['pageview-stats'] }
 );
 

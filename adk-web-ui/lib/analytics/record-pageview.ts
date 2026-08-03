@@ -1,5 +1,5 @@
-import { and, eq, gte } from 'drizzle-orm';
 import { revalidateTag } from 'next/cache';
+import { and, eq, gte } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { pageViews, type NewPageView } from '@/lib/drizzle/schema/page-views';
 import { identifyBot } from './bots';
@@ -134,7 +134,7 @@ export async function recordPageview(input: PageviewInput): Promise<{
     }
 
     const inserted = await db.insert(pageViews).values(row).returning({ id: pageViews.id });
-    // Bust the 60s stats cache so homepage pill /analytics show the new visit.
+    // Bust the stats cache so homepage pill /analytics show the new visit.
     try {
       revalidateTag(PAGEVIEW_STATS_TAG, 'max');
     } catch (error) {

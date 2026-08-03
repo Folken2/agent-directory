@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import {
+  CONSENT_COOKIE_NAME,
+  hasAnalyticsConsent,
+  parseConsent,
+} from '@/lib/analytics/consent';
 import { recordPageview } from '@/lib/analytics/record-pageview';
 import {
   VISITOR_COOKIE_NAME,
@@ -39,15 +44,25 @@ export async function POST(request: NextRequest) {
     }
 
     const source = body.source === 'server' ? 'server' : 'client';
+    const consent = parseConsent(request.cookies.get(CONSENT_COOKIE_NAME)?.value);
+    const analyticsOk = hasAnalyticsConsent(consent);
 
-    let visitorId =
-      (isValidVisitorId(body.visitorId) && body.visitorId) ||
-      request.cookies.get(VISITOR_COOKIE_NAME)?.value ||
-      null;
+    let visitorId: string | null = null;
+    let setVisitorCookie = false;
 
-    const setVisitorCookie = !isValidVisitorId(visitorId);
-    if (setVisitorCookie) {
-      visitorId = createVisitorId();
+    if (analyticsOk) {
+      visitorId =
+        (isValidVisitorId(body.visitorId) && body.visitorId) ||
+        request.cookies.get(VISITOR_COOKIE_NAME)?.value ||
+        null;
+      if (!isValidVisitorId(visitorId)) {
+        visitorId = createVisitorId();
+        setVisitorCookie = true;
+      }
+    } else {
+      // Cookieless aggregate hit — ephemeral id, never persist ad_vid.
+      visitorId =
+        (isValidVisitorId(body.visitorId) && body.visitorId) || createVisitorId();
     }
 
     let userId = body.userId ?? null;
