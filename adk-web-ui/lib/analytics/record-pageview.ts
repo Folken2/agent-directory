@@ -1,3 +1,4 @@
+import { revalidateTag } from 'next/cache';
 import { and, eq, gte } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { pageViews, type NewPageView } from '@/lib/drizzle/schema/page-views';
@@ -130,6 +131,11 @@ export async function recordPageview(input: PageviewInput): Promise<{
     }
 
     const inserted = await db.insert(pageViews).values(row).returning({ id: pageViews.id });
+    try {
+      revalidateTag('pageview-stats', 'max');
+    } catch {
+      // ignore
+    }
     return { recorded: true, id: inserted[0]?.id };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

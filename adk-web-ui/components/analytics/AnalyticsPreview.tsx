@@ -13,6 +13,12 @@ function formatCompact(n: number): string {
   return String(n);
 }
 
+function formatActiveLabel(ms: number): string {
+  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
+  return `${(ms / 3_600_000).toFixed(1)}h`;
+}
+
 function RankRow({
   label,
   meta,
@@ -96,6 +102,8 @@ export default function AnalyticsPreview() {
 
   const maxCountry = stats.byCountry[0]?.count || 1;
   const maxBot = stats.byBot[0]?.count || 1;
+  const topAgents = stats.topAgents ?? [];
+  const maxAgent = topAgents[0]?.messages || topAgents[0]?.activeMs || 1;
   const humanPct = Math.round((stats.humans / stats.total) * 100);
 
   return (
@@ -113,6 +121,30 @@ export default function AnalyticsPreview() {
       </div>
 
       {stats.timeline?.length ? <VisitsTimeline timeline={stats.timeline} /> : null}
+
+      <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">
+        <h2 className="text-title-medium text-md-on-surface mb-1">Agents people use</h2>
+        <p className="text-body-small text-md-on-surface-variant mb-6">
+          Active use after analytics consent — messages and time in chat
+        </p>
+        {topAgents.length === 0 ? (
+          <p className="text-body-small text-md-on-surface-variant">
+            No consented engagement yet. Visit counts above still include everyone.
+          </p>
+        ) : (
+          <ul>
+            {topAgents.map((a) => (
+              <RankRow
+                key={a.agentSlug}
+                label={a.agentSlug}
+                meta={`${formatCount(a.messages)} msgs · ${formatActiveLabel(a.activeMs)}`}
+                count={a.messages > 0 ? a.messages : a.activeMs}
+                max={maxAgent}
+              />
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="grid md:grid-cols-2 gap-6">
         <section className="bg-md-surface elevation-1 rounded-xl p-6 sm:p-8">

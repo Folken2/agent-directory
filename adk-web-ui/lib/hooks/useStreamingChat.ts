@@ -44,6 +44,7 @@ import {
 } from '@/lib/types';
 import type { GuideDocument } from '@/lib/guide/types';
 import { resolveGuideMessageContent } from '@/lib/guide/parse';
+import { trackEngagement, trackGtagEvent } from '@/lib/analytics/track-engagement';
 
 const ANON_RATE_LIMIT_FALLBACK = 5;
 
@@ -189,6 +190,12 @@ export function useStreamingChat(): UseStreamingChatResult {
       }
 
       addMessage(userMessage);
+      trackEngagement({
+        eventType: 'message_sent',
+        agentSlug: selectedAgent.name,
+        sessionKey: conversation.id,
+      });
+      trackGtagEvent('agent_message', { agent_slug: selectedAgent.name });
       const messageText = text.trim();
       const filesToSend = [...attachments];
       setLoading(true);
@@ -420,6 +427,12 @@ export function useStreamingChat(): UseStreamingChatResult {
               addArtifact(chunk.artifact);
               setCurrentMessageArtifacts((prev) => [...prev, chunk.artifact!]);
             } else if (chunk.type === 'toolCall' && chunk.toolCall) {
+              trackEngagement({
+                eventType: 'tool_call',
+                agentSlug: selectedAgent.name,
+                sessionKey: conversation?.id,
+                metadata: { tool: chunk.toolCall.name },
+              });
               if (isIntermediateAuthor(chunk.author)) {
                 recordIntermediateToolCall(chunk.author!, {
                   id: chunk.toolCall.id,

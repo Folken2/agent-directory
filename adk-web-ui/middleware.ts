@@ -1,5 +1,10 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
 import { identifyBot } from '@/lib/analytics/bots';
+import {
+  CONSENT_COOKIE_NAME,
+  hasAnalyticsConsent,
+  parseConsent,
+} from '@/lib/analytics/consent';
 import { shouldTrackServerRequest } from '@/lib/analytics/should-track';
 import {
   VISITOR_COOKIE_NAME,
@@ -13,13 +18,19 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   const userAgent = request.headers.get('user-agent');
   const bot = identifyBot(userAgent);
 
+  const consent = parseConsent(request.cookies.get(CONSENT_COOKIE_NAME)?.value);
+  const analyticsOk = hasAnalyticsConsent(consent);
+
   const existing = request.cookies.get(VISITOR_COOKIE_NAME)?.value;
-  const visitorId = isValidVisitorId(existing) ? existing! : createVisitorId();
-  const needsCookie = !isValidVisitorId(existing);
+  const visitorId = analyticsOk
+    ? isValidVisitorId(existing)
+      ? existing!
+      : createVisitorId()
+    : createVisitorId(); // ephemeral — not written to cookie
 
   const response = NextResponse.next();
 
-  if (needsCookie) {
+  if (analyticsOk && !isValidVisitorId(existing)) {
     response.cookies.set(
       VISITOR_COOKIE_NAME,
       visitorId,
@@ -48,6 +59,11 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
       language: request.headers.get('accept-language'),
     };
 
+    const cookieParts = [`${CONSENT_COOKIE_NAME}=${consent ?? ''}`];
+    if (analyticsOk) {
+      cookieParts.push(`${VISITOR_COOKIE_NAME}=${visitorId}`);
+    }
+
     const ingest = fetch(`${origin}/api/analytics/pageview`, {
       method: 'POST',
       headers: {
@@ -60,7 +76,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
         'x-vercel-ip-country': payload.country || '',
         'x-vercel-ip-country-region': payload.region || '',
         'x-vercel-ip-city': payload.city || '',
-        cookie: `${VISITOR_COOKIE_NAME}=${visitorId}`,
+        cookie: cookieParts.join('; '),
       },
       body: JSON.stringify(payload),
     }).catch((err) => {

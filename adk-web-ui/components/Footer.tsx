@@ -21,8 +21,14 @@ export default function Footer() {
     <footer className="border-t border-md-outline bg-md-surface-variant elevation-2">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-label-medium text-md-on-surface-variant">
-            © {new Date().getFullYear()} ADK Agent Directory. Built with Google ADK.
+          <div className="text-label-medium text-md-on-surface-variant flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>© {new Date().getFullYear()} ADK Agent Directory. Built with Google ADK.</span>
+            <Link
+              href="/privacy"
+              className="underline underline-offset-2 hover:text-md-on-surface"
+            >
+              Privacy
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <Link

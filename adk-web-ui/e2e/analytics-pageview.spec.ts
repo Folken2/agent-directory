@@ -27,11 +27,21 @@ test.describe('Visitor analytics ingest', () => {
     }
   });
 
-  test('home visit sets ad_vid cookie via middleware', async ({ page, context }) => {
+  test('home visit does not set ad_vid until analytics consent', async ({
+    page,
+    context,
+  }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
-    const cookies = await context.cookies();
-    const vid = cookies.find((c) => c.name === 'ad_vid');
+    const before = await context.cookies();
+    expect(before.find((c) => c.name === 'ad_vid')).toBeFalsy();
+
+    await page.getByRole('button', { name: 'Accept' }).click();
+    await page.waitForTimeout(300);
+    const after = await context.cookies();
+    const vid = after.find((c) => c.name === 'ad_vid');
+    const consent = after.find((c) => c.name === 'ad_consent');
+    expect(consent?.value).toBe('all');
     expect(vid?.value).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
     );
