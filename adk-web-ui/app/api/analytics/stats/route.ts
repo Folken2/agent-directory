@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { emptyPageviewStats, getPageviewStats } from '@/lib/analytics/stats';
 
 export const runtime = 'nodejs';
-export const revalidate = 60;
+/** Fresh per request at the edge; `unstable_cache` + tag invalidation handle DB load. */
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
@@ -11,7 +12,8 @@ export async function GET() {
       { ok: true, stats },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          // Do not CDN-cache — visits must reflect recent pageviews after tag bust.
+          'Cache-Control': 'private, no-store',
         },
       }
     );

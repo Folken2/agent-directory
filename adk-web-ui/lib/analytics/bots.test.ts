@@ -27,6 +27,23 @@ describe('identifyBot', () => {
     assert.equal(result.botCategory, 'search');
   });
 
+  it('labels Claude-User and Claude-SearchBot separately from ClaudeBot', () => {
+    assert.equal(identifyBot('compatible; Claude-User/1.0').botName, 'Claude-User');
+    assert.equal(
+      identifyBot('compatible; Claude-SearchBot/1.0').botName,
+      'Claude-SearchBot'
+    );
+    assert.equal(identifyBot('compatible; ClaudeBot/1.0').botName, 'ClaudeBot');
+  });
+
+  it('prefers Applebot-Extended over Applebot', () => {
+    const result = identifyBot(
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko; compatible; Applebot-Extended/0.3; +http://www.apple.com/go/applebot)'
+    );
+    assert.equal(result.botName, 'Applebot-Extended');
+    assert.equal(result.botCategory, 'ai');
+  });
+
   it('does not mark a normal Chrome UA as bot', () => {
     const result = identifyBot(
       'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

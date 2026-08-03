@@ -13,6 +13,9 @@ import {
   shouldTrackPath,
 } from './should-track';
 
+/** Must match the tag on `getPageviewStats` in stats.ts. */
+const PAGEVIEW_STATS_TAG = 'pageview-stats';
+
 const DEDUPE_WINDOW_MS = 5_000;
 
 export type PageviewInput = {
@@ -131,10 +134,11 @@ export async function recordPageview(input: PageviewInput): Promise<{
     }
 
     const inserted = await db.insert(pageViews).values(row).returning({ id: pageViews.id });
+    // Bust the stats cache so homepage pill /analytics show the new visit.
     try {
-      revalidateTag('pageview-stats', 'max');
-    } catch {
-      // ignore
+      revalidateTag(PAGEVIEW_STATS_TAG, 'max');
+    } catch (error) {
+      console.warn('[analytics] stats cache revalidate failed', error);
     }
     return { recorded: true, id: inserted[0]?.id };
   } catch (error) {
