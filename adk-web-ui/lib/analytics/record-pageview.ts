@@ -1,4 +1,5 @@
 import { and, eq, gte } from 'drizzle-orm';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/drizzle/db';
 import { pageViews, type NewPageView } from '@/lib/drizzle/schema/page-views';
 import { identifyBot } from './bots';
@@ -11,6 +12,9 @@ import {
   sanitizeQuery,
   shouldTrackPath,
 } from './should-track';
+
+/** Must match the tag on `getPageviewStats` in stats.ts. */
+const PAGEVIEW_STATS_TAG = 'pageview-stats';
 
 const DEDUPE_WINDOW_MS = 5_000;
 
@@ -130,6 +134,12 @@ export async function recordPageview(input: PageviewInput): Promise<{
     }
 
     const inserted = await db.insert(pageViews).values(row).returning({ id: pageViews.id });
+    // Bust the 60s stats cache so homepage pill /analytics show the new visit.
+    try {
+      revalidateTag(PAGEVIEW_STATS_TAG, 'max');
+    } catch (error) {
+      console.warn('[analytics] stats cache revalidate failed', error);
+    }
     return { recorded: true, id: inserted[0]?.id };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

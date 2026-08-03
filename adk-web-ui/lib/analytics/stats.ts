@@ -179,11 +179,14 @@ async function fetchPageviewStatsUncached(): Promise<PageviewStats | null> {
   }
 }
 
-/** Cached 60s — safe for homepage pill + analytics page. */
+/**
+ * Short TTL plus `revalidateTag('pageview-stats')` on each recorded visit.
+ * Keeps the homepage pill / analytics page from serving a minute-old total.
+ */
 export const getPageviewStats = unstable_cache(
   fetchPageviewStatsUncached,
-  ['pageview-stats-v3'],
-  { revalidate: 60, tags: ['pageview-stats'] }
+  ['pageview-stats-v4'],
+  { revalidate: 15, tags: ['pageview-stats'] }
 );
 
 export function emptyPageviewStats(): PageviewStats {

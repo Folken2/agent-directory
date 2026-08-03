@@ -1,13 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import type {
   BotCompanyStat,
   CountryStat,
-  PageviewStats,
 } from '@/lib/analytics/stats';
 import BrandMark from '@/components/analytics/BrandMark';
 import VisitsTimeline from '@/components/analytics/VisitsTimeline';
+import { usePageviewStats } from '@/lib/analytics/use-pageview-stats';
 
 /** Companies shown before the tail is collapsed into a count. */
 const MAX_COMPANIES = 8;
@@ -75,6 +74,7 @@ function CompanyRow({ company, max }: { company: BotCompanyStat; max: number }) 
             id={company.id}
             name={company.name}
             color={company.color}
+            domain={company.domain}
             size={28}
           />
           <div className="min-w-0">
@@ -106,28 +106,7 @@ function CompanyRow({ company, max }: { company: BotCompanyStat; max: number }) 
 }
 
 export default function AnalyticsPreview() {
-  const [stats, setStats] = useState<PageviewStats | null>(null);
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/analytics/stats')
-      .then((r) => r.json())
-      .then((data: { stats?: PageviewStats }) => {
-        if (cancelled) return;
-        setStats(data?.stats ?? null);
-        setLoaded(true);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setStats(null);
-          setLoaded(true);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { stats, loaded } = usePageviewStats();
 
   if (!loaded) {
     return (
