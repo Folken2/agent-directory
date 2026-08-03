@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import type { PageviewStats } from '@/lib/analytics/stats';
+import { usePageviewStats } from '@/lib/analytics/use-pageview-stats';
 
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
@@ -11,24 +10,8 @@ function formatCount(n: number): string {
 
 /** Tiny homepage badge — hidden until Neon has real visits. */
 export default function DirectoryPulse() {
-  const [total, setTotal] = useState<number | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch('/api/analytics/stats')
-      .then((r) => r.json())
-      .then((data: { stats?: PageviewStats }) => {
-        if (cancelled) return;
-        const n = data?.stats?.total ?? 0;
-        setTotal(n > 0 ? n : 0);
-      })
-      .catch(() => {
-        if (!cancelled) setTotal(0);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { stats, loaded } = usePageviewStats();
+  const total = loaded ? (stats?.total ?? 0) : null;
 
   // Hide while loading and when there is nothing real to show.
   if (total === null || total <= 0) return null;

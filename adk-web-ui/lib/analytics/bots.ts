@@ -23,25 +23,38 @@ type BotRule = {
 };
 
 const BOT_RULES: BotRule[] = [
+  // OpenAI — https://developers.openai.com/api/docs/bots
   { name: 'GPTBot', category: 'ai', patterns: ['GPTBot'] },
   { name: 'ChatGPT-User', category: 'ai', patterns: ['ChatGPT-User'] },
   { name: 'OAI-SearchBot', category: 'ai', patterns: ['OAI-SearchBot'] },
+  // Anthropic — ClaudeBot / Claude-User / Claude-SearchBot
   { name: 'ClaudeBot', category: 'ai', patterns: ['ClaudeBot', 'anthropic-ai', 'Claude-Web'] },
+  { name: 'Claude-User', category: 'ai', patterns: ['Claude-User'] },
+  { name: 'Claude-SearchBot', category: 'ai', patterns: ['Claude-SearchBot'] },
+  // Other AI operators — Cloudflare AI Crawl Control bot reference
   { name: 'PerplexityBot', category: 'ai', patterns: ['PerplexityBot'] },
+  { name: 'Perplexity-User', category: 'ai', patterns: ['Perplexity-User'] },
   { name: 'Google-Extended', category: 'ai', patterns: ['Google-Extended'] },
+  { name: 'Google-CloudVertexBot', category: 'ai', patterns: ['Google-CloudVertexBot'] },
   { name: 'Amazonbot', category: 'ai', patterns: ['Amazonbot'] },
   { name: 'Bytespider', category: 'ai', patterns: ['Bytespider'] },
   { name: 'CCBot', category: 'ai', patterns: ['CCBot'] },
   { name: 'cohere-ai', category: 'ai', patterns: ['cohere-ai'] },
   { name: 'Diffbot', category: 'ai', patterns: ['Diffbot'] },
   { name: 'YouBot', category: 'ai', patterns: ['YouBot'] },
-  { name: 'meta-externalagent', category: 'ai', patterns: ['meta-externalagent', 'FacebookBot'] },
+  { name: 'MistralAI-User', category: 'ai', patterns: ['MistralAI-User'] },
+  { name: 'meta-externalagent', category: 'ai', patterns: ['meta-externalagent'] },
+  { name: 'meta-externalfetcher', category: 'ai', patterns: ['meta-externalfetcher'] },
+  { name: 'FacebookBot', category: 'ai', patterns: ['FacebookBot'] },
 
   { name: 'Googlebot', category: 'search', patterns: ['Googlebot', 'Googlebot-Image', 'Googlebot-News', 'Storebot-Google', 'AdsBot-Google', 'Mediapartners-Google'] },
   { name: 'Bingbot', category: 'search', patterns: ['bingbot', 'BingPreview', 'adidxbot'] },
   { name: 'DuckDuckBot', category: 'search', patterns: ['DuckDuckBot'] },
+  { name: 'DuckAssistBot', category: 'ai', patterns: ['DuckAssistBot'] },
   { name: 'YandexBot', category: 'search', patterns: ['YandexBot', 'YandexImages'] },
   { name: 'Baiduspider', category: 'search', patterns: ['Baiduspider'] },
+  // Applebot-Extended before Applebot so the more specific UA wins
+  { name: 'Applebot-Extended', category: 'ai', patterns: ['Applebot-Extended'] },
   { name: 'Applebot', category: 'search', patterns: ['Applebot'] },
   { name: 'PetalBot', category: 'search', patterns: ['PetalBot'] },
   { name: 'Slurp', category: 'search', patterns: ['Slurp'] },
