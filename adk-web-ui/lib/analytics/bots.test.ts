@@ -53,14 +53,14 @@ describe('identifyBot', () => {
     assert.equal(result.botName, null);
   });
 
-  it('falls back to UnknownBot for generic crawler UA', () => {
+  it('names generic crawlers from the UA token instead of UnknownBot', () => {
     const result = identifyBot('Mozilla/5.0 (compatible; Acme crawler/1.0)');
     assert.equal(result.isBot, true);
-    assert.equal(result.botName, 'UnknownBot');
+    assert.equal(result.botName, 'Acme-crawler');
     assert.equal(result.confidence, 'medium');
   });
 
-  it('marks soft-signal traffic as bot when multiple signals fire', () => {
+  it('labels soft-signal empty UA as UnknownBot', () => {
     const headers = new Headers(); // no sec-fetch-*
     const result = identifyBot('', {
       source: 'server',
@@ -81,5 +81,26 @@ describe('identifyBot', () => {
     assert.equal(result.isBot, false);
     assert.equal(result.confidence, 'low');
     assert.ok(result.signals.includes('missing_accept_language'));
+  });
+
+  it('labels newly discovered UnknownBot UAs', () => {
+    assert.equal(
+      identifyBot(
+        'Mozilla/5.0 (compatible; SERankingBacklinksBot/1.0; +https://seranking.com/backlinks-crawler)'
+      ).botName,
+      'SERankingBacklinksBot'
+    );
+    assert.equal(
+      identifyBot(
+        'Mozilla/5.0 (compatible; DeepSeekBot/1.0; +https://www.deepseek.com/bot)'
+      ).botName,
+      'DeepSeekBot'
+    );
+    assert.equal(
+      identifyBot(
+        'Mozilla/5.0 (compatible; SeznamBot/4.0; +https://o-seznam.cz/napoveda/vyhledavani/en/seznambot-crawler/)'
+      ).botName,
+      'SeznamBot'
+    );
   });
 });
