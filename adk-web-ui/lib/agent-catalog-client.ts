@@ -49,6 +49,11 @@ export function getCatalogAgentMap(): Map<string, Agent> {
   return cachedMap;
 }
 
+/** All agent slugs in the bundled catalog snapshot. */
+export function listCatalogAgentSlugs(): string[] {
+  return [...getCatalogAgentMap().keys()].sort();
+}
+
 export function getCatalogAgent(slug: string): Agent {
   const hit = getCatalogAgentMap().get(slug);
   if (hit) return hit;

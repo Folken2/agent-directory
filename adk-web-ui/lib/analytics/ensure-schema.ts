@@ -108,3 +108,37 @@ export async function ensurePageViewsSchema(): Promise<void> {
 
 /** Alias — engagement lives in the same bootstrap as page_views. */
 export const ensureEngagementSchema = ensurePageViewsSchema;
+
+let agentRunEnsured: Promise<void> | null = null;
+
+/**
+ * Nullable identity columns on `agent_run_events` for funnel joins.
+ * Runtime ALTER — never drizzle-kit migrate on Vercel build.
+ */
+export async function ensureAgentRunEventsSchema(): Promise<void> {
+  if (!isAnalyticsDbAvailable()) return;
+  if (!agentRunEnsured) {
+    agentRunEnsured = (async () => {
+      await db.execute(sql`
+        ALTER TABLE "agent_run_events"
+        ADD COLUMN IF NOT EXISTS "visitor_id" text
+      `);
+      await db.execute(sql`
+        ALTER TABLE "agent_run_events"
+        ADD COLUMN IF NOT EXISTS "anon_session_token" text
+      `);
+      await db.execute(sql`
+        CREATE INDEX IF NOT EXISTS "idx_agent_run_events_visitor_id"
+        ON "agent_run_events" USING btree ("visitor_id")
+      `);
+      await db.execute(sql`
+        CREATE INDEX IF NOT EXISTS "idx_agent_run_events_anon_session"
+        ON "agent_run_events" USING btree ("anon_session_token")
+      `);
+    })().catch((error) => {
+      agentRunEnsured = null;
+      throw error;
+    });
+  }
+  await agentRunEnsured;
+}

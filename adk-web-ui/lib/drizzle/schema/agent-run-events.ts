@@ -13,6 +13,10 @@ export const agentRunEvents = pgTable(
     status: text('status').notNull(), // 'pending' | 'running' | 'completed' | 'error'
     errorMessage: text('error_message'),
     rateLimitIdentifier: text('rate_limit_identifier'), // UUID for authenticated users, session_token for anonymous users
+    /** Consented `ad_vid` cookie — null when analytics consent is off. */
+    visitorId: text('visitor_id'),
+    /** Rate-limit anonymous session cookie — null for signed-in users / no cookie. */
+    anonSessionToken: text('anon_session_token'),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     completedAt: timestamp('completed_at', { withTimezone: true }),
   },
@@ -22,6 +26,8 @@ export const agentRunEvents = pgTable(
     sessionIdIdx: index('idx_agent_run_events_session_id').on(table.sessionId),
     createdAtIdx: index('idx_agent_run_events_created_at').on(table.createdAt),
     rateLimitIdx: index('idx_agent_run_events_rate_limit').on(table.rateLimitIdentifier, table.createdAt),
+    visitorIdIdx: index('idx_agent_run_events_visitor_id').on(table.visitorId),
+    anonSessionIdx: index('idx_agent_run_events_anon_session').on(table.anonSessionToken),
   })
 );
 

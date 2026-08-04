@@ -1,7 +1,6 @@
 import { unstable_cache } from 'next/cache';
-import { eq, gte, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
-import { pageViews } from '@/lib/drizzle/schema/page-views';
 import { engagementEvents } from '@/lib/drizzle/schema/engagement-events';
 import {
   rollUpBotCompanies,
@@ -13,6 +12,8 @@ import { countryFlag, countryName } from './countries';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 import { resolveStoredBotName } from './bots';
+import { isPageView, normalizePath } from './path-classify';
+import { unwrapExecuteRows } from '@/lib/drizzle/unwrap-rows';
 import {
   type TimelineRange,
   timelineRangeDays,
@@ -46,6 +47,9 @@ const EMPTY: PageviewStats = {
   total: 0,
   humans: 0,
   bots: 0,
+  visits: 0,
+  peopleApprox: 0,
+  returning: 0,
   topCountries: [],
   botCompanies: [],
   byBot: [],
@@ -112,49 +116,115 @@ async function fetchPageviewStatsUncached(
   try {
     await ensurePageViewsSchema();
 
-    const [totals] = await db
-      .select({
-        total: sql<number>`count(*)::int`,
-        humans: sql<number>`count(*) filter (where ${pageViews.isBot} = false)::int`,
-        bots: sql<number>`count(*) filter (where ${pageViews.isBot} = true)::int`,
-      })
-      .from(pageViews);
+    // Path-level rollup so we can drop scanner / infra / missing from public
+    // "people" and visit counts (classification is richer than SQL patterns).
+    const pathRows = unwrapExecuteRows<{
+      path: string;
+      total: number;
+      humans: number;
+      bots: number;
+      country: string | null;
+    }>(
+      await db.execute(sql`
+        SELECT
+          path,
+          coalesce(nullif(country, ''), 'ZZ') AS country,
+          count(*)::int AS total,
+          count(*) FILTER (WHERE coalesce(is_bot, false) = false)::int AS humans,
+          count(*) FILTER (WHERE is_bot = true)::int AS bots
+        FROM page_views
+        GROUP BY path, coalesce(nullif(country, ''), 'ZZ')
+      `)
+    );
 
-    const humanTotal = Number(totals?.humans ?? 0);
-    const botTotal = Number(totals?.bots ?? 0);
+    let visits = 0;
+    let total = 0;
+    const countryCounts = new Map<string, number>();
 
-    // Countries: humans only — bot geo says where the crawler egresses, not who read us.
-    const byCountry = await db
-      .select({
-        country: sql<string>`coalesce(nullif(${pageViews.country}, ''), 'ZZ')`,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(pageViews)
-      .where(eq(pageViews.isBot, false))
-      .groupBy(sql`coalesce(nullif(${pageViews.country}, ''), 'ZZ')`)
-      .orderBy(sql`count(*) desc`)
-      .limit(TOP_COUNTRIES);
+    for (const row of pathRows) {
+      const path = normalizePath(row.path);
+      const rowTotal = Number(row.total);
+      const rowHumans = Number(row.humans);
+      total += rowTotal;
 
-    const botUaRows = await db
-      .select({
-        botName: sql<string>`coalesce(${pageViews.botName}, 'UnknownBot')`,
-        userAgent: pageViews.userAgent,
-        count: sql<number>`count(*)::int`,
-      })
-      .from(pageViews)
-      .where(eq(pageViews.isBot, true))
-      .groupBy(sql`coalesce(${pageViews.botName}, 'UnknownBot')`, pageViews.userAgent)
-      .orderBy(sql`count(*) desc`)
-      .limit(500);
+      if (!isPageView(path)) continue;
+
+      visits += rowHumans;
+      if (rowHumans > 0) {
+        const c = row.country || 'ZZ';
+        countryCounts.set(c, (countryCounts.get(c) ?? 0) + rowHumans);
+      }
+    }
+
+    // Distinct hashed_ip on real pages only (IP-based people estimate).
+    const ipRows = unwrapExecuteRows<{ hashed_ip: string; path: string }>(
+      await db.execute(sql`
+        SELECT DISTINCT hashed_ip, path
+        FROM page_views
+        WHERE coalesce(is_bot, false) = false
+          AND hashed_ip IS NOT NULL
+      `)
+    );
+    const peopleSet = new Set<string>();
+    for (const row of ipRows) {
+      if (isPageView(row.path)) peopleSet.add(row.hashed_ip);
+    }
+
+    // Returning = persistent visitor_id with >1 human page view (ephemeral
+    // one-shot UUIDs never qualify).
+    const visitorRows = unwrapExecuteRows<{
+      visitor_id: string;
+      path: string;
+      hits: number;
+    }>(
+      await db.execute(sql`
+        SELECT visitor_id, path, count(*)::int AS hits
+        FROM page_views
+        WHERE coalesce(is_bot, false) = false
+        GROUP BY visitor_id, path
+      `)
+    );
+    const hitsByVisitor = new Map<string, number>();
+    for (const row of visitorRows) {
+      if (!isPageView(row.path)) continue;
+      hitsByVisitor.set(
+        row.visitor_id,
+        (hitsByVisitor.get(row.visitor_id) ?? 0) + Number(row.hits)
+      );
+    }
+    let returning = 0;
+    for (const hits of hitsByVisitor.values()) {
+      if (hits > 1) returning++;
+    }
+
+    const botUaRows = unwrapExecuteRows<{
+      bot_name: string | null;
+      user_agent: string | null;
+      count: number;
+    }>(
+      await db.execute(sql`
+        SELECT
+          coalesce(bot_name, 'UnknownBot') AS bot_name,
+          user_agent,
+          count(*)::int AS count
+        FROM page_views
+        WHERE is_bot = true
+        GROUP BY coalesce(bot_name, 'UnknownBot'), user_agent
+        ORDER BY count(*) DESC
+        LIMIT 500
+      `)
+    );
 
     const botCounts = new Map<string, number>();
     for (const row of botUaRows) {
-      const name = resolveStoredBotName(row.botName, row.userAgent);
+      const name = resolveStoredBotName(row.bot_name, row.user_agent);
       botCounts.set(name, (botCounts.get(name) ?? 0) + Number(row.count));
     }
     const byBotSorted = [...botCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 100);
+
+    const botTotal = byBotSorted.reduce((s, [, n]) => s + n, 0);
 
     const fixedDays = timelineRangeDays(range);
     const since =
@@ -164,27 +234,42 @@ async function fetchPageviewStatsUncached(
             const d = new Date();
             d.setUTCHours(0, 0, 0, 0);
             d.setUTCDate(d.getUTCDate() - (fixedDays - 1));
-            return d;
+            return d.toISOString();
           })();
 
-    const byDayQuery = db
-      .select({
-        day: sql<string>`to_char((${pageViews.createdAt} AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD')`,
-        total: sql<number>`count(*)::int`,
-        humans: sql<number>`count(*) filter (where ${pageViews.isBot} = false)::int`,
-        bots: sql<number>`count(*) filter (where ${pageViews.isBot} = true)::int`,
-      })
-      .from(pageViews);
+    const byDayRaw = unwrapExecuteRows<{
+      day: string;
+      path: string;
+      total: number;
+      humans: number;
+      bots: number;
+    }>(
+      await db.execute(sql`
+        SELECT
+          to_char((created_at AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD') AS day,
+          path,
+          count(*)::int AS total,
+          count(*) FILTER (WHERE coalesce(is_bot, false) = false)::int AS humans,
+          count(*) FILTER (WHERE is_bot = true)::int AS bots
+        FROM page_views
+        ${since ? sql`WHERE created_at >= ${since}` : sql``}
+        GROUP BY (created_at AT TIME ZONE 'UTC')::date, path
+        ORDER BY (created_at AT TIME ZONE 'UTC')::date ASC
+      `)
+    );
 
-    const byDay =
-      since === null
-        ? await byDayQuery
-            .groupBy(sql`(${pageViews.createdAt} AT TIME ZONE 'UTC')::date`)
-            .orderBy(sql`(${pageViews.createdAt} AT TIME ZONE 'UTC')::date asc`)
-        : await byDayQuery
-            .where(gte(pageViews.createdAt, since))
-            .groupBy(sql`(${pageViews.createdAt} AT TIME ZONE 'UTC')::date`)
-            .orderBy(sql`(${pageViews.createdAt} AT TIME ZONE 'UTC')::date asc`);
+    const byDayMap = new Map<
+      string,
+      { total: number; humans: number; bots: number }
+    >();
+    for (const row of byDayRaw) {
+      if (!isPageView(row.path)) continue;
+      const prev = byDayMap.get(row.day) ?? { total: 0, humans: 0, bots: 0 };
+      prev.total += Number(row.total);
+      prev.humans += Number(row.humans);
+      prev.bots += Number(row.bots);
+      byDayMap.set(row.day, prev);
+    }
 
     // Engagement is all-time — independent of the chart window.
     const topAgentRows = await db
@@ -200,45 +285,40 @@ async function fetchPageviewStatsUncached(
       )
       .limit(TOP_AGENTS);
 
-    const byDayMap = new Map(
-      byDay.map((r) => [
-        r.day,
-        {
-          total: Number(r.total),
-          humans: Number(r.humans),
-          bots: Number(r.bots),
-        },
-      ])
-    );
-
     const today = utcDayString(new Date());
     let timeline: TimelineDay[];
     if (fixedDays !== null) {
       timeline = fillTimeline(buildEmptyTimeline(fixedDays), byDayMap);
-    } else if (byDay.length === 0) {
+    } else if (byDayMap.size === 0) {
       timeline = buildEmptyTimeline(1);
     } else {
-      timeline = fillTimeline(
-        buildTimelineBetween(byDay[0].day, today),
-        byDayMap
-      );
+      const days = [...byDayMap.keys()].sort();
+      timeline = fillTimeline(buildTimelineBetween(days[0], today), byDayMap);
     }
 
     const agents: BotAgentStat[] = byBotSorted.map(([botName, count]) =>
       toBotAgentStat(botName, count)
     );
 
+    const topCountries = [...countryCounts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, TOP_COUNTRIES)
+      .map(([country, count]) => ({
+        country,
+        name: countryName(country),
+        flag: countryFlag(country),
+        count,
+        share: share(count, visits),
+      }));
+
     return {
-      total: Number(totals?.total ?? 0),
-      humans: humanTotal,
+      total,
+      humans: visits,
       bots: botTotal,
-      topCountries: byCountry.map((r) => ({
-        country: r.country,
-        name: countryName(r.country),
-        flag: countryFlag(r.country),
-        count: Number(r.count),
-        share: share(Number(r.count), humanTotal),
-      })),
+      visits,
+      peopleApprox: peopleSet.size,
+      returning,
+      topCountries,
       botCompanies: rollUpBotCompanies(agents, botTotal),
       byBot: agents,
       topAgents: topAgentRows
@@ -259,7 +339,7 @@ async function fetchPageviewStatsUncached(
 
 const getCachedPageviewStats = unstable_cache(
   async (range: TimelineRange) => fetchPageviewStatsUncached(range),
-  ['pageview-stats-v7'],
+  ['pageview-stats-v8'],
   { revalidate: 15, tags: ['pageview-stats'] }
 );
 

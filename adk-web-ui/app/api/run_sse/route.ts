@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getRateLimitIdentifier, checkRateLimit } from '@/lib/rate-limit';
 import { trackAgentRun } from '@/lib/db-agent-runs';
+import {
+  ANONYMOUS_SESSION_COOKIE_NAME,
+  readRunIdentityCookies,
+} from '@/lib/analytics/run-identity';
 
 const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
-const ANONYMOUS_SESSION_COOKIE_NAME = 'anonymous_session_token';
 
 export async function POST(request: NextRequest) {
   // Create an AbortController for timeout handling
@@ -26,6 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Check rate limit before proceeding
     const { identifier: rateLimitId, userType } = await getRateLimitIdentifier(request);
+    const runIdentity = readRunIdentityCookies(request);
     const rateLimitCheck = await checkRateLimit(rateLimitId, userType);
     
     if (!rateLimitCheck.allowed) {
@@ -59,7 +63,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Track agent run start with rate limit identifier
-    await trackAgentRun(app_name, user_id, session_id, app_name, 'running', undefined, rateLimitId);
+    await trackAgentRun(
+      app_name,
+      user_id,
+      session_id,
+      app_name,
+      'running',
+      undefined,
+      rateLimitId,
+      runIdentity
+    );
 
     // Ensure session exists before calling /run_sse (ADK server requires session to exist)
     const sessionCheckController = new AbortController();
@@ -186,8 +199,17 @@ export async function POST(request: NextRequest) {
 
     if (response.ok) {
       // Track successful agent run completion (async, don't await)
-      trackAgentRun(app_name, user_id, session_id, app_name, 'completed', undefined, rateLimitId).catch(
-        (error) => console.error('Error tracking agent run completion:', error)
+      trackAgentRun(
+        app_name,
+        user_id,
+        session_id,
+        app_name,
+        'completed',
+        undefined,
+        rateLimitId,
+        runIdentity
+      ).catch((error) =>
+        console.error('Error tracking agent run completion:', error)
       );
 
       // Return the SSE stream directly from ADK server
@@ -214,7 +236,8 @@ export async function POST(request: NextRequest) {
       app_name,
       'error',
       `ADK server returned status ${response.status}`,
-      rateLimitId
+      rateLimitId,
+      runIdentity
     );
 
     const errorText = await response.text();
@@ -250,7 +273,8 @@ export async function POST(request: NextRequest) {
         body?.app_name || 'unknown',
         'error',
         errorMessage,
-        errorRateLimitId || undefined
+        errorRateLimitId || undefined,
+        readRunIdentityCookies(request)
       );
     } catch (trackError) {
       console.error('Error tracking failed run:', trackError);
