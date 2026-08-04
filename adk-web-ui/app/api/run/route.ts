@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { trackAgentRun } from '@/lib/db-agent-runs';
 import { getRateLimitIdentifier, checkRateLimit } from '@/lib/rate-limit';
+import {
+  ANONYMOUS_SESSION_COOKIE_NAME,
+  readRunIdentityCookies,
+} from '@/lib/analytics/run-identity';
 
 const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
-const ANONYMOUS_SESSION_COOKIE_NAME = 'anonymous_session_token';
 
 export async function POST(request: NextRequest) {
   // Create an AbortController for timeout handling
@@ -26,6 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Check rate limit before proceeding
     const { identifier: rateLimitId, userType } = await getRateLimitIdentifier(request);
+    const runIdentity = readRunIdentityCookies(request);
     const rateLimitCheck = await checkRateLimit(rateLimitId, userType);
     
     if (!rateLimitCheck.allowed) {
@@ -170,7 +174,16 @@ export async function POST(request: NextRequest) {
     console.log(`[API] Calling ADK server /run for agent: ${app_name}, session: ${session_id}`);
 
     // Track agent run start with rate limit identifier
-    await trackAgentRun(app_name, user_id, session_id, app_name, 'running', undefined, rateLimitId);
+    await trackAgentRun(
+      app_name,
+      user_id,
+      session_id,
+      app_name,
+      'running',
+      undefined,
+      rateLimitId,
+      runIdentity
+    );
 
     const response = await fetch(`${ADK_SERVER_URL}/run`, {
       method: 'POST',
@@ -364,7 +377,16 @@ export async function POST(request: NextRequest) {
       console.log('[API] Total artifacts found:', allArtifacts.length);
 
       // Track successful agent run completion
-      await trackAgentRun(app_name, user_id, session_id, app_name, 'completed', undefined, rateLimitId);
+      await trackAgentRun(
+        app_name,
+        user_id,
+        session_id,
+        app_name,
+        'completed',
+        undefined,
+        rateLimitId,
+        runIdentity
+      );
 
       const successResponse = NextResponse.json({
         success: true,
@@ -404,7 +426,8 @@ export async function POST(request: NextRequest) {
       app_name,
       'error',
       errorText || `ADK server returned status ${response.status}`,
-      rateLimitId
+      rateLimitId,
+      runIdentity
     );
     
     return NextResponse.json(
@@ -437,7 +460,8 @@ export async function POST(request: NextRequest) {
         body?.app_name || 'unknown',
         'error',
         errorMessage,
-        errorRateLimitId || undefined
+        errorRateLimitId || undefined,
+        readRunIdentityCookies(request)
       );
     } catch (trackError) {
       console.error('Error tracking failed run:', trackError);

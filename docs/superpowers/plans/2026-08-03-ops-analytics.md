@@ -52,24 +52,24 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 **Files:**
 - Create `adk-web-ui/lib/analytics/prompt-themes.ts` (+ test)
 
-- [ ] Extract text via `jsonb_array_elements(content->'parts')`, reusing the SQL shape in
+- [x] Extract text via `jsonb_array_elements(content->'parts')`, reusing the SQL shape in
       `lib/sessions.ts`
-- [ ] Tokenize, strip stopwords, count uni/bigrams; return top themes with example prompt
+- [x] Tokenize, strip stopwords, count uni/bigrams; return top themes with example prompt
       ids and per-agent breakdown
-- [ ] Cap prompt length and count per query; deterministic ordering for tests
-- [ ] Multilingual safety: do not assume ASCII (real prompts include CJK text)
+- [x] Cap prompt length and count per query; deterministic ordering for tests
+- [x] Multilingual safety: do not assume ASCII (real prompts include CJK text)
 
 ### Task 3: Signals engine
 
 **Files:**
 - Create `adk-web-ui/lib/analytics/signals.ts` (+ test)
 
-- [ ] Six signals from the design: dead agents, high friction, interest without use,
+- [x] Six signals from the design: dead agents, high friction, interest without use,
       dead pages, demand themes, traffic quality
-- [ ] Each returns `{ id, severity, title, evidence, suggestedAction, coverageBasis }`
-- [ ] Thresholds in one exported config object so they are tunable and testable
-- [ ] Minimum-sample guards so a 2-run agent never reports a 50% error rate as a finding
-- [ ] Tests assert each rule fires and stays silent on fixture data
+- [x] Each returns `{ id, severity, title, evidence, suggestedAction, coverageBasis }`
+- [x] Thresholds in one exported config object so they are tunable and testable
+- [x] Minimum-sample guards so a 2-run agent never reports a 50% error rate as a finding
+- [x] Tests assert each rule fires and stays silent on fixture data
 
 ### Task 4: Identity stamping on runs
 
@@ -79,11 +79,11 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 - Modify `adk-web-ui/app/api/run/route.ts`, `app/api/run_sse/route.ts`
 - Modify the `trackAgentRun` implementation
 
-- [ ] Add nullable `visitor_id` and `anon_session_token` columns + indexes
-- [ ] `ensure-schema`: `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
-- [ ] Read `ad_vid` and the rate-limit session cookie server-side; pass both to
+- [x] Add nullable `visitor_id` and `anon_session_token` columns + indexes
+- [x] `ensure-schema`: `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+- [x] Read `ad_vid` and the rate-limit session cookie server-side; pass both to
       `trackAgentRun`; never fabricate an id when cookies are absent
-- [ ] Confirm no behaviour change when both are null (anonymous, no consent)
+- [x] Confirm no behaviour change when both are null (anonymous, no consent)
 
 ### Task 5: Public `/analytics` people-count fix
 
@@ -91,11 +91,11 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 - Modify `adk-web-ui/lib/analytics/stats.ts`, `stats-types.ts`
 - Modify `adk-web-ui/components/analytics/AnalyticsPreview.tsx`
 
-- [ ] Replace distinct-`visitor_id` people count with: Visits, People (approx., distinct
+- [x] Replace distinct-`visitor_id` people count with: Visits, People (approx., distinct
       `hashed_ip`), Returning (persistent `ad_vid`)
-- [ ] Label People as an IP-based estimate in the UI, not a precise figure
-- [ ] Exclude scanner paths from public page counts
-- [ ] Update existing stats tests
+- [x] Label People as an IP-based estimate in the UI, not a precise figure
+- [x] Exclude scanner paths from public page counts
+- [x] Update existing stats tests
 
 ### Task 6: Ops API routes
 
@@ -103,10 +103,10 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 - Create `adk-web-ui/app/api/analytics/ops/route.ts`
 - Create `adk-web-ui/app/api/analytics/ops/prompts/route.ts`
 
-- [ ] Both routes re-check `isAnalyticsOpsEmail` server-side and 404 otherwise — never
+- [x] Both routes re-check `isAnalyticsOpsEmail` server-side and 404 otherwise — never
       rely on the page gate alone
-- [ ] Accept `range` via `parseTimelineRange`; respond `private, no-store`
-- [ ] Prompts route returns aggregates by default; raw text only with an explicit
+- [x] Accept `range` via `parseTimelineRange`; respond `private, no-store`
+- [x] Prompts route returns aggregates by default; raw text only with an explicit
       `mode=raw` param, capped and paginated
 
 ### Task 7: Signals UI
@@ -115,9 +115,9 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 - Create `adk-web-ui/components/analytics/OpsSignals.tsx`
 - Modify `adk-web-ui/components/analytics/AnalyticsOpsClient.tsx`
 
-- [ ] Signal cards: finding, evidence, suggested action, coverage label
-- [ ] Empty state that explains why a signal has no data yet rather than showing zero
-- [ ] Reuse existing Material tokens; no new design system
+- [x] Signal cards: finding, evidence, suggested action, coverage label
+- [x] Empty state that explains why a signal has no data yet rather than showing zero
+- [x] Reuse existing Material tokens; no new design system
 
 ### Task 8: Explorer UI
 
@@ -125,10 +125,10 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 - Create `adk-web-ui/components/analytics/OpsExplorer.tsx`
 - Create `adk-web-ui/components/analytics/OpsTable.tsx`
 
-- [ ] Four tabs: Agents, Pages, Prompts, Traffic
-- [ ] Shared table: client-side sort, text filter, `TimelineRange` selector
-- [ ] Prompts tab: aggregated themes by default, raw-text toggle that calls `mode=raw`
-- [ ] Link agent rows to `/agents/[name]` and page rows to the live path
+- [x] Four tabs: Agents, Pages, Prompts, Traffic
+- [x] Shared table: client-side sort, text filter, `TimelineRange` selector
+- [x] Prompts tab: aggregated themes by default, raw-text toggle that calls `mode=raw`
+- [x] Link agent rows to `/agents/[name]` and page rows to the live path
 
 ### Task 9: GA4 acquisition panel (last)
 
@@ -138,15 +138,15 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 - Create `adk-web-ui/components/analytics/OpsGa4Panel.tsx`
 - Modify `adk-web-ui/env.example`
 
-- [ ] Install `@google-analytics/data`; auth via service account JSON from env
-- [ ] Report on channel group, device category, new vs returning only
-- [ ] Missing env → panel shows a setup hint; never throws
-- [ ] Label as a consent-only sample; state that it will not match first-party counts
-- [ ] Note in UI that the GA property started 2026-08-03, so history is short
+- [x] Install `@google-analytics/data`; auth via service account JSON from env
+- [x] Report on channel group, device category, new vs returning only
+- [x] Missing env → panel shows a setup hint; never throws
+- [x] Label as a consent-only sample; state that it will not match first-party counts
+- [x] Note in UI that the GA property started 2026-08-03, so history is short
 
 ### Task 10: Verify + ship
 
-- [ ] `npm run test:unit`
+- [x] `npm run test:unit`
 - [ ] `npm run lint` and `npx tsc --noEmit`
 - [ ] Sanity-check each signal against production data and confirm the examples in the
       design doc still hold

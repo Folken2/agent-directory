@@ -29,6 +29,18 @@ export type PageviewStats = {
   total: number;
   humans: number;
   bots: number;
+  /**
+   * Human views on real app routes only (scanners / infra / missing excluded).
+   * Same meaning as `humans` after the people-count fix.
+   */
+  visits: number;
+  /** Distinct `hashed_ip` among human page views — IP-based estimate, not people. */
+  peopleApprox: number;
+  /**
+   * Distinct `visitor_id` with more than one human page view — the consented /
+   * persistent `ad_vid` subset (ephemeral one-shot IDs never qualify).
+   */
+  returning: number;
   /** Human visits only, top countries by volume. */
   topCountries: CountryStat[];
   /** Crawlers rolled up to the company that operates them. */

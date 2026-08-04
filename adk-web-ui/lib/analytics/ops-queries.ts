@@ -17,10 +17,13 @@
 
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
+import { listCatalogAgentSlugs } from '@/lib/agent-catalog-client';
 import { unwrapExecuteRows } from '@/lib/drizzle/unwrap-rows';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 import { classifyPath, normalizePath } from './path-classify';
+import { fetchPromptThemes } from './prompt-themes';
+import { buildOpsSignals } from './signals';
 import {
   pageJourneyStats,
   sessionizeVisits,
@@ -28,74 +31,26 @@ import {
   type RawPageView,
 } from './visit-journeys';
 import { timelineRangeDays, type TimelineRange } from './timeline-range';
+import type {
+  AgentUsageRow,
+  MissingPathRow,
+  OpsDashboardSnapshot,
+  PageUsageRow,
+  TrafficQuality,
+} from './ops-types';
+
+export type {
+  AgentUsageRow,
+  MissingPathRow,
+  OpsDashboardSnapshot,
+  PageUsageRow,
+  TrafficQuality,
+} from './ops-types';
 
 /** Ceiling on rows pulled for sessionization. ~1.6k today. */
 const RAW_VIEW_LIMIT = 50_000;
 
 const TERMINAL_RUN_FILTER = sql`status in ('completed', 'error')`;
-
-export type AgentUsageRow = {
-  agentSlug: string;
-  /** Terminal runs only — 'running' rows would double-count. */
-  runs: number;
-  errors: number;
-  /** 0–1. Zero runs yields 0, not NaN. */
-  errorRate: number;
-  /**
-   * Distinct signed-in users. Stable identity, so this really is a people count
-   * — but only 12 exist site-wide, so treat small numbers literally.
-   */
-  authedUsers: number;
-  /**
-   * Distinct anonymous rate-limit tokens. These rotate per browser session, so
-   * this counts *sessions*, not people, and runs close to the run count. Never
-   * present it as an audience size.
-   */
-  anonSessions: number;
-  prompts: number;
-  promptSessions: number;
-  /**
-   * Views of `/agents/<slug>`. Zero can mean "nobody looked" *or* "the agent was
-   * last used before pageview tracking began" — compare against
-   * `fetchPageViewsSince()` before drawing conclusions.
-   */
-  pageViews: number;
-  firstRunAt: string | null;
-  lastRunAt: string | null;
-};
-
-export type PageUsageRow = {
-  path: string;
-  views: number;
-  humanViews: number;
-  botViews: number;
-  /** Distinct hashed IPs among human views. */
-  visitors: number;
-  entries: number;
-  exits: number;
-  onwardRate: number;
-  bounces: number;
-};
-
-export type MissingPathRow = {
-  path: string;
-  hits: number;
-  /** Distinct hashed IPs — the difference between demand and one scraper. */
-  visitors: number;
-};
-
-export type TrafficQuality = {
-  totalViews: number;
-  pageViews: number;
-  scannerViews: number;
-  missingViews: number;
-  infraViews: number;
-  /** Views on real pages from non-bot user agents. */
-  humanPageViews: number;
-  /** Non-bot views on scanner paths — spoofed UAs inflating "human" counts. */
-  spoofedScannerViews: number;
-  botPageViews: number;
-};
 
 export type OpsPageData = {
   pages: PageUsageRow[];
@@ -394,5 +349,50 @@ export async function fetchPageUsage(range: TimelineRange): Promise<OpsPageData>
     pages: pages.sort((a, b) => b.humanViews - a.humanViews),
     missing: missing.sort((a, b) => b.visitors - a.visitors || b.hits - a.hits),
     quality,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Ops dashboard snapshot (API)
+// ---------------------------------------------------------------------------
+
+/**
+ * Full ops payload for `/api/analytics/ops`.
+ * Signals use all-time agent last-run so "dead for 90d" is not warped by the
+ * Explorer timeline filter; Explorer tables use the selected `range`.
+ */
+export async function fetchOpsDashboard(
+  range: TimelineRange
+): Promise<OpsDashboardSnapshot> {
+  const catalogSlugs = listCatalogAgentSlugs();
+  const [agents, agentsAll, pageData, themes, pageViewsSince] =
+    await Promise.all([
+      fetchAgentUsage(range),
+      fetchAgentUsage('all'),
+      fetchPageUsage(range),
+      fetchPromptThemes(range),
+      fetchPageViewsSince(),
+    ]);
+
+  const signals = buildOpsSignals({
+    catalogSlugs,
+    agents: agentsAll,
+    pages: pageData.pages,
+    missing: pageData.missing,
+    quality: pageData.quality,
+    themes,
+    pageViewsSince,
+  });
+
+  return {
+    range,
+    agents,
+    pages: pageData.pages,
+    missing: pageData.missing,
+    quality: pageData.quality,
+    themes,
+    pageViewsSince,
+    signals,
+    catalogSlugs,
   };
 }

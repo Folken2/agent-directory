@@ -138,7 +138,6 @@ export default function AnalyticsPreview() {
   const topAgents = stats.topAgents ?? [];
   const maxCountry = topCountries[0]?.count || 1;
   const maxCompany = botCompanies[0]?.count || 1;
-  const humanPct = Math.round((stats.humans / stats.total) * 100);
   const aiCompanies = allCompanies.filter((c) => c.ai).length;
   const hiddenCompanies = allCompanies.length - botCompanies.length;
 
@@ -158,21 +157,30 @@ export default function AnalyticsPreview() {
           <div className="flex flex-wrap gap-x-6 gap-y-2 text-body-medium text-md-on-surface-variant">
             <p>
               <span className="text-md-on-surface tabular-nums font-medium">
-                {humanPct}%
+                {formatCompact(stats.visits ?? stats.humans)}
               </span>{' '}
-              human
+              visits
+            </p>
+            <p>
+              <span className="text-md-on-surface tabular-nums font-medium">
+                {formatCompact(stats.peopleApprox ?? 0)}
+              </span>{' '}
+              people{' '}
+              <span className="text-md-on-surface-variant/60 text-label-small">
+                (approx.)
+              </span>
+            </p>
+            <p>
+              <span className="text-md-on-surface tabular-nums font-medium">
+                {formatCompact(stats.returning ?? 0)}
+              </span>{' '}
+              returning
             </p>
             <p>
               <span className="text-md-on-surface tabular-nums font-medium">
                 {formatCompact(stats.bots)}
               </span>{' '}
               bots
-            </p>
-            <p>
-              <span className="text-md-on-surface tabular-nums font-medium">
-                {formatCompact(stats.humans)}
-              </span>{' '}
-              people
             </p>
           </div>
         </div>
@@ -214,7 +222,7 @@ export default function AnalyticsPreview() {
         <section className="rounded-2xl border border-md-outline/40 bg-md-surface px-5 py-6 sm:px-7 sm:py-8">
           <h2 className="text-title-medium text-md-on-surface mb-1">Top countries</h2>
           <p className="text-body-small text-md-on-surface-variant mb-6">
-            Human visits · {formatCompact(stats.humans)} total
+            Human visits · {formatCompact(stats.visits ?? stats.humans)} total
           </p>
           {topCountries.length === 0 ? (
             <p className="text-body-small text-md-on-surface-variant">

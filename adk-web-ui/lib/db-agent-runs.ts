@@ -1,6 +1,7 @@
 import { db } from './drizzle/db';
 import { agentStats, agentRunEvents } from './drizzle/schema';
 import { eq, sql } from 'drizzle-orm';
+import { ensureAgentRunEventsSchema } from './analytics/ensure-schema';
 
 /**
  * Check if database is available
@@ -8,6 +9,11 @@ import { eq, sql } from 'drizzle-orm';
 function isDbAvailable(): boolean {
   return Boolean(process.env.DATABASE_URL);
 }
+
+export type TrackAgentRunIdentity = {
+  visitorId?: string | null;
+  anonSessionToken?: string | null;
+};
 
 /**
  * Track an agent run event and update agent stats
@@ -20,7 +26,8 @@ export async function trackAgentRun(
   appName: string,
   status: 'pending' | 'running' | 'completed' | 'error' = 'completed',
   errorMessage?: string,
-  rateLimitIdentifier?: string
+  rateLimitIdentifier?: string,
+  identity?: TrackAgentRunIdentity
 ) {
   // Skip tracking if database is not available
   if (!isDbAvailable()) {
@@ -31,7 +38,9 @@ export async function trackAgentRun(
   }
 
   try {
-    // Create run event
+    await ensureAgentRunEventsSchema();
+
+    // Create run event — visitor/anon stamps stay null when cookies are absent
     await db.insert(agentRunEvents).values({
       agentSlug,
       userId,
@@ -40,6 +49,8 @@ export async function trackAgentRun(
       status,
       errorMessage: errorMessage || null,
       rateLimitIdentifier: rateLimitIdentifier || null,
+      visitorId: identity?.visitorId || null,
+      anonSessionToken: identity?.anonSessionToken || null,
       completedAt: status === 'completed' || status === 'error' ? new Date() : null,
     });
 
@@ -119,4 +130,3 @@ export async function getRecentAgentRuns(
     return [];
   }
 }
-
