@@ -19,7 +19,7 @@ Real history lives in the ADK-owned tables.
 |---|---|---|---|
 | `events` (ADK) | 2,367 total / 490 `author='user'` | 2025-12-10 | Prompt text in `content->parts[].text` |
 | `sessions` (ADK) | 356 | 2025-12-10 | All `user_id='default-user'` |
-| `agent_run_events` | 937 | 2025-12-12 | Status incl. `error`; identity via `rate_limit_identifier` |
+| `agent_run_events` | 937 rows / 459 terminal runs | 2025-12-12 | One row per status change; count terminal only |
 | `page_views` | 1,803 (1,565 human) | 2026-07-16 | Bot-classified |
 | `engagement_events` | 7 | 2026-08-03 | Consent-gated; stays sparse |
 
@@ -48,6 +48,12 @@ ADK stamps every session, event and run with `user_id='default-user'`, but
 
 - 167 runs / 12 distinct authenticated user UUIDs
 - 770 runs / 393 distinct anonymous session tokens
+
+Those two identifier kinds must be reported separately, never summed. Authenticated UUIDs
+are stable, so they count people — but only 5 signed-in users have ever run the busiest
+agent. Anonymous tokens rotate per browser session, so they count sessions and track the
+run count closely (`adk_agent_builder`: 165 runs, 5 authed users, 127 anon sessions). A
+combined "actors" figure reads like an audience size and is not one.
 
 The gap is page views → chat. `ad_vid` only persists when `ad_consent=all`; otherwise
 middleware mints an ephemeral UUID per hit. Measured consequence: of ~1,298 distinct
@@ -93,14 +99,37 @@ action. No LLM in v1.
 | Signal | Rule | Example as of 2026-08-03 |
 |---|---|---|
 | Dead agents | No runs in 90d | `resume_screener` (Jan), `simple_agent_maps_grounded` (Mar), `tavily_mcp_agent` (May) |
-| High friction | Error rate over threshold, min run count | `adk_agent_builder` 12/337, `tavily_mcp_agent` 6/105 |
-| Interest without use | Agent page views > 0, runs = 0 in window | Candidate for fixing the agent, not the pitch |
-| Dead pages | Views, but no onward navigation in the journey and no run | `/` 572 views; all other pages 7–43 |
+| High friction | Error rate over threshold, min run count | `data_analyst_agent` 4/20, `tavily_mcp_agent` 6/52 |
+| Interest without use | Page views > 0 and no runs since pageview tracking began | Fix the agent, not the pitch |
+| Dead pages | Views, but no onward navigation in the journey and no run | `/` bounces 374 of 403 entries |
+| Missing pages | Repeat 404s on plausible page paths from distinct visitors | Only `/search` clears the bar today |
 | Demand themes | Stopword-filtered term frequency over user prompts | Upgrade path: LLM clustering |
-| Traffic quality | Human vs bot share; scanner paths excluded | `/.git/config`, `/admin.php` excluded from page reporting |
+| Traffic quality | Human vs bot share; scanner views called out separately | 590 non-bot views were credential scans |
 
-Scanner and probe paths are excluded from page reporting rather than silently inflating
-totals; they surface only under traffic quality.
+### Path classification
+
+Requests are classified four ways, not two, because a non-route can mean very different
+things. Measured over all 503 recorded paths:
+
+| Kind | Paths | Views | Non-bot views |
+|---|---|---|---|
+| `page` | 25 | 1,055 | 967 |
+| `scanner` | 450 | 741 | 590 |
+| `missing` | 26 | 31 | 31 |
+| `infra` | 2 | 9 | 9 |
+
+Only 25 of 503 paths are real routes. Scanners spoof browser user-agents, so **590 views
+that the old queries counted as human were credential sweeps** (`/.env`,
+`/wp-config.php.bak`, hundreds of one-off `.php` probes) — 38% of apparent human traffic.
+
+Classification allowlists real routes and tests only unrecognised paths against hostile
+patterns, so a new page can never be mistaken for an attack. A unit test compares the
+route list against `app/**/page.tsx` and fails on drift.
+
+`missing` is a candidate signal, not a finding: today's 404s are dominated by a
+contact-page scraper walking locales (`/kontakt`, `/contacto`, `/contatti`, `/impressum`,
+`/get-in-touch`), one hit each. The signal therefore requires repeat hits from distinct
+visitors, which currently leaves only `/search`.
 
 ## Explorer
 

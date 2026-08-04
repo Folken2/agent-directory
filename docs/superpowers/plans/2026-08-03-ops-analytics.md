@@ -25,23 +25,27 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 
 ---
 
-### Task 1: Ops analytics data layer + tests
+### Task 1: Ops analytics data layer + tests — DONE
 
 **Files:**
-- Create `adk-web-ui/lib/analytics/ops-queries.ts`
-- Create `adk-web-ui/lib/analytics/ops-queries.test.ts`
-- Create `adk-web-ui/lib/analytics/scanner-paths.ts` (+ test)
+- Created `adk-web-ui/lib/analytics/path-classify.ts` (+ test) — named for what it does;
+  classification is four-way, not a scanner blocklist
+- Created `adk-web-ui/lib/analytics/visit-journeys.ts` (+ test) — pure sessionization split
+  out so it is testable without a database
+- Created `adk-web-ui/lib/analytics/ops-queries.ts`
+- Created `adk-web-ui/lib/drizzle/unwrap-rows.ts` — shared `db.execute` row normalizer
 
-- [ ] `scanner-paths.ts`: classify probe/scanner paths (`/.git/*`, `/admin.php`,
-      `/.well-known/traffic-advice`, `*.php`, etc.) with an `isScannerPath` helper
-- [ ] Agent rollup: runs, terminal-status errors, distinct actors via
-      `rate_limit_identifier`, first/last run, per agent
-- [ ] Page rollup: views, distinct `hashed_ip`, bot share, scanner paths excluded
-- [ ] Journey rollup: sessionize human page views by `hashed_ip` + 30-min gap; entry page,
-      page count, onward rate
-- [ ] Prompt rollup: per-agent user-prompt counts from `events` where `author='user'`
-- [ ] Unit tests cover pure helpers (sessionization windowing, scanner classification,
-      error-rate thresholds) with fixtures — no live DB in tests
+- [x] Four-way path classification (`page` / `infra` / `scanner` / `missing`) by route
+      allowlist, with a drift test against `app/**/page.tsx`
+- [x] Agent rollup: terminal runs, errors, `authedUsers` and `anonSessions` reported
+      separately, prompts, agent page views, first/last run
+- [x] Page rollup: views, distinct `hashed_ip`, bot share, scanner paths excluded
+- [x] Journey rollup: sessionize human page views by `hashed_ip` + 30-min gap; entries,
+      exits, onward rate, bounces
+- [x] Prompt rollup: per-agent user-prompt counts from `events` where `author='user'`
+- [x] `fetchPageViewsSince()` so "views but no runs" comparisons cannot span the era
+      before pageview tracking existed
+- [x] 69 unit tests on the pure helpers; verified against production data
 
 ### Task 2: Demand themes from prompts
 
