@@ -147,8 +147,8 @@ Page journeys sequence on `hashed_ip` + 30-min window. GA4 arrives last via the 
 ### Task 10: Verify + ship
 
 - [x] `npm run test:unit`
-- [ ] `npm run lint` and `npx tsc --noEmit`
-- [ ] Sanity-check each signal against production data and confirm the examples in the
+- [x] `npm run lint` and `npx tsc --noEmit`
+- [x] Sanity-check each signal against production data and confirm the examples in the
       design doc still hold
-- [ ] Verify `/analytics/ops` 404s for a non-ops session and the API routes 404 too
-- [ ] Commit on `feature/ops-analytics`
+- [x] Verify `/analytics/ops` 404s for a non-ops session and the API routes 404 too
+- [x] Commit on `feature/ops-analytics`
