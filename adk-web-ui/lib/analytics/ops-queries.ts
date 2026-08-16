@@ -4,9 +4,12 @@
  * Sources, and why these and not `engagement_events`:
  *   - `agent_run_events` — 8 months of runs with error status. One row per
  *     status change, so runs count terminal rows only (see lib/db-agent-runs.ts).
+ *     Authenticated runs stamp `rate_limit_identifier` with `users.id`.
+ *   - `users` — Google sign-ins (NextAuth). Joined for the ops Users table.
  *   - `events` / `sessions` (ADK-owned) — user prompts, same Neon instance.
  *   - `page_views` — traffic, classified through `path-classify` because ~36% of
  *     apparently-human views are credential scanners spoofing browser UAs.
+ *     Signed-in hits stamp `user_id` with `users.id`.
  *   - `engagement_events` is deliberately unused: consent-gated and near-empty.
  *
  * Path classification and visit sessionization run in TypeScript rather than SQL
@@ -31,11 +34,13 @@ import {
   type RawPageView,
 } from './visit-journeys';
 import { timelineRangeDays, type TimelineRange } from './timeline-range';
+import { toSignedInUserRow, type SignedInUserSqlRow } from './signed-in-users';
 import type {
   AgentUsageRow,
   MissingPathRow,
   OpsDashboardSnapshot,
   PageUsageRow,
+  SignedInUserRow,
   TrafficQuality,
 } from './ops-types';
 
@@ -44,6 +49,7 @@ export type {
   MissingPathRow,
   OpsDashboardSnapshot,
   PageUsageRow,
+  SignedInUserRow,
   TrafficQuality,
 } from './ops-types';
 
@@ -197,6 +203,83 @@ export async function fetchAgentUsage(range: TimelineRange): Promise<AgentUsageR
   });
 
   return rows.sort((a, b) => b.runs - a.runs || b.pageViews - a.pageViews);
+}
+
+// ---------------------------------------------------------------------------
+// Signed-in users
+// ---------------------------------------------------------------------------
+
+/**
+ * Every Google sign-in, with runs and human page views in the selected range.
+ * The account list is not range-filtered so dormant sign-ups stay visible;
+ * usage columns (runs, views, last active) respect `range`.
+ */
+export async function fetchSignedInUsers(
+  range: TimelineRange
+): Promise<SignedInUserRow[]> {
+  if (!isAnalyticsDbAvailable()) return [];
+  const since = sinceIso(range);
+
+  const rows = unwrapExecuteRows<SignedInUserSqlRow>(
+    await db.execute(sql`
+      SELECT
+        u.id::text AS id,
+        u.email,
+        u.name,
+        u.image,
+        u.created_at,
+        coalesce(pv.page_views, 0)::int AS page_views,
+        coalesce(r.runs, 0)::int AS runs,
+        coalesce(r.errors, 0)::int AS errors,
+        coalesce(r.agents_used, 0)::int AS agents_used,
+        r.agent_slugs,
+        r.last_run_at,
+        pv.last_view_at
+      FROM users u
+      LEFT JOIN (
+        SELECT
+          rate_limit_identifier AS user_id,
+          count(*) FILTER (WHERE ${TERMINAL_RUN_FILTER})::int AS runs,
+          count(*) FILTER (WHERE status = 'error')::int AS errors,
+          count(DISTINCT agent_slug) FILTER (
+            WHERE ${TERMINAL_RUN_FILTER}
+          )::int AS agents_used,
+          string_agg(DISTINCT agent_slug, ',') FILTER (
+            WHERE ${TERMINAL_RUN_FILTER}
+          ) AS agent_slugs,
+          max(created_at) FILTER (WHERE ${TERMINAL_RUN_FILTER}) AS last_run_at
+        FROM agent_run_events
+        WHERE ${AUTHED_IDENTIFIER}
+        ${since ? sql`AND created_at >= ${since}` : sql``}
+        GROUP BY rate_limit_identifier
+      ) r ON r.user_id = u.id::text
+      LEFT JOIN (
+        SELECT
+          user_id,
+          count(*) FILTER (
+            WHERE coalesce(is_bot, false) = false
+          )::int AS page_views,
+          max(created_at) FILTER (
+            WHERE coalesce(is_bot, false) = false
+          ) AS last_view_at
+        FROM page_views
+        WHERE user_id IS NOT NULL
+        ${since ? sql`AND created_at >= ${since}` : sql``}
+        GROUP BY user_id
+      ) pv ON pv.user_id = u.id::text
+    `)
+  );
+
+  return rows
+    .map(toSignedInUserRow)
+    .sort((a, b) => {
+      if (a.lastActiveAt && b.lastActiveAt) {
+        return b.lastActiveAt.localeCompare(a.lastActiveAt);
+      }
+      if (a.lastActiveAt) return -1;
+      if (b.lastActiveAt) return 1;
+      return b.signedUpAt.localeCompare(a.signedUpAt);
+    });
 }
 
 // ---------------------------------------------------------------------------
@@ -365,10 +448,11 @@ export async function fetchOpsDashboard(
   range: TimelineRange
 ): Promise<OpsDashboardSnapshot> {
   const catalogSlugs = listCatalogAgentSlugs();
-  const [agents, agentsAll, pageData, themes, pageViewsSince] =
+  const [agents, agentsAll, users, pageData, themes, pageViewsSince] =
     await Promise.all([
       fetchAgentUsage(range),
       fetchAgentUsage('all'),
+      fetchSignedInUsers(range),
       fetchPageUsage(range),
       fetchPromptThemes(range),
       fetchPageViewsSince(),
@@ -387,6 +471,7 @@ export async function fetchOpsDashboard(
   return {
     range,
     agents,
+    users,
     pages: pageData.pages,
     missing: pageData.missing,
     quality: pageData.quality,

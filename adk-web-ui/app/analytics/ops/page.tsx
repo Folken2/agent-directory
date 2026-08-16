@@ -26,8 +26,8 @@ export default async function AnalyticsOpsPage() {
             Analytics
           </h1>
           <p className="text-body-large text-md-on-surface-variant max-w-xl">
-            Decision dashboard — Signals and Explorer for keep / kill / add.
-            Not linked publicly.
+            Decision dashboard — Signals and Explorer for keep / kill / add,
+            plus signed-in users and their usage. Not linked publicly.
           </p>
           <p className="mt-4">
             <Link

@@ -71,6 +71,7 @@ export default function AnalyticsOpsClient() {
         range={range}
         onRangeChange={setRange}
         agents={data.agents}
+        users={data.users ?? []}
         pages={data.pages}
         missing={data.missing}
         quality={data.quality}
