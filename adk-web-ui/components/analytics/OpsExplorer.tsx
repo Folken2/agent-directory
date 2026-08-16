@@ -8,6 +8,7 @@ import type {
   PageUsageRow,
   PromptTheme,
   PromptThemes,
+  SignedInUserRow,
   TrafficQuality,
 } from '@/lib/analytics/ops-types';
 import type { TimelineRange } from '@/lib/analytics/timeline-range';
@@ -15,7 +16,7 @@ import { TIMELINE_RANGE_LABELS, TIMELINE_RANGES } from '@/lib/analytics/timeline
 import { formatAgentDisplayName } from '@/lib/agent-utils';
 import OpsTable, { type OpsTableColumn } from '@/components/analytics/OpsTable';
 
-type Tab = 'agents' | 'pages' | 'prompts' | 'traffic';
+type Tab = 'agents' | 'users' | 'pages' | 'prompts' | 'traffic';
 
 type RawPrompt = { agentSlug: string; text: string };
 
@@ -23,6 +24,7 @@ type Props = {
   range: TimelineRange;
   onRangeChange: (range: TimelineRange) => void;
   agents: AgentUsageRow[];
+  users: SignedInUserRow[];
   pages: PageUsageRow[];
   missing: MissingPathRow[];
   quality: TrafficQuality;
@@ -66,12 +68,13 @@ export default function OpsExplorer({
   range,
   onRangeChange,
   agents,
+  users,
   pages,
   missing,
   quality,
   themes,
 }: Props) {
-  const [tab, setTab] = useState<Tab>('agents');
+  const [tab, setTab] = useState<Tab>('users');
   const [rawMode, setRawMode] = useState(false);
   const [rawPrompts, setRawPrompts] = useState<RawPrompt[]>([]);
   const [rawTotal, setRawTotal] = useState(0);
@@ -207,7 +210,82 @@ export default function OpsExplorer({
     []
   );
 
+  const userCols: OpsTableColumn<SignedInUserRow>[] = useMemo(
+    () => [
+      {
+        key: 'user',
+        header: 'User',
+        sortValue: (r) => r.email,
+        render: (r) => (
+          <div className="flex items-center gap-2.5 min-w-0">
+            {r.image ? (
+              // eslint-disable-next-line @next/next/no-img-element -- Google avatar URL
+              <img
+                src={r.image}
+                alt=""
+                referrerPolicy="no-referrer"
+                className="h-7 w-7 rounded-full bg-md-surface-container shrink-0"
+              />
+            ) : (
+              <span className="h-7 w-7 rounded-full bg-md-surface-container text-md-on-surface-variant flex items-center justify-center text-label-small shrink-0">
+                {(r.name || r.email).slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <div className="min-w-0">
+              <div className="truncate font-medium">{r.name || '—'}</div>
+              <div className="truncate text-label-small text-md-on-surface-variant">
+                {r.email}
+              </div>
+            </div>
+          </div>
+        ),
+      },
+      {
+        key: 'signedUp',
+        header: 'Signed up',
+        sortValue: (r) => r.signedUpAt,
+        render: (r) => (r.signedUpAt ? r.signedUpAt.slice(0, 10) : '—'),
+      },
+      {
+        key: 'views',
+        header: 'Views',
+        align: 'right',
+        sortValue: (r) => r.pageViews,
+        render: (r) => formatCount(r.pageViews),
+      },
+      {
+        key: 'runs',
+        header: 'Runs',
+        align: 'right',
+        sortValue: (r) => r.runs,
+        render: (r) =>
+          r.errors > 0
+            ? `${formatCount(r.runs)} (${r.errors} err)`
+            : formatCount(r.runs),
+      },
+      {
+        key: 'agents',
+        header: 'Agents',
+        sortValue: (r) => r.agentsUsed,
+        render: (r) => {
+          if (r.agentsUsed === 0) return '—';
+          const names = r.agentSlugs.slice(0, 2).map(formatAgentDisplayName);
+          const extra = r.agentSlugs.length > 2 ? ` +${r.agentSlugs.length - 2}` : '';
+          return `${names.join(', ')}${extra}`;
+        },
+      },
+      {
+        key: 'last',
+        header: 'Last active',
+        sortValue: (r) => r.lastActiveAt,
+        render: (r) => (r.lastActiveAt ? r.lastActiveAt.slice(0, 10) : '—'),
+      },
+    ],
+    []
+  );
+
   const tabs: { id: Tab; label: string }[] = [
+    { id: 'users', label: 'Users' },
     { id: 'agents', label: 'Agents' },
     { id: 'pages', label: 'Pages' },
     { id: 'prompts', label: 'Prompts' },
@@ -266,6 +344,24 @@ export default function OpsExplorer({
           filterPlaceholder="Filter agents…"
           filterText={(r) => `${r.agentSlug} ${formatAgentDisplayName(r.agentSlug)}`}
         />
+      )}
+
+      {tab === 'users' && (
+        <div className="space-y-3">
+          <p className="text-body-small text-md-on-surface-variant">
+            {formatCount(users.length)} signed in
+            {users.length > 0
+              ? ` · ${formatCount(users.filter((u) => u.runs > 0 || u.pageViews > 0).length)} active in this range`
+              : ''}
+          </p>
+          <OpsTable
+            rows={users}
+            columns={userCols}
+            rowKey={(r) => r.id}
+            filterPlaceholder="Filter by name or email…"
+            filterText={(r) => `${r.name} ${r.email} ${r.agentSlugs.join(' ')}`}
+          />
+        </div>
       )}
 
       {tab === 'pages' && (

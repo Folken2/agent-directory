@@ -63,9 +63,27 @@ export type PromptThemes = {
   bigrams: PromptTheme[];
 };
 
+/** Google-signed-in account plus usage in the selected ops range. */
+export type SignedInUserRow = {
+  id: string;
+  email: string;
+  name: string;
+  image: string | null;
+  signedUpAt: string;
+  pageViews: number;
+  runs: number;
+  errors: number;
+  agentsUsed: number;
+  agentSlugs: string[];
+  lastRunAt: string | null;
+  lastViewAt: string | null;
+  lastActiveAt: string | null;
+};
+
 export type OpsDashboardSnapshot = {
   range: TimelineRange;
   agents: AgentUsageRow[];
+  users: SignedInUserRow[];
   pages: PageUsageRow[];
   missing: MissingPathRow[];
   quality: TrafficQuality;
