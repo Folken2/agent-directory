@@ -1,0 +1,25 @@
+{
+  "name": "nuvel_agent_builder",
+  "displayName": "Nuvel Agent Builder",
+  "logo": "https://github.githubassets.com/favicons/favicon-dark.png",
+  "category": "Code",
+  "description": "Build custom ADK agents from natural language descriptions. Powered by Nuvel — scaffolds, iterates, and publishes production-ready agents with Composio integrations, Slack/Telegram/Teams gateways, self-rewriting personas, and more.",
+  "tools": [],
+  "tags": ["nuvel", "agent-development", "scaffolding", "adk", "meta-agent", "cli"],
+  "useCases": [
+    { "title": "Build From Scratch", "description": "Design and build ADK agents from natural language descriptions" },
+    { "title": "Tool Integration", "description": "Add Composio integrations (GitHub, Slack, Gmail, Sheets, 250+ more)" },
+    { "title": "Channel Gateways", "description": "Wire your agent to Slack, Telegram, or Teams" },
+    { "title": "Self-Writing Persona", "description": "Give your agent a SOUL.md that evolves through use" },
+    { "title": "Workflow Agents", "description": "Build ADK 2.0 Workflow graphs for complex pipelines" },
+    { "title": "Eval Suites", "description": "Add evalv2 test suites to validate agent behavior" }
+  ],
+  "samplePrompts": [
+    "Build me a customer support agent that connects to Slack and our ticket system.",
+    "Create a data analyst agent with Composio integrations for Google Sheets and BigQuery.",
+    "I need a Telegram bot that monitors GitHub issues and alerts the team.",
+    "Design a multi-agent workflow for processing sales leads through qualification, outreach, and handoff.",
+    "What's the best architecture for an agent that needs both web search and code execution?"
+  ],
+  "author": "Albert Folch"
+}
