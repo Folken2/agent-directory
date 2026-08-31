@@ -35,7 +35,7 @@ describe('isKnownRoute', () => {
   });
 
   it('accepts agent detail slugs', () => {
-    assert.equal(isKnownRoute('/agents/adk_agent_builder'), true);
+    assert.equal(isKnownRoute('/agents/nuvel_agent_builder'), true);
     assert.equal(isKnownRoute('/agents/simple_agent_web_search_EXA'), true);
   });
 

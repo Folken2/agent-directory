@@ -1,5 +1,5 @@
 """
-LLM configuration for the agent. Define your favourite provider and model here.
+LLM configuration for the agent.
 """
 
 import os
@@ -19,4 +19,3 @@ REASONING_MODEL = LiteLlm(
     model=os.getenv("REASONING_MODEL", "openrouter/google/gemini-3-pro-preview"),
     app_name="adk-samples-directory",
 )
-

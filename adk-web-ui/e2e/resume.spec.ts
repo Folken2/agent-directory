@@ -84,7 +84,7 @@ test.describe('Resume flow (authenticated)', () => {
     // Sidebar in this app is rendered with buttons, not anchors. Just assert
     // the page text doesn't surface the wrong slug as a row label. Loose
     // assertion — sharper coverage requires test-ids on the sidebar items.
-    const otherAgentSnippet = agentSlug === 'adk_agent_builder' ? 'mermaid' : 'adk_agent_builder';
+    const otherAgentSnippet = agentSlug === 'nuvel_agent_builder' ? 'mermaid' : 'nuvel_agent_builder';
     await expect(page.locator('aside, [role="complementary"]').first().getByText(new RegExp(otherAgentSnippet, 'i'))).toHaveCount(0).catch(() => {
       // Element might not exist; that's fine.
     });
