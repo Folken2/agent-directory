@@ -1,3 +1,5 @@
+
+
 # Agent Directory
 
 Welcome to the **Agent Directory** repository! This collection provides production-ready AI agents built on top of the [Agent Development Kit (ADK)](https://github.com/google/adk), designed to showcase various agent patterns, capabilities, and integrations.
@@ -132,7 +134,7 @@ For detailed API documentation, see the [ADK documentation](https://github.com/g
 
 ## Getting Help
 
-If you have any questions or if you found any problems with this repository, please report through [GitHub issues](https://github.com/albertfolch/adk-agents/issues).
+If you have any questions or if you found any problems with this repository, please report through [GitHub issues](https://github.com/Folken2/agent-directory/issues).
 
 ## Contributing
 
