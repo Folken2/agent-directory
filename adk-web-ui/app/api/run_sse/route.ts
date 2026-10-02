@@ -29,8 +29,6 @@ type RunBody = {
   app_name?: unknown;
   session_id?: unknown;
   new_message?: unknown;
-  state_delta?: unknown;
-  invocation_id?: unknown;
 };
 
 function withCookie(res: Response, resolved: ResolvedIdentity): Response {
@@ -126,8 +124,6 @@ export async function POST(request: NextRequest) {
         session_id: sessionId,
         new_message: newMessage,
         streaming: true,
-        state_delta: body.state_delta ?? undefined,
-        invocation_id: typeof body.invocation_id === 'string' ? body.invocation_id : undefined,
       }),
       signal: upstream.signal,
     });
