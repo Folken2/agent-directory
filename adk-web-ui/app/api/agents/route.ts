@@ -155,17 +155,17 @@ export async function GET(_request: NextRequest) {
         ? (error as { cause?: { code?: string } }).cause?.code
         : undefined;
 
-    let errorMessage = message || 'Unknown error';
+    // User-visible copy must never contain the raw error message (it can hold
+    // upstream URLs/hosts). Default to a fixed string; only the timeout case
+    // gets more specific (still no raw message), and we log the raw error
+    // server-side below.
+    let errorMessage = 'Agent server unreachable';
 
     if (name === 'AbortError') {
       errorMessage = `Request timeout - ADK server did not respond within ${LIST_APPS_TIMEOUT_MS / 1000}s (after ${LIST_APPS_MAX_ATTEMPTS} attempt(s))`;
-    } else if (message?.includes('fetch failed') || message?.includes('ECONNREFUSED') || causeCode === 'ECONNREFUSED') {
-      errorMessage = 'Agent server unreachable';
-    } else if (message?.includes('ENOTFOUND') || causeCode === 'ENOTFOUND') {
-      errorMessage = 'Agent server unreachable';
     }
 
-    console.error('Error fetching agents from ADK server:', errorMessage, error);
+    console.error('Error fetching agents from ADK server:', message, causeCode, error);
 
     return respondWithFallback(`ADK server unavailable: ${errorMessage}.`);
   }
