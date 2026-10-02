@@ -156,7 +156,6 @@ The application uses Next.js API routes as a proxy layer, so all requests from t
 - If the catalog is missing a new agent, run `npm run sync:agent-catalog` and redeploy
 
 ### Streaming not working
-- The application will fallback to non-streaming requests automatically
 - Verify your ADK server supports `/run_sse` endpoint
 - Check browser console for SSE connection errors
 

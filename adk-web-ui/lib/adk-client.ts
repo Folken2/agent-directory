@@ -561,9 +561,10 @@ class ADKClient {
                 }
               }
             } else if (line.trim() && !line.startsWith(':')) {
-              // Non-SSE line, might be error
+              // Non-SSE line. Never surface this raw text to the user — it
+              // may contain upstream error bodies — just log it for diagnostics.
               if (line.includes('error')) {
-                yield { type: 'error', error: line };
+                debugLog('[ADK Client] Non-SSE line containing "error":', line);
               }
             }
           }
@@ -591,7 +592,7 @@ class ADKClient {
       }
       if (error instanceof ChatApiError) throw error;
       console.error('Error streaming agent:', error);
-      yield { type: 'error', error: error.message || 'Streaming failed' };
+      yield { type: 'error', error: friendlyMessage('backend_unavailable'), code: 'backend_unavailable' };
     }
   }
 }

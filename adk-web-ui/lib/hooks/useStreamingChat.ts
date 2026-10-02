@@ -165,8 +165,8 @@ export function useStreamingChat(): UseStreamingChatResult {
 
   const send = useCallback(
     async ({ text, attachments }: { text: string; attachments: File[] }) => {
-      lastInputRef.current = { text, attachments };
       if ((!text.trim() && attachments.length === 0) || !selectedAgent || isLoading || isStreaming || isInitializing) return;
+      lastInputRef.current = { text, attachments };
 
       const userMessage: Message = {
         id: newMessageId(),
@@ -476,9 +476,8 @@ export function useStreamingChat(): UseStreamingChatResult {
             } else if (chunk.type === 'guideDocument' && chunk.guideDocument) {
               guideDocument = chunk.guideDocument;
             } else if (chunk.type === 'error') {
-              throw new ChatApiError(isApiErrorCode(chunk.code) ? chunk.code : 'internal', 0, {
-                message: chunk.error,
-              });
+              const code = isApiErrorCode(chunk.code) ? chunk.code : 'internal';
+              throw new ChatApiError(code, 0, isApiErrorCode(chunk.code) ? { message: chunk.error } : {});
             } else if (chunk.type === 'done') {
               streamDone = true;
               break;
