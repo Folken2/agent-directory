@@ -27,7 +27,6 @@ export interface ArtifactResponse {
  */
 export async function listArtifacts(
   appName: string,
-  _userId: string,
   sessionId: string
 ): Promise<string[]> {
   const response = await fetch(
@@ -56,7 +55,6 @@ export async function listArtifacts(
  */
 export async function loadArtifact(
   appName: string,
-  _userId: string,
   sessionId: string,
   artifactName: string,
   version?: number
