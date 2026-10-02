@@ -35,7 +35,7 @@ export function guardStream(
   let maxTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Only latch ended flag and clear timers; return whether this call won.
-  const finish = (outcome: StreamOutcome) => {
+  const finish = () => {
     if (ended) return false;
     ended = true;
     clearTimeout(idleTimer);
@@ -65,7 +65,7 @@ export function guardStream(
       };
 
       const stop = (outcome: 'idle_timeout' | 'max_duration') => {
-        if (!finish(outcome)) return;
+        if (!finish()) return;
         // Cleanup first, then notify.
         opts.abortUpstream();
         reader.cancel().catch(() => {});
@@ -87,7 +87,7 @@ export function guardStream(
             const { done, value } = await reader.read();
             if (ended) return;
             if (done) {
-              if (!finish('completed')) return;
+              if (!finish()) return;
               // Cleanup first, then notify.
               controller.close();
               notify('completed');
@@ -97,7 +97,7 @@ export function guardStream(
             controller.enqueue(value);
           }
         } catch (error) {
-          if (!finish('upstream_error')) return;
+          if (!finish()) return;
           // Cleanup first, then notify.
           console.error('[stream-guard] upstream stream failed', error);
           closeWithError('backend_unavailable');
@@ -106,7 +106,7 @@ export function guardStream(
       })();
     },
     cancel() {
-      if (!finish('client_cancelled')) return reader.cancel().catch(() => {});
+      if (!finish()) return reader.cancel().catch(() => {});
       // Cleanup first, then notify.
       opts.abortUpstream();
       notify('client_cancelled');
