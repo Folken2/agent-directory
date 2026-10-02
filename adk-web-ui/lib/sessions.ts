@@ -1,12 +1,12 @@
 /**
  * Server-side data layer for chat sessions.
  *
- * Why this exists: ADK writes session events with user_id='default-user'
- * regardless of who's signed in (sessions/events tables are owned by the
- * Python ADK server, which we can't change without forking). The bridge
- * between an authenticated `users.id` and ADK's `(app_name, user_id,
- * session_id)` triple is `agent_run_events.rate_limit_identifier`, populated
- * with the auth user's UUID for authenticated runs (see lib/rate-limit.ts).
+ * Why this exists: Before 2026-10 ADK sessions were written under user_id='default-user';
+ * new sessions use per-identity ids (see lib/identity.ts). Either way the stored
+ * `agent_run_events.user_id` is the ADK id to query with. The bridge between an
+ * authenticated `users.id` and ADK's `(app_name, user_id, session_id)` triple is
+ * `agent_run_events.rate_limit_identifier`, populated with the auth user's UUID for
+ * authenticated runs (see lib/rate-limit.ts).
  *
  * Every function in this module enforces ownership through that bridge — no
  * route or component should read `events` / `agent_run_events` directly.
@@ -233,6 +233,29 @@ export async function getSessionTranscriptForUser(
     }));
 
   return { sessionId: asSessionId(sessionId), agentSlug, turns };
+}
+
+/**
+ * ADK user id this identity used for `sessionId`, if it ever ran it.
+ * Lets signed-in users keep resuming pre-hardening sessions stored under
+ * 'default-user' without exposing anyone else's sessions.
+ */
+export async function findOwnedAdkUserId(
+  identityKey: string,
+  sessionId: string
+): Promise<string | null> {
+  const rows = await db
+    .select({ adkUserId: agentRunEvents.userId })
+    .from(agentRunEvents)
+    .where(
+      and(
+        eq(agentRunEvents.rateLimitIdentifier, identityKey),
+        eq(agentRunEvents.sessionId, sessionId)
+      )
+    )
+    .orderBy(desc(agentRunEvents.createdAt))
+    .limit(1);
+  return rows[0]?.adkUserId ?? null;
 }
 
 // ---------------------------------------------------------------------------
