@@ -80,7 +80,8 @@ describe('guardStream', () => {
     assert.equal(h.aborted, 1);
   });
 
-  it('reports upstream_error when the source errors', async () => {
+  it('reports upstream_error when the source errors', async (t) => {
+    t.mock.method(console, 'error', () => {});
     const h = harness();
     const source = new ReadableStream<Uint8Array>({
       start(c) { c.error(new Error('socket hang up')); },
@@ -88,5 +89,54 @@ describe('guardStream', () => {
     const out = await readAll(guardStream(source, h.opts(1_000)));
     assert.match(out, /"error_code":"backend_unavailable"/);
     assert.deepEqual(h.outcomes, ['upstream_error']);
+  });
+
+  it('onEnd throws on completed → stream still closes', async (t) => {
+    const errorLog: Array<{ msg: string; err: unknown }> = [];
+    t.mock.method(console, 'error', (msg: string, err: unknown) => {
+      errorLog.push({ msg, err });
+    });
+    const h = harness();
+    const source = new ReadableStream<Uint8Array>({
+      start(c) {
+        c.enqueue(enc.encode('data: ok\n\n'));
+        c.close();
+      },
+    });
+    const opts = h.opts(1_000);
+    const originalOnEnd = opts.onEnd;
+    opts.onEnd = (o: StreamOutcome) => {
+      originalOnEnd(o);
+      throw new Error('onEnd broke');
+    };
+    const out = await readAll(guardStream(source, opts));
+    assert.equal(out, 'data: ok\n\n');
+    assert.deepEqual(h.outcomes, ['completed']);
+    assert.equal(errorLog.length, 1);
+    assert.match(String((errorLog[0]?.err as Error)?.message), /onEnd broke/);
+  });
+
+  it('onEnd throws on idle timeout → error frame sent and abortUpstream called', async (t) => {
+    const errorLog: Array<{ msg: string; err: unknown }> = [];
+    t.mock.method(console, 'error', (msg: string, err: unknown) => {
+      errorLog.push({ msg, err });
+    });
+    const h = harness();
+    const source = new ReadableStream<Uint8Array>({
+      start(c) { c.enqueue(enc.encode('data: first\n\n')); },
+    });
+    const opts = h.opts(30);
+    const originalOnEnd = opts.onEnd;
+    opts.onEnd = (o: StreamOutcome) => {
+      originalOnEnd(o);
+      throw new Error('onEnd broke');
+    };
+    const out = await readAll(guardStream(source, opts));
+    assert.match(out, /^data: first\n\n/);
+    assert.match(out, /"error_code":"idle_timeout"/);
+    assert.deepEqual(h.outcomes, ['idle_timeout']);
+    assert.equal(h.aborted, 1);
+    assert.equal(errorLog.length, 1);
+    assert.match(String((errorLog[0]?.err as Error)?.message), /onEnd broke/);
   });
 });

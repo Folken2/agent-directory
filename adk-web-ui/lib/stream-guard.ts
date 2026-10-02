@@ -26,7 +26,7 @@ export function guardStream(
     idleMs: number;
     maxMs: number;
     abortUpstream: () => void;
-    onEnd: (outcome: StreamOutcome) => void;
+    onEnd: (outcome: StreamOutcome) => void | Promise<void>;
   }
 ): ReadableStream<Uint8Array> {
   const reader = source.getReader();
@@ -34,13 +34,23 @@ export function guardStream(
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let maxTimer: ReturnType<typeof setTimeout> | undefined;
 
+  // Only latch ended flag and clear timers; return whether this call won.
   const finish = (outcome: StreamOutcome) => {
     if (ended) return false;
     ended = true;
     clearTimeout(idleTimer);
     clearTimeout(maxTimer);
-    opts.onEnd(outcome);
     return true;
+  };
+
+  const notify = (outcome: StreamOutcome) => {
+    try {
+      Promise.resolve(opts.onEnd(outcome)).catch((e) => {
+        console.error('[stream-guard] onEnd failed', e);
+      });
+    } catch (e) {
+      console.error('[stream-guard] onEnd failed', e);
+    }
   };
 
   return new ReadableStream<Uint8Array>({
@@ -56,9 +66,11 @@ export function guardStream(
 
       const stop = (outcome: 'idle_timeout' | 'max_duration') => {
         if (!finish(outcome)) return;
+        // Cleanup first, then notify.
         opts.abortUpstream();
         reader.cancel().catch(() => {});
         closeWithError('idle_timeout');
+        notify(outcome);
       };
 
       const armIdle = () => {
@@ -75,8 +87,10 @@ export function guardStream(
             const { done, value } = await reader.read();
             if (ended) return;
             if (done) {
-              finish('completed');
+              if (!finish('completed')) return;
+              // Cleanup first, then notify.
               controller.close();
+              notify('completed');
               return;
             }
             armIdle();
@@ -84,13 +98,18 @@ export function guardStream(
           }
         } catch (error) {
           if (!finish('upstream_error')) return;
+          // Cleanup first, then notify.
           console.error('[stream-guard] upstream stream failed', error);
           closeWithError('backend_unavailable');
+          notify('upstream_error');
         }
       })();
     },
     cancel() {
-      if (finish('client_cancelled')) opts.abortUpstream();
+      if (!finish('client_cancelled')) return reader.cancel().catch(() => {});
+      // Cleanup first, then notify.
+      opts.abortUpstream();
+      notify('client_cancelled');
       return reader.cancel().catch(() => {});
     },
   });
