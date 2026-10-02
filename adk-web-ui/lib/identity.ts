@@ -51,19 +51,25 @@ export function defaultAdkUserId(identity: Identity): string {
  * ADK user id for a session. Sessions this identity already ran keep the ADK
  * id they were created under (legacy 'default-user' history keeps working);
  * anything else gets the identity's own id, so foreign session ids miss.
+ *
+ * `findOwned` reads a value legacy code once wrote from client input, so it
+ * is only trusted when it matches what this identity would actually own:
+ * either the legacy sentinel or this identity's own derived id. Anything
+ * else (e.g. a planted row aimed at another identity) is ignored.
  */
 export async function adkUserIdForSession(
   identity: Identity,
   sessionId: string,
   findOwned: (key: string, sessionId: string) => Promise<string | null>
 ): Promise<string> {
+  const derived = defaultAdkUserId(identity);
   try {
     const owned = await findOwned(identityKey(identity), sessionId);
-    if (owned) return owned;
+    if (owned === 'default-user' || owned === derived) return owned;
   } catch (error) {
     console.error('[identity] session ownership lookup failed', error);
   }
-  return defaultAdkUserId(identity);
+  return derived;
 }
 
 export function anonCookieHeader(token: string, secure: boolean): string {

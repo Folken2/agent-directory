@@ -96,4 +96,9 @@ describe('ADK user ids', () => {
     const boom = async () => { throw new Error('db'); };
     assert.equal(await adkUserIdForSession(user, 's', boom), 'u_user-1');
   });
+
+  it('ignores a legacy lookup pointing at someone else\'s ADK id', async () => {
+    const planted = async () => 'u_someone-else';
+    assert.equal(await adkUserIdForSession(user, 'session-planted', planted), 'u_user-1');
+  });
 });
