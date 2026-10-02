@@ -301,12 +301,6 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    // Return empty array instead of error for artifacts (non-critical)
-    console.error('[Artifacts API] Error fetching artifacts:', error);
-    return NextResponse.json({
-      success: true,
-      data: [],
-      warning: 'Failed to fetch artifacts',
-    });
+    return apiError('backend_unavailable', requestId, { log: error });
   }
 }
