@@ -27,7 +27,7 @@ export function useArtifactsForConversation(
       try {
         const sessionId = toSessionId(conversation.id);
         const response = await fetch(
-          `/api/artifacts?app_name=${agent.name}&user_id=default-user&session_id=${sessionId}`,
+          `/api/artifacts?app_name=${encodeURIComponent(agent.name)}&session_id=${encodeURIComponent(sessionId)}`,
         );
         if (cancelled) return;
         if (!response.ok) {

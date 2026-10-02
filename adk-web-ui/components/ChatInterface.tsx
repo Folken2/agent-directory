@@ -34,6 +34,7 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
   const {
     send,
     stop,
+    retryLast,
     rateLimitInfo,
     dismissRateLimit,
     isStreaming,
@@ -145,6 +146,18 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
           currentMessageArtifacts={currentMessageArtifacts}
           streamingSubAgentSteps={streamingSubAgentSteps}
         />
+
+        {messages.length > 0 && messages[messages.length - 1].isError && !busy && (
+          <div className="flex justify-center py-2">
+            <button
+              type="button"
+              onClick={retryLast}
+              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+            >
+              Retry
+            </button>
+          </div>
+        )}
 
         <div className="bg-background/90 backdrop-blur-lg sticky bottom-0 z-10 relative">
           <Composer

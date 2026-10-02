@@ -129,7 +129,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
 
       // Remove artifact_name from query params - it's not needed for POST
       const response = await fetch(
-        `/api/artifacts?app_name=${encodeURIComponent(selectedAgent.name)}&user_id=default-user&session_id=${encodeURIComponent(sessionId)}`,
+        `/api/artifacts?app_name=${encodeURIComponent(selectedAgent.name)}&session_id=${encodeURIComponent(sessionId)}`,
         {
           method: 'POST',
           headers: {
@@ -190,7 +190,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
       const sessionId = toSessionId(currentConversation.id);
 
       const response = await fetch(
-        `/api/artifacts?app_name=${selectedAgent.name}&user_id=default-user&session_id=${sessionId}&artifact_name=${artifact.name}`,
+        `/api/artifacts?app_name=${encodeURIComponent(selectedAgent.name)}&session_id=${encodeURIComponent(sessionId)}&artifact_name=${encodeURIComponent(artifact.name)}`,
         {
           method: 'DELETE',
         }

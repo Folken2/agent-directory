@@ -72,6 +72,7 @@ export interface Message {
   subAgentSteps?: SubAgentStep[];
   mapsCaptures?: MapsCapture[];
   guideDocument?: GuideDocument;
+  isError?: boolean;
 }
 
 export interface Artifact {
@@ -172,6 +173,6 @@ export type StreamChunk =
   | { type: 'toolResponse'; toolResponse: ToolResponse; author?: string }
   | { type: 'mapsCapture'; mapsCapture: MapsCapture; author?: string }
   | { type: 'guideDocument'; guideDocument: GuideDocument; author?: string }
-  | { type: 'error'; error: string }
+  | { type: 'error'; error: string; code?: string }
   | { type: 'done' };
 

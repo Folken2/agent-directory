@@ -68,7 +68,7 @@ cp .env.example .env.local  # Configure your environment variables
 npm run dev                  # Starts on http://localhost:3000
 ```
 
-The frontend connects to the backend via `NEXT_PUBLIC_ADK_SERVER_URL` (defaults to `http://localhost:8000`).
+The frontend connects to the backend via `ADK_SERVER_URL` (server-only, defaults to `http://localhost:8000`).
 
 ## Repository Structure
 

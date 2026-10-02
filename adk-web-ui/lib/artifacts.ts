@@ -27,11 +27,11 @@ export interface ArtifactResponse {
  */
 export async function listArtifacts(
   appName: string,
-  userId: string,
+  _userId: string,
   sessionId: string
 ): Promise<string[]> {
   const response = await fetch(
-    `/api/artifacts?app_name=${appName}&user_id=${userId}&session_id=${sessionId}`
+    `/api/artifacts?app_name=${encodeURIComponent(appName)}&session_id=${encodeURIComponent(sessionId)}`
   );
   
   if (!response.ok) {
@@ -56,12 +56,12 @@ export async function listArtifacts(
  */
 export async function loadArtifact(
   appName: string,
-  userId: string,
+  _userId: string,
   sessionId: string,
   artifactName: string,
   version?: number
 ): Promise<ArtifactResponse> {
-  let url = `/api/artifacts?app_name=${appName}&user_id=${userId}&session_id=${sessionId}&artifact_name=${artifactName}`;
+  let url = `/api/artifacts?app_name=${encodeURIComponent(appName)}&session_id=${encodeURIComponent(sessionId)}&artifact_name=${encodeURIComponent(artifactName)}`;
   if (version !== undefined) {
     url += `&version=${version}`;
   }
