@@ -17,15 +17,26 @@ export async function POST(request: NextRequest) {
   const { appName, sessionId, adkUserId } = scope;
   const artifactsBase = adkPath('apps', appName, 'users', adkUserId, 'sessions', sessionId, 'artifacts');
 
+  let body: Record<string, unknown>;
   try {
-    // Get the request body
-    const body = await request.json();
-    const { filename, artifact } = body;
+    body = (await request.json()) as Record<string, unknown>;
+  } catch (error) {
+    return apiError('invalid_input', requestId, { log: error });
+  }
 
-    if (!filename || !artifact) {
-      return apiError('invalid_input', requestId, { log: 'filename and artifact are required' });
-    }
+  let filename: string;
+  try {
+    filename = assertArtifactName(body?.filename);
+  } catch (error) {
+    return apiError('invalid_input', requestId, { log: error });
+  }
 
+  const { artifact } = body;
+  if (!artifact) {
+    return apiError('invalid_input', requestId, { log: 'artifact is required' });
+  }
+
+  try {
     // Prepare SaveArtifactRequest format matching FastAPI
     const saveRequest = {
       filename,
@@ -269,6 +280,12 @@ export async function GET(request: NextRequest) {
       // Fetch each artifact
       const artifacts: any[] = [];
       for (const name of artifactNames) {
+        try {
+          assertArtifactName(name);
+        } catch {
+          console.warn(`[Artifacts API] Skipping invalid upstream artifact name`);
+          continue;
+        }
         try {
           const artifactResponse = await adkFetch(`${artifactsBase}/${encodeURIComponent(name)}`, {
             method: 'GET',
