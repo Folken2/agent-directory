@@ -16,52 +16,66 @@ const sql = DATABASE_URL ? neon(DATABASE_URL) : null;
 
 export const isDbEnabled = () => Boolean(sql);
 
+let communitySchema: Promise<void> | null = null;
+function ensureCommunitySchema(run: () => Promise<void>): Promise<void> {
+  if (!communitySchema) {
+    communitySchema = run().catch((error) => {
+      communitySchema = null;
+      throw error;
+    });
+  }
+  return communitySchema;
+}
+
 // Get database connection for API routes
 // Note: Users table and auth tables are now managed by Drizzle ORM migrations
 // This function is kept for backward compatibility with existing code that uses it
 export async function getDb() {
   if (!sql) throw new Error('Database is not configured');
-  
+
   // Ensure community tables exist (posts, post_likes, post_comments)
-  // These are still created inline for now, but should be migrated to Drizzle in the future
-  await sql`
-    CREATE TABLE IF NOT EXISTS posts (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      title VARCHAR(500) NOT NULL,
-      content TEXT NOT NULL,
-      author_id UUID NOT NULL,
-      author VARCHAR(255) NOT NULL,
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-  `;
+  // These are still created inline for now, but should be migrated to Drizzle in the future.
+  // Memoized per process so this DDL runs once, not on every request.
+  await ensureCommunitySchema(async () => {
+    await sql`
+      CREATE TABLE IF NOT EXISTS posts (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        title VARCHAR(500) NOT NULL,
+        content TEXT NOT NULL,
+        author_id UUID NOT NULL,
+        author VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS post_likes (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-      user_id UUID NOT NULL,
-      created_at TIMESTAMP DEFAULT NOW(),
-      UNIQUE(post_id, user_id)
-    );
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS post_likes (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(post_id, user_id)
+      );
+    `;
 
-  await sql`
-    CREATE TABLE IF NOT EXISTS post_comments (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
-      user_id UUID NOT NULL,
-      author VARCHAR(255) NOT NULL,
-      content TEXT NOT NULL,
-      created_at TIMESTAMP DEFAULT NOW()
-    );
-  `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS post_comments (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        post_id UUID NOT NULL REFERENCES posts(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL,
+        author VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `;
 
-  // Create indexes
-  await sql`CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON post_likes(post_id);`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_post_likes_user_id ON post_likes(user_id);`;
-  await sql`CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON post_comments(post_id);`;
+    // Create indexes
+    await sql`CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_posts_author_id ON posts(author_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_post_likes_post_id ON post_likes(post_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_post_likes_user_id ON post_likes(user_id);`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_post_comments_post_id ON post_comments(post_id);`;
+  });
 
   return sql;
 }

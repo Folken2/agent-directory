@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isDbEnabled, getDb } from '@/lib/db';
+import { communityWritesEnabled } from '@/lib/community';
+import { newRequestId } from '@/lib/api-error';
+import { apiError } from '@/lib/api-response';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  if (!communityWritesEnabled()) {
+    return apiError('disabled', newRequestId());
+  }
+
   if (!isDbEnabled()) {
     return NextResponse.json(
       { error: 'Database not configured' },

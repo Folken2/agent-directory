@@ -8,7 +8,7 @@ import Link from 'next/link';
 
 interface AgentCardProps {
   agent: Agent;
-  onToggleStar: () => void;
+  onToggleStar?: () => void;
   isStarred: boolean;
 }
 
@@ -16,7 +16,7 @@ export default function AgentCard({ agent, onToggleStar, isStarred }: AgentCardP
   const handleStarClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    onToggleStar();
+    onToggleStar?.();
   };
 
   const categoryColors = getCategoryColors(agent.category);
@@ -53,31 +53,41 @@ export default function AgentCard({ agent, onToggleStar, isStarred }: AgentCardP
               <h3 className="text-title-medium text-md-on-surface wrap-break-word tracking-tight group-hover:text-md-primary transition-colors duration-300 line-clamp-2">
                 {agent.displayName || agent.name}
               </h3>
-              <button
-                type="button"
-                onClick={handleStarClick}
-                className={cn(
-                  "text-xs font-medium backdrop-blur-sm rounded-full px-2.5 py-1 border flex items-center gap-1.5 transition-all duration-200 hover:scale-105 shrink-0 relative z-10",
-                  isStarred
-                    ? "bg-md-tertiary-container/50 border-md-tertiary/50 text-md-on-tertiary-container"
-                    : "bg-md-surface-container-high/50 border-md-outline-variant text-md-on-surface-variant hover:border-md-tertiary/50"
-                )}
-                aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
-              >
-                <Star
+              {onToggleStar ? (
+                <button
+                  type="button"
+                  onClick={handleStarClick}
                   className={cn(
-                    "w-3 h-3 transition-all duration-300",
+                    "text-xs font-medium backdrop-blur-sm rounded-full px-2.5 py-1 border flex items-center gap-1.5 transition-all duration-200 hover:scale-105 shrink-0 relative z-10",
                     isStarred
-                      ? "text-md-tertiary fill-md-tertiary"
-                      : "text-md-tertiary fill-md-tertiary/50"
+                      ? "bg-md-tertiary-container/50 border-md-tertiary/50 text-md-on-tertiary-container"
+                      : "bg-md-surface-container-high/50 border-md-outline-variant text-md-on-surface-variant hover:border-md-tertiary/50"
                   )}
-                />
-                <span className={cn(
-                  isStarred ? "text-md-on-tertiary-container" : "text-md-on-surface"
-                )}>
-                  {agent.starsCount ?? 0}
-                </span>
-              </button>
+                  aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
+                >
+                  <Star
+                    className={cn(
+                      "w-3 h-3 transition-all duration-300",
+                      isStarred
+                        ? "text-md-tertiary fill-md-tertiary"
+                        : "text-md-tertiary fill-md-tertiary/50"
+                    )}
+                  />
+                  <span className={cn(
+                    isStarred ? "text-md-on-tertiary-container" : "text-md-on-surface"
+                  )}>
+                    {agent.starsCount ?? 0}
+                  </span>
+                </button>
+              ) : (
+                <div
+                  className="text-xs font-medium backdrop-blur-sm rounded-full px-2.5 py-1 border flex items-center gap-1.5 shrink-0 relative z-10 bg-md-surface-container-high/50 border-md-outline-variant text-md-on-surface-variant"
+                  aria-label="Stars"
+                >
+                  <Star className="w-3 h-3 text-md-tertiary fill-md-tertiary/50" />
+                  <span className="text-md-on-surface">{agent.starsCount ?? 0}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { TrendingUp, Plus, ArrowUp, MessageCircle, Heart, User, Clock, X, Send } from 'lucide-react';
 
+const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
+
 interface Post {
   id: string;
   title: string;
@@ -171,21 +173,23 @@ export default function TrendingPage() {
               </p>
             </div>
           </div>
-          {isAuthenticated ? (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-full text-label-large transition-all elevation-1 hover:elevation-2"
-            >
-              <Plus className="w-4 h-4" />
-              New Post
-            </button>
-          ) : (
-            <Link
-              href="/auth/signin"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-full text-label-large transition-all elevation-1 hover:elevation-2"
-            >
-              Sign In to Post
-            </Link>
+          {COMMUNITY_WRITES && (
+            isAuthenticated ? (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-full text-label-large transition-all elevation-1 hover:elevation-2"
+              >
+                <Plus className="w-4 h-4" />
+                New Post
+              </button>
+            ) : (
+              <Link
+                href="/auth/signin"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-full text-label-large transition-all elevation-1 hover:elevation-2"
+              >
+                Sign In to Post
+              </Link>
+            )
           )}
         </div>
 
@@ -227,16 +231,18 @@ export default function TrendingPage() {
                 >
                   <div className="flex items-start gap-4">
                     <div className="flex flex-col items-center gap-1">
-                      <button
-                        onClick={() => handleLike(post.id)}
-                        className={`p-2 rounded-lg transition-all ${isLiked
-                            ? 'bg-md-primary-container text-md-on-primary-container elevation-1'
-                            : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
-                          }`}
-                        disabled={!isAuthenticated}
-                      >
-                        <ArrowUp className="w-5 h-5" />
-                      </button>
+                      {COMMUNITY_WRITES && (
+                        <button
+                          onClick={() => handleLike(post.id)}
+                          className={`p-2 rounded-lg transition-all ${isLiked
+                              ? 'bg-md-primary-container text-md-on-primary-container elevation-1'
+                              : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
+                            }`}
+                          disabled={!isAuthenticated}
+                        >
+                          <ArrowUp className="w-5 h-5" />
+                        </button>
+                      )}
                       <span className="text-label-medium text-md-on-surface">
                         {post.likes}
                       </span>
@@ -477,27 +483,29 @@ function CommentsSection({
         </div>
       )}
 
-      {isAuthenticated ? (
-        <form onSubmit={handleSubmit} className="flex gap-2 mt-3">
-          <input
-            type="text"
-            value={newComment}
-            onChange={(e) => setNewComment(e.target.value)}
-            placeholder="Write a comment..."
-            className="flex-1 px-3 py-2 rounded-lg bg-md-surface-container text-body-small text-md-on-surface border border-md-outline placeholder:text-md-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-md-primary transition-all"
-          />
-          <button
-            type="submit"
-            disabled={isSubmitting || !newComment.trim()}
-            className="px-3 py-2 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </form>
-      ) : (
-        <p className="text-body-small text-md-on-surface-variant mt-3">
-          <a href="/auth/signin" className="text-md-primary hover:underline">Sign in</a> to comment.
-        </p>
+      {COMMUNITY_WRITES && (
+        isAuthenticated ? (
+          <form onSubmit={handleSubmit} className="flex gap-2 mt-3">
+            <input
+              type="text"
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Write a comment..."
+              className="flex-1 px-3 py-2 rounded-lg bg-md-surface-container text-body-small text-md-on-surface border border-md-outline placeholder:text-md-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-md-primary transition-all"
+            />
+            <button
+              type="submit"
+              disabled={isSubmitting || !newComment.trim()}
+              className="px-3 py-2 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </form>
+        ) : (
+          <p className="text-body-small text-md-on-surface-variant mt-3">
+            <a href="/auth/signin" className="text-md-primary hover:underline">Sign in</a> to comment.
+          </p>
+        )
       )}
     </div>
   );

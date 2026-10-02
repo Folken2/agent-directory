@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isDbEnabled, getDb } from '@/lib/db';
+import { communityWritesEnabled } from '@/lib/community';
+import { newRequestId } from '@/lib/api-error';
+import { apiError } from '@/lib/api-response';
 
 export async function GET() {
   if (!isDbEnabled()) {
@@ -48,6 +51,10 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  if (!communityWritesEnabled()) {
+    return apiError('disabled', newRequestId());
+  }
+
   if (!isDbEnabled()) {
     return NextResponse.json(
       { error: 'Database not configured' },

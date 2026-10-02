@@ -16,12 +16,17 @@ const realAuth = nextAuth.auth;
  * This lets Playwright drive authenticated flows deterministically against a
  * known DB user. The variable should NEVER be set in production; the bypass
  * is gated only by env, so make sure your deployment env doesn't carry it.
+ * Ignored when NODE_ENV=production.
  *
  * The synthetic session deliberately omits `image` and uses a placeholder
  * email so it's obvious in any logged output that this is a test session.
  */
 export const auth = (async (...args: any[]) => {
   if (process.env.E2E_TEST_USER_ID) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('[auth] E2E_TEST_USER_ID is set in production; ignoring test bypass');
+      return (realAuth as any)(...args);
+    }
     return {
       user: {
         id: process.env.E2E_TEST_USER_ID,

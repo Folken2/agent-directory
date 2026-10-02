@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isDbEnabled, starAgent, unstarAgent } from '@/lib/db';
+import { communityWritesEnabled } from '@/lib/community';
+import { newRequestId } from '@/lib/api-error';
+import { apiError } from '@/lib/api-response';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ agent: string }> }
 ) {
+  if (!communityWritesEnabled()) {
+    return apiError('disabled', newRequestId());
+  }
+
   const { agent: agentSlug } = await params;
 
   if (!agentSlug) {
@@ -47,11 +54,7 @@ export async function POST(
       data: { starsCount },
     });
   } catch (error: any) {
-    console.error('Error updating star:', error);
-    return NextResponse.json(
-      { success: false, error: error.message || 'Failed to update star' },
-      { status: 500 }
-    );
+    return apiError('internal', newRequestId(), { log: error });
   }
 }
 
