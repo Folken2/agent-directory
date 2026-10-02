@@ -25,6 +25,7 @@ export const auth = (async (...args: any[]) => {
   if (process.env.E2E_TEST_USER_ID) {
     if (process.env.NODE_ENV === 'production') {
       console.error('[auth] E2E_TEST_USER_ID is set in production; ignoring test bypass');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (realAuth as any)(...args);
     }
     return {
