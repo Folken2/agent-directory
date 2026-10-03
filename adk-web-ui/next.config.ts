@@ -50,7 +50,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/api/agents': ['../agents/**/metadata.json'],
     '/agents/[name]': ['../agents/**/metadata.json'],
-    '/agents/[name]/opengraph-image': ['../agents/**/metadata.json'],
+    '/agents/[name]/opengraph-image': ['../agents/**/metadata.json', './public/adk_logo.png'],
     ...(process.env.VERCEL ? {} : { '/api/analytics/pageview': [GEOIP_DATA] }),
   },
   ...(process.env.VERCEL

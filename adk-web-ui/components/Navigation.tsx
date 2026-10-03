@@ -82,7 +82,7 @@ export default function Navigation() {
         className="mx-auto flex h-14 max-w-7xl items-center justify-between rounded-full bg-md-surface-container px-2 pl-4"
       >
         <Link href="/" aria-label="Agent Directory home" className="flex items-center gap-2 rounded-full pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary">
-          <Image src="/logo.svg" alt="" width={28} height={28} className="h-7 w-7" priority unoptimized />
+          <Image src="/adk_logo.png" alt="" width={28} height={28} className="h-7 w-7" priority />
           <span className="hidden text-base font-medium text-md-on-surface sm:inline">
             Agent <span className="text-md-primary">Directory</span>
           </span>

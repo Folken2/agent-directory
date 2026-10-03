@@ -68,7 +68,7 @@ describe('agent-catalog cold-start fallbacks', () => {
     assert.equal(getCatalogAgent('../agents'), null);
   });
 
-  it('does not use third-party brand logos for the builder', () => {
+  it('serves the builder logo from the site assets', () => {
     const builder = getCatalogAgent('adk_agent_builder');
     assert.ok(builder?.logo?.startsWith('/'), `expected a local logo, got ${builder?.logo}`);
     const snap = loadCatalogFromSnapshot().find((a) => a.name === 'adk_agent_builder');
