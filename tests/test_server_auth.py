@@ -97,3 +97,34 @@ def test_resolve_internal_token_allows_explicit_opt_in():
 
 def test_resolve_internal_token_ignores_opt_in_when_token_set():
     assert resolve_internal_token({"ADK_INTERNAL_TOKEN": "abc", "ADK_ALLOW_UNAUTHENTICATED": "1"}) == "abc"
+
+
+def make_health_client(token):
+    app = FastAPI()
+
+    @app.api_route("/health", methods=["GET", "HEAD", "POST"])
+    def health():
+        return {"status": "ok"}
+
+    @app.get("/health/details")
+    def health_details():
+        return {"secret": True}
+
+    app.add_middleware(InternalTokenMiddleware, token=token)
+    return TestClient(app)
+
+
+def test_health_get_is_exempt_from_token():
+    assert make_health_client("s3cret").get("/health").status_code == 200
+
+
+def test_health_head_is_exempt_from_token():
+    assert make_health_client("s3cret").head("/health").status_code == 200
+
+
+def test_health_post_still_requires_token():
+    assert make_health_client("s3cret").post("/health").status_code == 401
+
+
+def test_health_subpath_still_requires_token():
+    assert make_health_client("s3cret").get("/health/details").status_code == 401

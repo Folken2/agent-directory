@@ -5,6 +5,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Liveness probe the host's health check calls without the shared secret.
+HEALTH_PATH = "/health"
+HEALTH_METHODS = ("GET", "HEAD")
+
+
+def _is_health_probe(scope) -> bool:
+    return (
+        scope["type"] == "http"
+        and scope.get("path") == HEALTH_PATH
+        and scope.get("method") in HEALTH_METHODS
+    )
+
 
 def resolve_internal_token(env) -> str | None:
     """Return the configured internal token, enforcing it unless explicitly opted out.
@@ -30,7 +42,11 @@ class InternalTokenMiddleware:
             logger.warning("ADK_INTERNAL_TOKEN not set: ADK server accepts unauthenticated requests")
 
     async def __call__(self, scope, receive, send):
-        if self.token_bytes and scope["type"] in ("http", "websocket"):
+        if (
+            self.token_bytes
+            and scope["type"] in ("http", "websocket")
+            and not _is_health_probe(scope)
+        ):
             headers = dict(scope.get("headers") or [])
             supplied = headers.get(b"x-internal-token", b"")
             if not hmac.compare_digest(supplied, self.token_bytes):
