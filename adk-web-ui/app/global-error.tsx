@@ -9,7 +9,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <h1>Something went wrong</h1>
           <p>Please reload the page.</p>
           <button type="button" onClick={reset} style={{ padding: '8px 16px' }}>
-            Reload
+            Try again
           </button>
         </div>
       </body>

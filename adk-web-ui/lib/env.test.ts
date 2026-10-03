@@ -28,6 +28,12 @@ describe('missingEnv', () => {
       'AUTH_SECRET (or NEXTAUTH_SECRET)',
     ]);
   });
+  it('in development, only DATABASE_URL and the auth secret are required', () => {
+    assert.deepEqual(missingEnv({ NODE_ENV: 'development' } as NodeJS.ProcessEnv), [
+      'DATABASE_URL',
+      'AUTH_SECRET (or NEXTAUTH_SECRET)',
+    ]);
+  });
 });
 
 describe('envWarnings', () => {

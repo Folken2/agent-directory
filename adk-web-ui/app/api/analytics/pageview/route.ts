@@ -35,7 +35,7 @@ type Body = {
 
 export async function POST(request: NextRequest) {
   try {
-    // Check per-IP daily rate limit before parsing request.
+    // Analytics never blocks the user: over-limit or DB trouble just skips recording.
     const clientIp = extractClientIp(request.headers);
     const ipHash = hashIp(clientIp);
     if (ipHash) {
