@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adkFetch } from '@/lib/adk-config';
 import { isScopeError, resolveAdkScope } from '@/lib/adk-scope';
 import { adkPath, assertArtifactName } from '@/lib/adk-url';
+import { toStandardBase64 } from '@/lib/artifact-base64';
 import { newRequestId } from '@/lib/api-error';
 import { apiError } from '@/lib/api-response';
 import { rejectCrossOrigin } from '@/lib/origin-guard';
@@ -183,8 +184,8 @@ function processArtifactData(name: string, inlineData: { data: string | any; mim
     return null;
   }
 
-  // Remove whitespace from base64 data
-  base64Data = base64Data.replace(/\s/g, '');
+  // ADK sends URL-safe base64; data: URLs need the standard alphabet.
+  base64Data = toStandardBase64(base64Data);
 
   // Validate base64 format (basic check)
   if (base64Data && !/^[A-Za-z0-9+/]*={0,2}$/.test(base64Data)) {

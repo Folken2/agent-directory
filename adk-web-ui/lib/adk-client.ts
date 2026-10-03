@@ -203,6 +203,11 @@ class ADKClient {
   private extractFunctionCalls(eventData: any): ToolCall[] {
     const functionCalls: ToolCall[] = [];
 
+    // google-adk 2.x streams a call's arguments in partial events
+    // (willContinue / partialArgs, no args) before the final event that
+    // carries the complete call. Only the final one is a tool call.
+    if (eventData?.partial === true) return functionCalls;
+
     // Check content.parts first (ADK structure)
     if (eventData.content && typeof eventData.content === 'object' && eventData.content.parts && Array.isArray(eventData.content.parts)) {
       for (const part of eventData.content.parts) {
