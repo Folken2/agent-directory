@@ -32,7 +32,9 @@ def main() -> None:
         raise RuntimeError("SESSION_SERVICE_URI is required (set it in .env or env vars).")
 
     session_uri = _normalize_to_asyncpg_uri(session_uri)
-    connect_args = {"ssl": "require"}
+    # Neon requires TLS. The local dev database (docker-compose.dev.yml) has
+    # none, so it runs with DB_SSL=disable.
+    connect_args = {"ssl": os.getenv("DB_SSL", "require")}
 
     app = get_fast_api_app(
         agents_dir=agents_dir,

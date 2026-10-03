@@ -43,6 +43,29 @@ This runs Next.js dev server on `http://localhost:3000`. The application uses Ne
 
 **Important:** Make sure your ADK server is running at the URL specified in `ADK_SERVER_URL` (default: `http://localhost:8000`).
 
+### Local database (Docker)
+
+You can develop and test against a local Postgres instead of Neon. `docker-compose.dev.yml` at the repo root runs Postgres plus a small proxy that speaks Neon's SQL-over-HTTP protocol, so the app's `@neondatabase/serverless` driver works unchanged.
+
+```bash
+npm run db:dev:up      # start Postgres (host port 5433) + the HTTP proxy (4444)
+npm run db:dev:reset   # wipe and recreate the schema from lib/drizzle/schema
+npm run db:dev:down    # stop the containers (data is kept in a Docker volume)
+```
+
+Point both servers at it:
+
+```bash
+# adk-web-ui/.env.local
+DATABASE_URL=postgres://postgres:postgres@db.localtest.me:5433/main
+
+# repo-root .env (ADK server)
+SESSION_SERVICE_URI=postgresql://postgres:postgres@db.localtest.me:5433/main
+DB_SSL=disable
+```
+
+`db.localtest.me` resolves to `127.0.0.1`; the app routes that host to the local proxy (see `lib/drizzle/neon-local.ts`). Tables the app creates at runtime (community posts, analytics extras) and the ADK session tables are created on first use. `scripts/dev-db.sh psql` opens a shell.
+
 ## Available Agents
 
 The application supports all agents available from the ADK server via the `/list-apps` endpoint. The UI will automatically discover and list available agents.
