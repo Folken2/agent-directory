@@ -79,6 +79,8 @@ const nextConfig: NextConfig = {
       { source: '/learn', destination: '/', permanent: true },
       { source: '/contribute', destination: '/about', permanent: true },
       { source: '/contribute/:path*', destination: '/about', permanent: true },
+      { source: '/settings/keys', destination: '/settings', permanent: false },
+      { source: '/settings/connections', destination: '/settings', permanent: false },
     ];
   },
   async headers() {

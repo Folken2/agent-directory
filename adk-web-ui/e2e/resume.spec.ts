@@ -41,7 +41,7 @@ test.describe('Resume flow (authenticated)', () => {
 
   test('lists past sessions for the user', async ({ page }) => {
     await page.goto('/me/sessions');
-    await expect(page.getByRole('heading', { name: /your sessions/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /chat history/i })).toBeVisible();
     // Each row links to /chat?agent=...&session=...
     const firstSessionLink = page.locator('a[href^="/chat?agent="][href*="session="]').first();
     await expect(firstSessionLink).toBeVisible({ timeout: 10_000 });

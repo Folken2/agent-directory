@@ -1,5 +1,3 @@
-import SettingsNav from '@/components/settings/SettingsNav';
-
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
@@ -7,10 +5,5 @@ export const metadata = {
 };
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <SettingsNav />
-      {children}
-    </div>
-  );
+  return <div className="mx-auto max-w-2xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14">{children}</div>;
 }
