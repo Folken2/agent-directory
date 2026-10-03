@@ -14,10 +14,10 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir uv
 
 # Copy dependency files for better layer caching
-COPY agents/pyproject.toml agents/uv.lock* ./
+COPY agents/pyproject.toml agents/uv.lock ./
 
-# Install dependencies - if uv.lock exists use it, otherwise create it
-RUN uv sync --frozen || uv sync
+# Install the exact versions recorded in agents/uv.lock (fails if it is out of date)
+RUN uv sync --frozen --no-dev
 
 # Copy the rest of the application
 COPY . .
