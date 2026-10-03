@@ -15,6 +15,28 @@ describe('extractClientIp', () => {
     assert.equal(extractClientIp(h({ 'x-forwarded-for': '6.6.6.6, 3.3.3.3' }), 'x-forwarded-for:last'), '3.3.3.3');
   });
   it('returns null when the trusted header is absent', () => {
-    assert.equal(extractClientIp(h({ 'x-forwarded-for': '6.6.6.6' }), 'x-real-ip'), null);
+    const original = console.warn;
+    console.warn = () => {};
+    try {
+      assert.equal(extractClientIp(h({ 'x-forwarded-for': '6.6.6.6' }), 'x-real-ip'), null);
+    } finally {
+      console.warn = original;
+    }
+  });
+  it('tolerates spaces around the name and position', () => {
+    assert.equal(extractClientIp(h({ 'x-forwarded-for': '6.6.6.6, 3.3.3.3' }), ' X-Forwarded-For : last '), '3.3.3.3');
+  });
+  it('warns once when the trusted header is missing', () => {
+    const warnings: unknown[] = [];
+    const original = console.warn;
+    console.warn = (...args: unknown[]) => { warnings.push(args.join(' ')); };
+    try {
+      extractClientIp(h({}), 'x-missing-ip');
+      extractClientIp(h({}), 'x-missing-ip');
+    } finally {
+      console.warn = original;
+    }
+    assert.equal(warnings.length, 1);
+    assert.match(String(warnings[0]), /TRUSTED_IP_HEADER x-missing-ip not present/);
   });
 });
