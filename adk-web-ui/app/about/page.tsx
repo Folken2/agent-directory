@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { ArrowRight, Github, Code, Zap, Users, BookOpen } from 'lucide-react';
 
 export default function AboutPage() {
@@ -132,13 +131,15 @@ export default function AboutPage() {
             We welcome contributions! Whether you want to add a new agent, improve existing ones,
             or enhance the platform, your contributions are valuable.
           </p>
-          <Link
-            href="/contribute"
+          <a
+            href="https://github.com/Folken2/agent-directory"
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-full text-label-large transition-all elevation-1 hover:elevation-2"
           >
-            Learn How to Contribute
+            Contribute on GitHub
             <ArrowRight className="w-4 h-4" />
-          </Link>
+          </a>
         </div>
 
         {/* Contact */}

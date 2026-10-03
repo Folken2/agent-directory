@@ -37,15 +37,11 @@ export const KNOWN_STATIC_ROUTES: readonly string[] = [
   '/analytics/ops',
   '/auth/signin',
   '/chat',
-  '/contribute',
-  '/contribute/submit',
-  '/learn',
   '/me/sessions',
   '/privacy',
   '/settings',
   '/settings/connections',
   '/settings/keys',
-  '/trending',
 ] as const;
 
 /** Dynamic route patterns, anchored. Only `/agents/[name]` today. */

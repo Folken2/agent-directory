@@ -68,6 +68,14 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'yt3.googleusercontent.com', pathname: '/**' },
     ],
   },
+  async redirects() {
+    return [
+      { source: '/trending', destination: '/', permanent: true },
+      { source: '/learn', destination: '/', permanent: true },
+      { source: '/contribute', destination: '/about', permanent: true },
+      { source: '/contribute/:path*', destination: '/about', permanent: true },
+    ];
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },
