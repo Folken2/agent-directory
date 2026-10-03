@@ -2,17 +2,16 @@
 import axios, { AxiosInstance } from 'axios';
 import {
   Agent,
-  AgentRun,
   AgentsListResult,
   AgentsListSource,
-  Artifact,
   StreamChunk,
   ToolCall,
   ToolResponse,
 } from './types';
 import { parseGuideDocument } from './guide/parse';
+import { ChatApiError, errorFromResponse, friendlyMessage } from './api-error';
 
-const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
+const API_BASE_URL = '';
 
 /** Must exceed Next.js /api/agents cold-start wait (see ADK_LIST_APPS_* env on server). */
 const LIST_AGENTS_CLIENT_TIMEOUT_MS = Math.max(
@@ -20,45 +19,8 @@ const LIST_AGENTS_CLIENT_TIMEOUT_MS = Math.max(
   parseInt(process.env.NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS || '180000', 10)
 );
 
-// Use Next.js API routes as proxy when running in browser
-const USE_API_PROXY = typeof window !== 'undefined';
-const API_BASE_URL = USE_API_PROXY ? '' : ADK_SERVER_URL;
-
-// RunAgentRequest format matching adk_web_server.py
-interface RunAgentRequest {
-  app_name: string;
-  user_id: string;
-  session_id: string;
-  new_message: string | { parts: Array<{ text?: string; inline_data?: any }> };
-  streaming?: boolean;
-  state_delta?: Record<string, any>;
-  invocation_id?: string;
-}
-
-// Session structure
-interface Session {
-  id: string;
-  app_name: string;
-  user_id: string;
-  state?: Record<string, any>;
-  events?: any[];
-}
-
-// Event structure from ADK
-interface Event {
-  id?: string;
-  author?: string;
-  content?: string | { parts: any[]; role: string };
-  parts?: any[];
-  actions?: any;
-  modelVersion?: string;
-  partial?: boolean;
-  finishReason?: string;
-  usageMetadata?: any;
-  invocationId?: string;
-  longRunningToolIds?: any[];
-  timestamp?: number;
-}
+const DEBUG_STREAM = process.env.NEXT_PUBLIC_DEBUG_STREAM === 'true';
+const debugLog = (...args: unknown[]) => { if (DEBUG_STREAM) console.log(...args); };
 
 // Normalize base64 strings so we can safely display artifacts across different payload shapes
 function sanitizeBase64String(value: string): string {
@@ -151,8 +113,6 @@ function extractInlineDataFromPart(part: any): { data: string; mimeType: string;
 
 class ADKClient {
   private client: AxiosInstance;
-  private defaultUserId: string = 'default-user';
-  private defaultSessionId: string = '';
 
   constructor(baseURL: string = API_BASE_URL) {
     this.client = axios.create({
@@ -178,17 +138,16 @@ class ADKClient {
 
   async listAgentsDetailed(): Promise<AgentsListResult> {
     try {
-      const endpoint = USE_API_PROXY ? '/api/agents' : '/list-apps';
+      const endpoint = '/api/agents';
       const response = await this.client.get(endpoint, {
         timeout: LIST_AGENTS_CLIENT_TIMEOUT_MS,
       });
 
       const payload = response.data;
-      const data = USE_API_PROXY && payload?.data ? payload.data : payload;
-      const source = normalizeAgentsSource(USE_API_PROXY ? payload?.source : 'live');
-      const warning =
-        USE_API_PROXY && typeof payload?.warning === 'string' ? payload.warning : undefined;
-      const stale = USE_API_PROXY ? Boolean(payload?.stale) : false;
+      const data = payload?.data ? payload.data : payload;
+      const source = normalizeAgentsSource(payload?.source);
+      const warning = typeof payload?.warning === 'string' ? payload.warning : undefined;
+      const stale = Boolean(payload?.stale);
 
       if (data && Array.isArray(data)) {
         const agents = data.map((item: string | Agent) => {
@@ -238,307 +197,6 @@ class ADKClient {
   }
 
   /**
-   * Create or get a session
-   * Endpoint: POST /apps/{app_name}/users/{user_id}/sessions
-   */
-  async createOrGetSession(
-    appName: string,
-    userId: string = this.defaultUserId,
-    sessionId?: string
-  ): Promise<Session> {
-    try {
-      // Generate session ID if not provided
-      const actualSessionId = sessionId || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-      if (USE_API_PROXY) {
-        // When using proxy, always create session via API route
-        try {
-          // Try to get existing session first
-          if (sessionId) {
-            try {
-              const getResponse = await this.client.get(
-                `/api/sessions?app_name=${appName}&user_id=${userId}&session_id=${sessionId}`
-              );
-              if (getResponse.data?.success && getResponse.data?.data) {
-                return getResponse.data.data;
-              }
-            } catch (e: any) {
-              // If session doesn't exist, continue to create it
-              if (e.response?.status !== 404) {
-                console.warn('Error checking for existing session:', e);
-              }
-            }
-          }
-
-          // Create new session via API proxy
-          const createResponse = await this.client.post('/api/sessions', {
-            app_name: appName,
-            user_id: userId,
-            session_id: actualSessionId,
-          });
-
-          if (createResponse.data?.success && createResponse.data?.data) {
-            return createResponse.data.data;
-          }
-
-          // Fallback if API doesn't return expected format
-          return {
-            id: actualSessionId,
-            app_name: appName,
-            user_id: userId,
-            state: {},
-            events: [],
-          };
-        } catch (error: any) {
-          console.error('Error creating session via proxy:', error);
-          // Return session object anyway - the /run endpoint will handle the error
-          return {
-            id: actualSessionId,
-            app_name: appName,
-            user_id: userId,
-            state: {},
-            events: [],
-          };
-        }
-      } else {
-        // Direct connection to ADK server
-        if (sessionId) {
-          // Try to get existing session
-          try {
-            const response = await this.client.get(
-              `/apps/${appName}/users/${userId}/sessions/${sessionId}`
-            );
-            if (response.data) {
-              return response.data;
-            }
-          } catch (e: any) {
-            if (e.response?.status !== 404) {
-              throw e;
-            }
-          }
-        }
-
-        // Create new session
-        const response = await this.client.post(
-          `/apps/${appName}/users/${userId}/sessions`,
-          { session_id: actualSessionId }
-        );
-        return response.data;
-      }
-    } catch (error: any) {
-      console.error('Error creating/getting session:', error);
-      // Return a default session object
-      return {
-        id: sessionId || `session-${Date.now()}`,
-        app_name: appName,
-        user_id: userId,
-        state: {},
-        events: [],
-      };
-    }
-  }
-
-  /**
-   * Run an agent with a message (non-streaming)
-   * Endpoint: POST /run
-   */
-  async runAgent(
-    agentName: string,
-    message: string | { parts: Array<{ text?: string; inline_data?: any }> },
-    userId: string = this.defaultUserId,
-    sessionId?: string
-  ): Promise<AgentRun> {
-    try {
-      // Ensure we have a session
-      const session = await this.createOrGetSession(agentName, userId, sessionId);
-      const actualSessionId = session.id;
-
-      // Prepare RunAgentRequest
-      // Convert message to Content format (Google GenAI Content type)
-      const contentMessage = typeof message === 'string'
-        ? { parts: [{ text: message }] }
-        : message;
-
-      const request: RunAgentRequest = {
-        app_name: agentName,
-        user_id: userId,
-        session_id: actualSessionId,
-        new_message: contentMessage,
-        streaming: false,
-      };
-
-      // Use Next.js API route as proxy when in browser
-      if (USE_API_PROXY) {
-        // Use simplified request format for proxy
-        // Convert message to Content format
-        const contentMessage = typeof message === 'string'
-          ? { parts: [{ text: message }] }
-          : message;
-
-        const proxyRequest = {
-          app_name: agentName,
-          user_id: userId,
-          session_id: actualSessionId,
-          new_message: contentMessage,
-          streaming: false,
-        };
-        const response = await this.client.post('/api/run', proxyRequest);
-
-        if (response.data?.success && response.data?.data) {
-          const result = response.data.data;
-          return {
-            id: result.id || `run-${Date.now()}`,
-            agentName: result.agentName || agentName,
-            message: result.message || message,
-            response: result.response || '',
-            artifacts: result.artifacts || [],
-            status: result.status || 'completed',
-          };
-        }
-        
-        // Check for rate limit error
-        if (response.status === 429 || response.data?.rateLimit) {
-          const error = new Error(response.data?.error || 'Rate limit exceeded') as any;
-          error.status = 429;
-          error.rateLimit = response.data?.rateLimit;
-          throw error;
-        }
-        
-        throw new Error(response.data?.error || 'Failed to run agent');
-      }
-
-      const response = await this.client.post('/run', request);
-
-      if (response.data && (Array.isArray(response.data) || typeof response.data === 'object')) {
-        // Response is list[Event] or single Event object
-        const events: Event[] = Array.isArray(response.data) ? response.data : [response.data];
-
-        // Extract text content from events
-        let responseText = '';
-        const artifacts: Artifact[] = [];
-
-        for (const event of events) {
-          // Check for content.parts first (ADK server structure)
-          if (event.content && typeof event.content === 'object' && event.content.parts && Array.isArray(event.content.parts)) {
-            for (const part of event.content.parts) {
-              if (part.text) {
-                // Ensure text is a string
-                const text = typeof part.text === 'string' ? part.text : JSON.stringify(part.text);
-                responseText += text + '\n';
-              } else {
-                const inlineData = extractInlineDataFromPart(part);
-                if (inlineData && inlineData.data) {
-                  const mimeType = inlineData.mimeType;
-                  let type: 'image' | 'pdf' | 'document' | 'spreadsheet' | 'text' | 'file' = 'file';
-                  if (mimeType.startsWith('image/')) {
-                    type = 'image';
-                  } else if (mimeType.includes('pdf')) {
-                    type = 'pdf';
-                  } else if (mimeType.includes('document') || mimeType.includes('word')) {
-                    type = 'document';
-                  } else if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
-                    type = 'spreadsheet';
-                  } else if (mimeType.includes('text')) {
-                    type = 'text';
-                  }
-
-                  artifacts.push({
-                    id: `artifact-${Date.now()}`,
-                    name: inlineData.filename || 'artifact',
-                    type,
-                    url: `data:${mimeType};base64,${inlineData.data}`,
-                    runId: actualSessionId,
-                  });
-                }
-              }
-            }
-          } else if (event.parts && Array.isArray(event.parts)) {
-            // Fallback for direct parts field
-            for (const part of event.parts) {
-              if (part.text) {
-                // Ensure text is a string
-                const text = typeof part.text === 'string' ? part.text : JSON.stringify(part.text);
-                responseText += text + '\n';
-              } else {
-                const inlineData = extractInlineDataFromPart(part);
-                if (inlineData && inlineData.data) {
-                  const mimeType = inlineData.mimeType;
-                  let type: 'image' | 'pdf' | 'document' | 'spreadsheet' | 'text' | 'file' = 'file';
-                  if (mimeType.startsWith('image/')) {
-                    type = 'image';
-                  } else if (mimeType.includes('pdf')) {
-                    type = 'pdf';
-                  } else if (mimeType.includes('document') || mimeType.includes('word')) {
-                    type = 'document';
-                  } else if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) {
-                    type = 'spreadsheet';
-                  } else if (mimeType.includes('text')) {
-                    type = 'text';
-                  }
-
-                  artifacts.push({
-                    id: `artifact-${Date.now()}`,
-                    name: inlineData.filename || 'artifact',
-                    type,
-                    url: `data:${mimeType};base64,${inlineData.data}`,
-                    runId: actualSessionId,
-                  });
-                }
-              }
-            }
-          } else if (event.content) {
-            // Fallback for content field
-            const content = typeof event.content === 'string' ? event.content : JSON.stringify(event.content);
-            responseText += content + '\n';
-          }
-        }
-
-        // Convert message to string for AgentRun interface
-        const messageString = typeof message === 'string'
-          ? message
-          : message.parts?.map(part => part.text || '').join('') || '';
-
-        return {
-          id: `run-${Date.now()}`,
-          agentName,
-          message: messageString,
-          response: responseText.trim(),
-          artifacts,
-          status: 'completed',
-        };
-      }
-
-      throw new Error('Unexpected response format');
-    } catch (error: any) {
-      console.error('Error running agent:', error);
-      
-      // Re-throw rate limit errors so they can be handled specially
-      // Check both direct status and axios response status
-      if (error?.status === 429 || error?.response?.status === 429) {
-        // Attach rate limit info to error if available
-        if (error?.response?.data?.rateLimit) {
-          error.rateLimit = error.response.data.rateLimit;
-        }
-        throw error;
-      }
-      
-      // Convert message to string for AgentRun interface
-      const messageString = typeof message === 'string'
-        ? message
-        : message.parts?.map(part => part.text || '').join('') || '';
-
-      return {
-        id: `run-${Date.now()}`,
-        agentName,
-        message: messageString,
-        status: 'error',
-        error: error.message || 'Failed to run agent',
-        rateLimit: error?.rateLimit || error?.response?.data?.rateLimit,
-      };
-    }
-  }
-
-  /**
    * Extract function calls from an event
    */
   private extractFunctionCalls(eventData: any): ToolCall[] {
@@ -550,7 +208,7 @@ class ADKClient {
         // Check both snake_case and camelCase versions
         const fc = part.function_call || part.functionCall;
         if (fc) {
-          console.log('[ADK Client] Found function_call in content.parts:', fc);
+          debugLog('[ADK Client] Found function_call in content.parts:', fc);
           functionCalls.push({
             id: fc.id || `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: fc.name || 'unknown',
@@ -564,7 +222,7 @@ class ADKClient {
       for (const part of eventData.parts) {
         const fc = part.function_call || part.functionCall;
         if (fc) {
-          console.log('[ADK Client] Found function_call in parts:', fc);
+          debugLog('[ADK Client] Found function_call in parts:', fc);
           functionCalls.push({
             id: fc.id || `call-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: fc.name || 'unknown',
@@ -590,7 +248,7 @@ class ADKClient {
         // Check both snake_case and camelCase versions
         const fr = part.function_response || part.functionResponse;
         if (fr) {
-          console.log('[ADK Client] Found function_response in content.parts:', fr);
+          debugLog('[ADK Client] Found function_response in content.parts:', fr);
           functionResponses.push({
             id: fr.id || `response-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: fr.name || 'unknown',
@@ -604,7 +262,7 @@ class ADKClient {
       for (const part of eventData.parts) {
         const fr = part.function_response || part.functionResponse;
         if (fr) {
-          console.log('[ADK Client] Found function_response in parts:', fr);
+          debugLog('[ADK Client] Found function_response in parts:', fr);
           functionResponses.push({
             id: fr.id || `response-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             name: fr.name || 'unknown',
@@ -625,62 +283,28 @@ class ADKClient {
   async *streamAgent(
     agentName: string,
     message: string | { parts: Array<{ text?: string; inline_data?: any }> },
-    userId: string = this.defaultUserId,
-    sessionId?: string,
+    sessionId: string | undefined,
     signal?: AbortSignal
   ): AsyncGenerator<StreamChunk> {
     try {
-      // Ensure we have a session
-      const session = await this.createOrGetSession(agentName, userId, sessionId);
-      const actualSessionId = session.id;
+      // The server creates the ADK session and derives the user id itself.
+      const actualSessionId =
+        sessionId || `session-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+      const contentMessage = typeof message === 'string' ? { parts: [{ text: message }] } : message;
 
-      // Prepare RunAgentRequest
-      // Convert message to Content format
-      const contentMessage = typeof message === 'string'
-        ? { parts: [{ text: message }] }
-        : message;
-
-      const request: RunAgentRequest = {
-        app_name: agentName,
-        user_id: userId,
-        session_id: actualSessionId,
-        new_message: contentMessage,
-        streaming: true,
-      };
-
-      // Use fetch for SSE streaming
-      // When using proxy, use the Next.js API route for SSE
-      const sseUrl = USE_API_PROXY ? '/api/run_sse' : `${ADK_SERVER_URL}/run_sse`;
-
-      const response = await fetch(sseUrl, {
+      const response = await fetch('/api/run_sse', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(request),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          app_name: agentName,
+          session_id: actualSessionId,
+          new_message: contentMessage,
+        }),
         signal,
       });
 
       if (!response.ok) {
-        // For 429 errors, try to extract rate limit info from response
-        if (response.status === 429) {
-          try {
-            const errorData = await response.clone().json();
-            const error = new Error(`HTTP error! status: ${response.status}`) as any;
-            error.status = 429;
-            error.response = { status: 429, data: errorData };
-            if (errorData.rateLimit) {
-              error.rateLimit = errorData.rateLimit;
-            }
-            throw error;
-          } catch (parseError) {
-            // If parsing fails, throw regular error
-            const error = new Error(`HTTP error! status: ${response.status}`) as any;
-            error.status = 429;
-            throw error;
-          }
-        }
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw await errorFromResponse(response);
       }
 
       if (!response.body) {
@@ -706,9 +330,18 @@ class ADKClient {
               try {
                 const eventData = JSON.parse(line.slice(6));
 
+                if (typeof eventData.error_code === 'string') {
+                  yield {
+                    type: 'error',
+                    error: typeof eventData.error === 'string' ? eventData.error : friendlyMessage(eventData.error_code),
+                    code: eventData.error_code,
+                  };
+                  continue;
+                }
+
                 // Debug: Log event structure to understand what we're receiving
                 if (eventData.content?.parts || eventData.parts) {
-                  console.log('[ADK Client] Event received:', {
+                  debugLog('[ADK Client] Event received:', {
                     hasContent: !!eventData.content,
                     hasParts: !!eventData.parts,
                     contentParts: eventData.content?.parts?.length || 0,
@@ -719,9 +352,9 @@ class ADKClient {
 
                   // Log the actual parts structure to see what's inside
                   if (eventData.content?.parts) {
-                    console.log('[ADK Client] Content parts:', eventData.content.parts);
+                    debugLog('[ADK Client] Content parts:', eventData.content.parts);
                     eventData.content.parts.forEach((part: any, index: number) => {
-                      console.log(`[ADK Client] Part ${index}:`, {
+                      debugLog(`[ADK Client] Part ${index}:`, {
                         hasText: !!part.text,
                         hasFunctionCall: !!part.function_call,
                         hasFunctionResponse: !!part.function_response,
@@ -729,10 +362,10 @@ class ADKClient {
                         keys: Object.keys(part),
                       });
                       if (part.function_call) {
-                        console.log(`[ADK Client] Part ${index} function_call:`, part.function_call);
+                        debugLog(`[ADK Client] Part ${index} function_call:`, part.function_call);
                       }
                       if (part.function_response) {
-                        console.log(`[ADK Client] Part ${index} function_response:`, part.function_response);
+                        debugLog(`[ADK Client] Part ${index} function_response:`, part.function_response);
                       }
                     });
                   }
@@ -743,10 +376,10 @@ class ADKClient {
                 const functionResponses = this.extractFunctionResponses(eventData);
 
                 if (functionCalls.length > 0) {
-                  console.log('[ADK Client] Found function calls:', functionCalls);
+                  debugLog('[ADK Client] Found function calls:', functionCalls);
                 }
                 if (functionResponses.length > 0) {
-                  console.log('[ADK Client] Found function responses:', functionResponses);
+                  debugLog('[ADK Client] Found function responses:', functionResponses);
                 }
 
                 // Yield tool calls
@@ -823,11 +456,11 @@ class ADKClient {
                       const isThought = part.thought === true || part.thinking === true
                         || part.is_thought === true || 'thoughtSignature' in part;
                       if (isThought) {
-                        console.log(`[ADK Client] Yielding thinking from content.parts (author=${eventData.author}), len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        debugLog(`[ADK Client] Yielding thinking from content.parts (author=${eventData.author}), len=${text.length}, preview="${text.substring(0, 50)}..."`);
                         yield { type: 'thinking', content: text, author: eventData.author };
                       } else {
                         textChunkCount++;
-                        console.log(`[ADK Client] Yielding text #${textChunkCount} from content.parts (author=${eventData.author}), len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        debugLog(`[ADK Client] Yielding text #${textChunkCount} from content.parts (author=${eventData.author}), len=${text.length}, preview="${text.substring(0, 50)}..."`);
                         yield { type: 'text', content: text, author: eventData.author };
                       }
                     } else {
@@ -874,11 +507,11 @@ class ADKClient {
                       const isThought = part.thought === true || part.thinking === true
                         || part.is_thought === true || 'thoughtSignature' in part;
                       if (isThought) {
-                        console.log(`[ADK Client] Yielding thinking from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        debugLog(`[ADK Client] Yielding thinking from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
                         yield { type: 'thinking', content: text };
                       } else {
                         textChunkCount++;
-                        console.log(`[ADK Client] Yielding text #${textChunkCount} from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
+                        debugLog(`[ADK Client] Yielding text #${textChunkCount} from parts, len=${text.length}, preview="${text.substring(0, 50)}..."`);
                         yield { type: 'text', content: text };
                       }
                     } else {
@@ -915,7 +548,7 @@ class ADKClient {
                   // Fallback for content field
                   const content = typeof eventData.content === 'string' ? eventData.content : JSON.stringify(eventData.content);
                   textChunkCount++;
-                  console.log(`[ADK Client] Yielding text #${textChunkCount} from content field (author=${eventData.author}), len=${content.length}, preview="${content.substring(0, 50)}..."`);
+                  debugLog(`[ADK Client] Yielding text #${textChunkCount} from content field (author=${eventData.author}), len=${content.length}, preview="${content.substring(0, 50)}..."`);
                   yield { type: 'text', content, author: eventData.author };
                 }
               } catch (e) {
@@ -923,14 +556,15 @@ class ADKClient {
                 const text = line.slice(6);
                 if (text.trim()) {
                   textChunkCount++;
-                  console.log(`[ADK Client] Yielding text #${textChunkCount} from unparsed line, len=${text.length}`);
+                  debugLog(`[ADK Client] Yielding text #${textChunkCount} from unparsed line, len=${text.length}`);
                   yield { type: 'text', content: text };
                 }
               }
             } else if (line.trim() && !line.startsWith(':')) {
-              // Non-SSE line, might be error
+              // Non-SSE line. Never surface this raw text to the user — it
+              // may contain upstream error bodies — just log it for diagnostics.
               if (line.includes('error')) {
-                yield { type: 'error', error: line };
+                debugLog('[ADK Client] Non-SSE line containing "error":', line);
               }
             }
           }
@@ -941,10 +575,10 @@ class ADKClient {
 
       // Log buffer state at end of stream (don't process to avoid duplicates)
       if (buffer.trim()) {
-        console.log('[ADK Client] Remaining buffer at stream end (NOT processing):', buffer.substring(0, 200));
+        debugLog('[ADK Client] Remaining buffer at stream end (NOT processing):', buffer.substring(0, 200));
       }
 
-      console.log(`[ADK Client] Stream complete. Total text chunks yielded: ${textChunkCount}`);
+      debugLog(`[ADK Client] Stream complete. Total text chunks yielded: ${textChunkCount}`);
       yield { type: 'done' };
     } catch (error: any) {
       // User-initiated abort isn't a real error: re-throw so the consumer's
@@ -956,77 +590,10 @@ class ADKClient {
       if (isAbort) {
         throw error;
       }
+      if (error instanceof ChatApiError) throw error;
       console.error('Error streaming agent:', error);
-      yield { type: 'error', error: error.message || 'Streaming failed' };
+      yield { type: 'error', error: friendlyMessage('backend_unavailable'), code: 'backend_unavailable' };
     }
-  }
-
-  /**
-   * Get artifacts from a session
-   * Endpoint: GET /apps/{app_name}/users/{user_id}/sessions/{session_id}/artifacts
-   */
-  async getArtifacts(
-    appName: string,
-    sessionId: string,
-    userId: string = this.defaultUserId
-  ): Promise<Artifact[]> {
-    try {
-      const response = await this.client.get(
-        `/apps/${appName}/users/${userId}/sessions/${sessionId}/artifacts`
-      );
-
-      if (response.data && Array.isArray(response.data)) {
-        // Response is list of artifact names
-        const artifactNames: string[] = response.data;
-
-        // Fetch each artifact
-        const artifacts: Artifact[] = [];
-        for (const artifactName of artifactNames) {
-          try {
-            const artifactResponse = await this.client.get(
-              `/apps/${appName}/users/${userId}/sessions/${sessionId}/artifacts/${artifactName}`
-            );
-
-            if (artifactResponse.data) {
-              const part = artifactResponse.data;
-              const inlineData = extractInlineDataFromPart(part);
-              if (inlineData) {
-                artifacts.push({
-                  id: artifactName,
-                  name: artifactName,
-                  type: inlineData.mimeType?.startsWith('image/') ? 'image' : 'file',
-                  url: `data:${inlineData.mimeType};base64,${inlineData.data}`,
-                  runId: sessionId,
-                });
-              }
-            }
-          } catch (e) {
-            console.error(`Error loading artifact ${artifactName}:`, e);
-          }
-        }
-
-        return artifacts;
-      }
-
-      return [];
-    } catch (error) {
-      console.error('Error getting artifacts:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Set default user ID
-   */
-  setDefaultUserId(userId: string) {
-    this.defaultUserId = userId;
-  }
-
-  /**
-   * Set default session ID
-   */
-  setDefaultSessionId(sessionId: string) {
-    this.defaultSessionId = sessionId;
   }
 }
 

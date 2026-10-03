@@ -45,6 +45,7 @@ import {
 import type { GuideDocument } from '@/lib/guide/types';
 import { resolveGuideMessageContent } from '@/lib/guide/parse';
 import { trackEngagement, trackGtagEvent } from '@/lib/analytics/track-engagement';
+import { ChatApiError, friendlyMessage, isApiErrorCode } from '@/lib/api-error';
 
 const ANON_RATE_LIMIT_FALLBACK = 5;
 
@@ -96,6 +97,7 @@ function isRateLimitError(error: unknown): boolean {
 export type UseStreamingChatResult = {
   send: (input: { text: string; attachments: File[] }) => Promise<void>;
   stop: () => void;
+  retryLast: () => void;
   /** UI rate-limit banner data; `null` when the user is within their quota. */
   rateLimitInfo: RateLimitInfo | null;
   dismissRateLimit: () => void;
@@ -149,6 +151,7 @@ export function useStreamingChat(): UseStreamingChatResult {
 
   const abortControllerRef = useRef<AbortController | null>(null);
   const stoppedRef = useRef(false);
+  const lastInputRef = useRef<{ text: string; attachments: File[] } | null>(null);
 
   const stop = useCallback(() => {
     if (!abortControllerRef.current) return;
@@ -163,6 +166,7 @@ export function useStreamingChat(): UseStreamingChatResult {
   const send = useCallback(
     async ({ text, attachments }: { text: string; attachments: File[] }) => {
       if ((!text.trim() && attachments.length === 0) || !selectedAgent || isLoading || isStreaming || isInitializing) return;
+      lastInputRef.current = { text, attachments };
 
       const userMessage: Message = {
         id: newMessageId(),
@@ -369,7 +373,6 @@ export function useStreamingChat(): UseStreamingChatResult {
           for await (const chunk of adkClient.streamAgent(
             selectedAgent.name,
             messageContent,
-            'default-user',
             sessionId,
             controller.signal,
           )) {
@@ -473,7 +476,8 @@ export function useStreamingChat(): UseStreamingChatResult {
             } else if (chunk.type === 'guideDocument' && chunk.guideDocument) {
               guideDocument = chunk.guideDocument;
             } else if (chunk.type === 'error') {
-              throw new Error(chunk.error || 'Streaming error');
+              const code = isApiErrorCode(chunk.code) ? chunk.code : 'internal';
+              throw new ChatApiError(code, 0, isApiErrorCode(chunk.code) ? { message: chunk.error } : {});
             } else if (chunk.type === 'done') {
               streamDone = true;
               break;
@@ -485,7 +489,7 @@ export function useStreamingChat(): UseStreamingChatResult {
             if (finalArtifacts.length === 0) {
               try {
                 const artifactsResponse = await fetch(
-                  `/api/artifacts?app_name=${selectedAgent.name}&user_id=default-user&session_id=${sessionId}`,
+                  `/api/artifacts?app_name=${encodeURIComponent(selectedAgent.name)}&session_id=${encodeURIComponent(sessionId)}`,
                 );
                 if (artifactsResponse.ok) {
                   const artifactsResult = await artifactsResponse.json();
@@ -590,74 +594,25 @@ export function useStreamingChat(): UseStreamingChatResult {
             }
           }
 
-          // Streaming endpoint failed for a non-cancel reason — fall back to
-          // the non-streaming run endpoint. ADK's /run gives us the full
-          // response in one shot; we display it as a single assistant message.
-          setArtifacts([]);
-          setIsInitializing(false);
-          setIsThinking(false);
-          setStreamingThinking('');
-
-          const result = await adkClient.runAgent(
-            selectedAgent.name,
-            messageContent,
-            'default-user',
-            sessionId,
-          );
-
-          if (result.status === 'error') {
-            const info = extractRateLimit(result);
-            if (info) {
-              setRateLimitInfo(info);
-              setError(null);
-              return;
-            }
-            throw new Error(result.error || 'Failed to run agent');
+          // No silent /run retry: it re-ran the agent and double-charged quota.
+          // Keep whatever streamed, then surface a retryable error.
+          if (fullResponse.trim()) {
+            const partialResolved = resolveGuideMessageContent(fullResponse, guideDocument);
+            addMessage({
+              id: assistantMessageId,
+              role: 'assistant',
+              content: partialResolved.content,
+              thinking: fullThinking || undefined,
+              timestamp: new Date(),
+              agentName: selectedAgent.name,
+              artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
+              guideDocument: partialResolved.guideDocument,
+            });
+            setCurrentMessageArtifacts([]);
           }
-
-          let finalArtifacts: Artifact[] = [];
-          if (result.artifacts && result.artifacts.length > 0) {
-            finalArtifacts = result.artifacts;
-            setArtifacts(result.artifacts);
-          } else {
-            try {
-              const artifactsResponse = await fetch(
-                `/api/artifacts?app_name=${selectedAgent.name}&user_id=default-user&session_id=${sessionId}`,
-              );
-              if (artifactsResponse.ok) {
-                const artifactsResult = await artifactsResponse.json();
-                if (artifactsResult.success && artifactsResult.data && artifactsResult.data.length > 0) {
-                  finalArtifacts = artifactsResult.data;
-                  setArtifacts(artifactsResult.data);
-                }
-              }
-            } catch (error) {
-              console.error('[useStreamingChat] Error loading artifacts after non-streaming:', error);
-            }
-          }
-
-          // Same fence-extraction + lead-preference logic as the streaming
-          // commit path above. Pass any guideDocument accumulated before the
-          // stream failed — the backend often strips the fence from /run text,
-          // so the accumulated doc is the only way to keep PlaceCards + map.
-          const fallbackResolved = resolveGuideMessageContent(
-            result.response || '',
-            guideDocument,
-          );
-          const assistantMessage: Message = {
-            id: assistantMessageId,
-            role: 'assistant',
-            content: fallbackResolved.content,
-            timestamp: new Date(),
-            agentName: selectedAgent.name,
-            artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
-            guideDocument: fallbackResolved.guideDocument,
-          };
-          addMessage(assistantMessage);
-          setCurrentMessageArtifacts([]);
+          throw streamError;
         }
-      } catch (error: any) {
-        console.error('Error sending message:', error);
+      } catch (error: unknown) {
         if (isRateLimitError(error)) {
           const info = extractRateLimit(error);
           if (info) {
@@ -666,16 +621,17 @@ export function useStreamingChat(): UseStreamingChatResult {
             return;
           }
         }
-
-        setError(error.message || 'Failed to send message');
-        const errorMessage: Message = {
+        if (!(error instanceof ChatApiError)) console.error('Error sending message:', error);
+        const message = error instanceof ChatApiError ? error.message : friendlyMessage('internal');
+        setError(message);
+        addMessage({
           id: newMessageId(),
           role: 'assistant',
-          content: `Error: ${error.message || 'Failed to process your request. Please try again.'}`,
+          content: message,
           timestamp: new Date(),
           agentName: selectedAgent.name,
-        };
-        addMessage(errorMessage);
+          isError: true,
+        });
       } finally {
         setLoading(false);
         setIsStreaming(false);
@@ -709,9 +665,15 @@ export function useStreamingChat(): UseStreamingChatResult {
     ],
   );
 
+  const retryLast = useCallback(() => {
+    const last = lastInputRef.current;
+    if (last) void send(last);
+  }, [send]);
+
   return {
     send,
     stop,
+    retryLast,
     rateLimitInfo,
     dismissRateLimit,
     isStreaming,

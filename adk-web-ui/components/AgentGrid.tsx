@@ -21,6 +21,8 @@ import {
 
 type SortOption = 'featured' | 'mostStarred' | 'name';
 
+const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
+
 export default function AgentGrid() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -391,7 +393,7 @@ export default function AgentGrid() {
             key={agent.name}
             agent={agent}
             isStarred={isAgentStarred(agent.name)}
-            onToggleStar={() => handleToggleStar(agent)}
+            onToggleStar={COMMUNITY_WRITES ? () => handleToggleStar(agent) : undefined}
           />
         ))}
       </div>

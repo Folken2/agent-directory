@@ -7,10 +7,9 @@ import {
   type AgentsListSource,
 } from '@/lib/agent-catalog';
 import { getAgentStatsMap, isDbEnabled } from '@/lib/db';
+import { adkFetch } from '@/lib/adk-config';
 
 export const maxDuration = 300;
-
-const ADK_SERVER_URL = process.env.NEXT_PUBLIC_ADK_SERVER_URL || 'http://localhost:8000';
 
 /** Cold / sleeping hosts (e.g. Railway) often need >30s before /list-apps responds. */
 const LIST_APPS_TIMEOUT_MS = Math.max(
@@ -35,7 +34,7 @@ async function fetchAdkListApps(): Promise<Response> {
     const timeoutId = setTimeout(() => controller.abort(), LIST_APPS_TIMEOUT_MS);
 
     try {
-      const response = await fetch(`${ADK_SERVER_URL}/list-apps`, {
+      const response = await adkFetch('/list-apps', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -156,17 +155,17 @@ export async function GET(_request: NextRequest) {
         ? (error as { cause?: { code?: string } }).cause?.code
         : undefined;
 
-    let errorMessage = message || 'Unknown error';
+    // User-visible copy must never contain the raw error message (it can hold
+    // upstream URLs/hosts). Default to a fixed string; only the timeout case
+    // gets more specific (still no raw message), and we log the raw error
+    // server-side below.
+    let errorMessage = 'Agent server unreachable';
 
     if (name === 'AbortError') {
       errorMessage = `Request timeout - ADK server did not respond within ${LIST_APPS_TIMEOUT_MS / 1000}s (after ${LIST_APPS_MAX_ATTEMPTS} attempt(s))`;
-    } else if (message?.includes('fetch failed') || message?.includes('ECONNREFUSED') || causeCode === 'ECONNREFUSED') {
-      errorMessage = `Cannot connect to ADK server at ${ADK_SERVER_URL}`;
-    } else if (message?.includes('ENOTFOUND') || causeCode === 'ENOTFOUND') {
-      errorMessage = `Cannot resolve hostname for ${ADK_SERVER_URL}`;
     }
 
-    console.error('Error fetching agents from ADK server:', errorMessage, error);
+    console.error('Error fetching agents from ADK server:', message, causeCode, error);
 
     return respondWithFallback(`ADK server unavailable: ${errorMessage}.`);
   }

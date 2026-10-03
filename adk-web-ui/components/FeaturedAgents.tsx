@@ -7,6 +7,8 @@ import { useAppStore } from '@/lib/store';
 import AgentCard from './AgentCard';
 import { Sparkles } from 'lucide-react';
 
+const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
+
 export default function FeaturedAgents() {
   const [featuredAgents, setFeaturedAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -77,7 +79,7 @@ export default function FeaturedAgents() {
             key={agent.name}
             agent={agent}
             isStarred={isAgentStarred(agent.name)}
-            onToggleStar={() => toggleStarAgent(agent.name)}
+            onToggleStar={COMMUNITY_WRITES ? () => toggleStarAgent(agent.name) : undefined}
           />
         ))}
       </div>

@@ -28,7 +28,7 @@ npm install
 2. Set up environment variables:
 Create a `.env.local` file in the root directory:
 ```env
-NEXT_PUBLIC_ADK_SERVER_URL=http://localhost:8000
+ADK_SERVER_URL=http://localhost:8000
 ```
 
 ## Development
@@ -41,7 +41,7 @@ npm run dev
 
 This runs Next.js dev server on `http://localhost:3000`. The application uses Next.js API routes as a proxy to communicate with the ADK server, so no CORS configuration is needed.
 
-**Important:** Make sure your ADK server is running at the URL specified in `NEXT_PUBLIC_ADK_SERVER_URL` (default: `http://localhost:8000`).
+**Important:** Make sure your ADK server is running at the URL specified in `ADK_SERVER_URL` (default: `http://localhost:8000`).
 
 ### Local database (Docker)
 
@@ -114,7 +114,7 @@ adk-web-ui/
 
 ### Environment Variables
 
-- `NEXT_PUBLIC_ADK_SERVER_URL`: URL of the ADK server (default: `http://localhost:8000`)
+- `ADK_SERVER_URL`: URL of the ADK server (default: `http://localhost:8000`)
 - `NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS` (optional): Milliseconds the browser waits for `GET /api/agents` (default **180000**). Must stay above cold-start duration when the ADK API is on a sleeping host.
 - `NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY` (optional): Google Maps Embed API key. This is the legacy/single-place fallback — when set, agents that ground on a single Maps result render an interactive Google Maps iframe inline with the assistant message. Without it, place blocks still render as Markdown links — the embed silently no-ops. Restrict the key to "Maps Embed API" only and to your domains (it ships in the iframe URL by design — security comes from referer restrictions, not secrecy).
 - `NEXT_PUBLIC_GOOGLE_MAPS_JS_KEY` (optional): Google Maps JavaScript API key. Powers `GuideMap`, the multi-marker overview map used by the **Local Guide** agent's neighborhood/itinerary/comparison answers (one map, one pin per place, click a pin or card to select). Enable **Maps JavaScript API** and **Geocoding API** on the key (markers are geocoded from address/name when lat/lng are absent). Restrict by HTTP referrer to your domains. Without it, `GuideMap` renders nothing — place cards and "Open in Google Maps" links still work. For production, replace the in-code `DEMO_MAP_ID` with a real Cloud Console Map ID (required by Advanced Markers).
@@ -162,7 +162,7 @@ This is a standalone Next.js application that can be deployed to any platform th
 - **Railway**: Connect your repository
 - **Any Node.js hosting**: Run `npm run build && npm start`
 
-**Important:** Make sure to set the `NEXT_PUBLIC_ADK_SERVER_URL` environment variable in your deployment platform to point to your ADK server URL.
+**Important:** Make sure to set the `ADK_SERVER_URL` environment variable in your deployment platform to point to your ADK server URL.
 
 The application uses Next.js API routes as a proxy layer, so all requests from the browser go through `/api/*` routes which then forward to the ADK server. This eliminates CORS issues and allows the app to run independently.
 
@@ -170,7 +170,7 @@ The application uses Next.js API routes as a proxy layer, so all requests from t
 
 ### Agents not loading
 - Verify the ADK server is running
-- Check `NEXT_PUBLIC_ADK_SERVER_URL` is correct
+- Check `ADK_SERVER_URL` is correct
 - If the API host sleeps (e.g. Railway free tier), wait for cold start or raise `ADK_LIST_APPS_TIMEOUT_MS` / `NEXT_PUBLIC_ADK_LIST_AGENTS_CLIENT_TIMEOUT_MS`
 - On Vercel, ensure the **API route max duration** allows long `list-apps` waits (`maxDuration` is set on `/api/agents`; Pro plans can use the full window)
 - During an outage you should still see the full offline catalog (not a single wrong agent). Check the `/api/agents` JSON for `source` / `warning`
@@ -179,17 +179,16 @@ The application uses Next.js API routes as a proxy layer, so all requests from t
 - If the catalog is missing a new agent, run `npm run sync:agent-catalog` and redeploy
 
 ### Streaming not working
-- The application will fallback to non-streaming requests automatically
 - Verify your ADK server supports `/run_sse` endpoint
 - Check browser console for SSE connection errors
 
 ### CORS errors
 - The application uses Next.js API routes as a proxy, so CORS should not be an issue
-- If you encounter CORS errors, verify that `NEXT_PUBLIC_ADK_SERVER_URL` is correctly set
+- If you encounter CORS errors, verify that `ADK_SERVER_URL` is correctly set
 
 ### API routes not working
 - Ensure you're running the app in standalone mode (not static export)
-- Verify that the ADK server is running and accessible at `NEXT_PUBLIC_ADK_SERVER_URL`
+- Verify that the ADK server is running and accessible at `ADK_SERVER_URL`
 - Check the browser console and server logs for error messages
 
 ## License

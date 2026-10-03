@@ -24,6 +24,8 @@ import {
 import { cn } from '@/lib/utils';
 import { getCategoryColors } from '@/lib/category-colors';
 
+const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
+
 export default function AgentDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -181,27 +183,29 @@ export default function AgentDetailPage() {
               <Play className="w-4 h-4 fill-current" />
               Start Chat
             </button>
-            <button
-              onClick={() => toggleStarAgent(agent.name)}
-              className={cn(
-                "px-4 py-3 rounded-xl font-medium border flex items-center gap-2 transition-all",
-                isStarred
-                  ? "bg-md-tertiary-container/30 border-md-tertiary/40 text-md-on-tertiary-container"
-                  : "bg-md-surface border-md-outline hover:bg-muted text-foreground"
-              )}
-              aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
-            >
-              <Star
+            {COMMUNITY_WRITES && (
+              <button
+                onClick={() => toggleStarAgent(agent.name)}
                 className={cn(
-                  "w-4 h-4",
-                  isStarred ? "fill-md-tertiary text-md-tertiary" : "text-muted-foreground"
+                  "px-4 py-3 rounded-xl font-medium border flex items-center gap-2 transition-all",
+                  isStarred
+                    ? "bg-md-tertiary-container/30 border-md-tertiary/40 text-md-on-tertiary-container"
+                    : "bg-md-surface border-md-outline hover:bg-muted text-foreground"
                 )}
-              />
-              {isStarred ? 'Starred' : 'Star'}
-              {agent.starsCount !== undefined && (
-                <span className="text-sm text-muted-foreground ml-1">({agent.starsCount})</span>
-              )}
-            </button>
+                aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
+              >
+                <Star
+                  className={cn(
+                    "w-4 h-4",
+                    isStarred ? "fill-md-tertiary text-md-tertiary" : "text-muted-foreground"
+                  )}
+                />
+                {isStarred ? 'Starred' : 'Star'}
+                {agent.starsCount !== undefined && (
+                  <span className="text-sm text-muted-foreground ml-1">({agent.starsCount})</span>
+                )}
+              </button>
+            )}
             <button
               onClick={handleShare}
               className="px-4 py-3 rounded-xl font-medium border border-md-outline bg-md-surface hover:bg-muted text-foreground flex items-center gap-2 transition-all"
