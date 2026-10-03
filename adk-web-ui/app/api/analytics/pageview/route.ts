@@ -13,6 +13,10 @@ import {
   visitorCookieOptions,
 } from '@/lib/analytics/visitor-cookie';
 import { shouldTrackPath } from '@/lib/analytics/should-track';
+import { reserveBuckets } from '@/lib/limits/limiter';
+import { dbCounterStore } from '@/lib/limits/db-store';
+import { envInt } from '@/lib/env-int';
+import { extractClientIp, hashIp } from '@/lib/analytics/hash-ip';
 
 export const runtime = 'nodejs';
 
@@ -41,6 +45,30 @@ export async function POST(request: NextRequest) {
     const path = (body.path || '/').split('?')[0];
     if (!shouldTrackPath(path)) {
       return NextResponse.json({ ok: true, recorded: false, reason: 'skipped_path' });
+    }
+
+    // Check per-IP daily rate limit
+    const clientIp = extractClientIp(request.headers);
+    const ipHash = hashIp(clientIp);
+    if (ipHash) {
+      const ipLimit = envInt('PAGEVIEW_IP_DAILY_LIMIT', 10000);
+      const ipBucketResult = await reserveBuckets([{ key: `pageview:ip:${ipHash}`, limit: ipLimit }], {
+        store: dbCounterStore,
+      });
+      if (!ipBucketResult.ok) {
+        if (ipBucketResult.reason === 'limit') {
+          return NextResponse.json(
+            { ok: false, error: 'rate_limit_exceeded', limit: ipBucketResult.limit },
+            { status: 429 }
+          );
+        } else {
+          // Unavailable: fail closed
+          return NextResponse.json(
+            { ok: false, error: 'rate_limit_unavailable' },
+            { status: 503 }
+          );
+        }
+      }
     }
 
     const source = body.source === 'server' ? 'server' : 'client';
