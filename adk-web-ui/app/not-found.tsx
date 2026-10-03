@@ -1,22 +1,37 @@
 import Link from 'next/link';
-import { buttonVariants } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import AgentGrid from '@/components/AgentGrid';
+import BuilderHero from '@/components/home/BuilderHero';
+import { Page, PageHeader, Section } from '@/components/layout/Page';
+import { loadExampleAgents } from '@/lib/agent-catalog';
 
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-14rem)] max-w-md flex-col items-center justify-center px-4 py-16 text-center">
-      <p className="text-label-large text-md-on-surface-variant">404</p>
-      <h1 className="mt-2 text-headline-small tracking-tight text-md-on-surface">Page not found</h1>
-      <p className="mt-2 text-body-large text-md-on-surface-variant">
-        The page you&apos;re looking for doesn&apos;t exist or has moved.
-      </p>
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link href="/" className={buttonVariants({ variant: 'filled' })}>
-          Build an agent
-        </Link>
-        <Link href="/examples" className={buttonVariants({ variant: 'outlined' })}>
-          Browse examples
-        </Link>
+    <Page>
+      <PageHeader
+        title="Page not found"
+        description="Error 404. The link may be broken, or the page may have moved. You can pick up from here instead."
+      />
+
+      <div className="max-w-2xl">
+        <BuilderHero compact label="Describe the agent you were looking for" placeholder="Describe the agent you were looking for…" />
       </div>
-    </div>
+
+      <Section
+        title="Or start from an example"
+        className="mt-16"
+        action={
+          <Link
+            href="/examples"
+            className="inline-flex items-center gap-1 rounded-full text-label-large text-md-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
+          >
+            Browse all examples
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        }
+      >
+        <AgentGrid agents={loadExampleAgents()} limit={4} showControls={false} />
+      </Section>
+    </Page>
   );
 }

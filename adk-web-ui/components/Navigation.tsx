@@ -68,6 +68,12 @@ export default function Navigation() {
 
   if (pathname?.startsWith('/chat')) return null;
 
+  // Return to the current page after signing in.
+  const signInHref =
+    pathname && pathname !== '/' && !pathname.startsWith('/auth')
+      ? `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`
+      : '/auth/signin';
+
   const accountLinks = isAuthenticated
     ? [
         { name: 'Chat history', href: '/me/sessions' },
@@ -119,8 +125,8 @@ export default function Navigation() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Link href="/auth/signin" className={cn(buttonVariants({ variant: 'filled', size: 'sm' }), 'ml-1 h-9 px-4')}>
+          ) : pathname?.startsWith('/auth') ? null : (
+            <Link href={signInHref} className={cn(buttonVariants({ variant: 'filled', size: 'sm' }), 'ml-1 h-9 px-4')}>
               Sign in
             </Link>
           )}
@@ -150,7 +156,7 @@ export default function Navigation() {
                   </div>
                 ) : (
                   <SheetClose asChild>
-                    <Link href="/auth/signin" className={cn(buttonVariants({ variant: 'filled' }), 'w-full')}>
+                    <Link href={signInHref} className={cn(buttonVariants({ variant: 'filled' }), 'w-full')}>
                       <LogIn /> Sign in
                     </Link>
                   </SheetClose>

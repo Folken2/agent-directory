@@ -13,6 +13,7 @@ import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MAX_BUILDER_PROMPT_LENGTH, resolveChatAgentName } from '@/lib/builder';
 import { loadConversation, saveConversation } from '@/lib/chat/local-history';
+import ChatSkeleton from '@/components/chat/ChatSkeleton';
 
 function ChatContent() {
   const {
@@ -260,11 +261,7 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-dvh items-center justify-center bg-md-surface-container-low">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-md-primary"></div>
-      </div>
-    }>
+    <Suspense fallback={<ChatSkeleton />}>
       <ChatContent />
     </Suspense>
   );
