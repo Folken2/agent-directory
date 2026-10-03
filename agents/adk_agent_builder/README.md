@@ -1,151 +1,121 @@
 # ADK Agent Builder
 
-A specialist AI assistant that helps users build agents using the Google Agent Development Kit (ADK). The agent is grounded in a **curated library of ADK skills shipped inside the agent package** — no external doc fetches at runtime — so it works the same locally and in deployed environments.
+The Agent Directory's front door. Describe the agent you want; the builder designs it with you on the Google Agent Development Kit (ADK), then **builds it**: a complete, production-ready project on [nuvel](https://github.com/Folken2/nuvel), handed over as a zip you download from the chat.
 
-## Overview
+It still answers plain ADK questions, grounded in nuvel's ADK skills and the official ADK docs.
 
-The ADK Agent Builder is a meta-agent that helps you build other agents. It acts as an expert consultant and mentor, providing:
+## What you get
 
-- **Architectural Guidance**: From simple single-agent setups to complex multi-agent orchestrations
-- **Code Examples**: Working code snippets and complete examples
-- **Best Practices**: ADK patterns, anti-patterns, and recommendations
-- **Troubleshooting**: Debug help and solutions for common issues
-- **Skill-grounded answers**: Every substantive answer is queried against the bundled ADK skills
+A standalone project from nuvel's ADK skeleton, with the agent's own brain written by the builder:
 
-## Quick Start
-
-```bash
-# 1. Install dependencies
-uv sync --no-install-project
-
-# 2. Set up environment variables in .env file (if needed)
-FAST_MODEL=openrouter/google/gemini-3-flash-preview
-REASONING_MODEL=openrouter/google/gemini-3-pro-preview
-
-# 3. Run the web interface
-adk web
-```
-
-## Usage
-
-### Web Interface
-
-```bash
-adk web
-```
-
-Opens a browser interface to chat with the agent builder.
-
-### Python
-
-```python
-from adk_agent_builder.agent import root_agent
-
-response = root_agent.run("Help me build a simple web search agent")
-print(response)
-```
-
-## Knowledge — bundled ADK skills
-
-Instead of fetching pages from `adk.dev` at runtime, this agent loads a curated set of `SKILL.md` files via ADK's `SkillToolset`. The skills live in `skills/` next to `agent.py` and ship with the package.
-
-| Skill | Use it for |
+| Part | Where it comes from |
 | --- | --- |
-| `adk-agent-patterns` | Choosing between `LlmAgent`, `LoopAgent`, `SequentialAgent`, `ParallelAgent`, multi-agent hierarchies |
-| `adk-tool-creation` | Writing function tools, `ToolContext`, structured returns, error handling |
-| `adk-prompt-engineering` | System prompt design, dynamic `InstructionProvider`, prompt versioning |
-| `adk-callbacks-hitl` | `before/after` callbacks, human-in-the-loop gates, state management |
-| `adk-streaming` | Voice / video agents on the Gemini Live API |
-| `adk-skill-creation` | Authoring your own `SKILL.md` for an agent's domain knowledge |
-| `adk-skill-design-patterns` | The five canonical SKILL.md shapes — pick before authoring |
+| FastAPI server with API-key auth, health checks, SSE streaming | nuvel skeleton (`run_adk.py`) |
+| 17-plugin chain: cost guard, context window, tracing, resilience, guardrails, cache, memory, self-healing tools, … | nuvel skeleton (`<package>/plugins/`) |
+| Guardrails (exfiltration guard, command safety), long-term memory, cron jobs | nuvel skeleton |
+| Dockerfile, Railway config, `.env.example`, tests | nuvel skeleton |
+| Optional: Workflow graph root, Composio integrations, Slack / Telegram / Teams gateways, ACP adapter, eval suite | nuvel options picked during design |
+| System prompt, SOUL.md, tools, domain skills, README, tool tests | written by the builder |
 
-The agent queries the `SkillToolset` with focused questions; the toolset returns the relevant skill content rather than dumping it into the system prompt, keeping context usage small.
+Unzip it, then:
 
-## Example Use Cases
+```bash
+cd my-agent
+cp .env.example .env     # add OPENROUTER_API_KEY
+pip install -r requirements.txt
+DEV_MODE=true python run_adk.py
+```
 
-### 1. Building a Simple Agent
+## How a build goes
 
-**User**: "I want to create an agent that searches the web and summarizes results"
+1. **Discover**: the builder asks only what it is missing (goal, tasks, services, channels, model).
+2. **Design**: it loads nuvel's architecture and skill-design skills, proposes the agents, tools, skills and nuvel options, and emits a **blueprint** (shown as a panel in the web UI; see `blueprint.py`). It asks before building.
+3. **Build**: `scaffold_agent` → `write_file` for the prompt, SOUL.md, tools, skills, requirements, README and tests → `validate_agent` until clean → `package_agent`.
+4. **Hand over**: a short summary plus `<name>.zip` in the chat.
 
-The Agent Builder queries `adk-agent-patterns` and `adk-tool-creation`, then recommends a single `LlmAgent` with `google_search`, with a complete code example.
+## Tools
 
-### 2. Multi-Agent System Design
+| Tool | What it does |
+| --- | --- |
+| `scaffold_agent` | Stamps nuvel's skeleton (`nuvel.backends.adk.scaffold`) with the chosen options; the project becomes the session's current project |
+| `write_file`, `read_file`, `list_files` | Edit the current project; paths are relative to its root |
+| `validate_agent` | nuvel's checks: required files, no `{{placeholders}}`, every Python file compiles, skills have a `SKILL.md` |
+| `package_agent` | Validates, zips the project (no `.env`, no caches) and saves it as the `<name>.zip` artifact |
+| `list_composio_toolkits` | nuvel's Composio catalog lookup; only when the server has `COMPOSIO_API_KEY` |
+| `list_skills`, `load_skill`, `load_skill_resource` | nuvel's 15 ADK skills via `SkillToolset` |
+| `list_doc_sources`, `fetch_docs` | Official ADK docs via `mcpdoc` (launched with `uvx`) |
 
-**User**: "I need an agent that processes data and then generates a report"
+## Built on nuvel
 
-It queries `adk-agent-patterns` and recommends a `SequentialAgent` pipeline, mapping out session-state communication between sub-agents.
+`nuvel-cli` is a dependency of `agents/pyproject.toml`, pinned to a commit. The builder uses:
 
-### 3. Tool Integration
+- **Skills**: every skill in `nuvel/backends/adk/skills/` (agent patterns, workflow graphs, tool creation, prompt engineering, callbacks/HITL, skill creation and design patterns, streaming, Composio, task delegation, long-horizon guardrails and sessions, cron isolation, memory).
+- **Scaffolder and validator**: `scaffold_agent`, `validate_agent_dir`, `resolve_safe_path`.
+- **Guards** on every tool call: `path_guard` (fixes paths like `my-agent/tools/x.py`) and `exfil_guard` (blocks secrets in tool arguments).
+- **Plugins** on the builder's `App` (`nuvel_plugins.py`), on top of the server's own chain:
 
-**User**: "How do I add a custom API tool to my agent?"
+| Plugin | Role |
+| --- | --- |
+| `cost_guard` | Cost per call and per session in state; stops the session at `COST_GUARD_BUDGET` (default $2.00) |
+| `context_window` | Live context usage in state |
+| `resilience` | Tool-call rate limit, circuit breaker on scaffold/validate |
+| `guardrails` | Halts a turn stuck in a loop; the user's next message resumes |
+| `cache` | Per-session cache of reads and validation, cleared on every write |
 
-It queries `adk-tool-creation` and walks through `FunctionTool` patterns, `ToolContext` use, and structured return shapes.
+nuvel's trace and tool-events plugins are not used: they keep per-run counters on the plugin instance, which would mix sessions on a shared server.
 
-### 4. Human-in-the-loop
+## The workspace
 
-**User**: "How do I require approval before a destructive action?"
+Each chat session gets its own directory under `BUILDER_WORKSPACE_DIR` (default: `<tmp>/adk-agent-builder`), named from a hash of the user and session ids. Tools derive that path on the server for every call; session state only holds the project's name (`current_agent_name`, `current_agent_package`), which must pass nuvel's name check. Workspaces are scratch space: the zip artifact is the deliverable, and idle workspaces are deleted.
 
-It queries `adk-callbacks-hitl` and shows the `before_tool_callback` pattern with state-driven approval.
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `BUILDER_WORKSPACE_DIR` | `<tmp>/adk-agent-builder` | Root of the per-session workspaces |
+| `BUILDER_WORKSPACE_TTL_HOURS` | `24` | Idle workspaces older than this are deleted |
+| `BUILDER_MAX_PROJECTS` | `3` | Projects per session |
+| `BUILDER_MAX_FILE_BYTES` | `262144` | Largest file `write_file` accepts |
+| `BUILDER_MAX_PROJECT_BYTES` | `8388608` | Largest project |
+| `BUILDER_MAX_PROJECT_FILES` | `400` | Most files in a project |
+| `COST_GUARD_BUDGET` | `2.00` | USD per session before the builder stops |
+| `TOOL_RATE_LIMIT`, `TOOL_RATE_BURST` | `5`, `20` | nuvel's tool-call rate limit (whole server) |
+| `COMPOSIO_API_KEY` | unset | Enables the Composio catalog lookup |
 
-## Project Structure
+Generated code is never imported or run on the server; `validate_agent` only compiles it.
+
+## Project structure
 
 ```text
 adk_agent_builder/
-├── agent.py              # Builds SkillToolset from skills/ and wires the agent
+├── agent.py             # root_agent (skills, tools, guards) and app (nuvel plugins)
+├── nuvel_plugins.py     # nuvel plugin chain for the builder
+├── workspace.py         # per-session workspace, limits, cleanup
+├── tools/
+│   ├── __init__.py      # get_tools()
+│   └── project_tools.py # scaffold / write / read / list / validate / package
+├── blueprint.py         # Blueprint model + ```blueprintjson parsing
+├── callbacks/
+│   └── blueprint_document.py  # moves the blueprint into session state
 ├── config/
-│   ├── llm.py           # LLM configuration
-│   └── utils.py         # Tool-rendering callback that injects tool descriptions into the prompt
+│   ├── llm.py           # FAST_MODEL / REASONING_MODEL (LiteLLM, OpenRouter)
+│   └── utils.py         # date helper
 ├── prompt/
-│   └── prompt.py        # Specialist prompt for agent building
-├── skills/              # Bundled ADK skills (SKILL.md + references/)
-│   ├── adk-agent-patterns/
-│   ├── adk-tool-creation/
-│   ├── adk-prompt-engineering/
-│   ├── adk-callbacks-hitl/
-│   ├── adk-streaming/
-│   ├── adk-skill-creation/
-│   └── adk-skill-design-patterns/
-├── metadata.json        # Agent metadata for web UI
-└── README.md            # This file
+│   └── prompt.py        # versioned prompts; build_prompt_v3 is current
+└── metadata.json        # web UI metadata
 ```
 
-## How It Works
+## Running it
 
-1. On import, `agent.py` walks `skills/`, calls `load_skill_from_dir` on each subdirectory containing a `SKILL.md`, and wraps the result in a `SkillToolset`.
-2. The agent's prompt instructs it to query the skill toolset before answering substantive ADK questions.
-3. The before-agent callback (`before_agent_callback_update_tools`) discovers the loaded tools at runtime and rewrites the instruction to include their descriptions.
+From the repository root:
 
-The skills directory path is resolved as `pathlib.Path(__file__).parent / "skills"`, so the agent works in any deployment without needing env vars or filesystem mounts.
+```bash
+cd agents && uv sync && cd ..
+adk web agents            # or: python run_adk.py (needs SESSION_SERVICE_URI)
+```
+
+Tests: `python -m pytest tests/test_agent_builder.py tests/test_blueprint.py`.
 
 ## Customization
 
-### Add or edit skills
-
-Drop a new directory under `skills/` containing a `SKILL.md` (with frontmatter `name:` and `description:` at minimum). It will be picked up on the next agent boot.
-
-### Change LLM Model
-
-Edit `config/llm.py`:
-
-```python
-FAST_MODEL = LiteLlm(
-    model="openrouter/google/gemini-3-flash-preview",
-    app_name="adk-samples-directory",
-)
-```
-
-### Modify Prompt
-
-Edit `prompt/prompt.py` (`prompt_v1`) to customize behavior. The codebase uses versioned prompts — bump to `prompt_v2` for substantive changes.
-
-## Resources
-
-- [Google ADK Documentation](https://adk.dev/)
-- [ADK GitHub Repository](https://github.com/google/adk)
-- [MCP (Model Context Protocol)](https://modelcontextprotocol.io/)
-
-## Notes
-
-- All ADK guidance is grounded in the bundled skills — the agent does not fetch external docs at runtime
-- Skills are queryable via the `SkillToolset`, not preloaded into the system prompt
-- The agent recommends the simplest architecture first and warns against over-engineering
+- **Model**: `FAST_MODEL` in `.env` or `config/llm.py`.
+- **Prompt**: `prompt/prompt.py`. Prompts are versioned; add `PROMPT_V4` for substantive changes.
+- **nuvel version**: bump the commit in `agents/pyproject.toml` and run `uv lock`.

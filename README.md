@@ -4,6 +4,7 @@ Welcome to the **Agent Directory** repository! This collection provides producti
 
 ## What's Inside
 
+- 🛠️ **Agent Builder**: Describe an agent and get it built — a complete, production-ready ADK project on [nuvel](https://github.com/Folken2/nuvel), delivered as a zip (see [agents/adk_agent_builder](./agents/adk_agent_builder/README.md))
 - 🤖 **Production-Ready Agents**: Battle-tested agents covering web search, research, image generation, and more
 - 🌐 **Next.js Web UI**: Full-featured frontend with agent chat, community posts, Google OAuth, and more
 - 🧩 **Plugin System**: Server-level plugins for logging, error recovery, and more — applied globally to every agent run
@@ -79,7 +80,7 @@ This is a **monorepo** containing both the Python backend (ADK agents) and the N
 ```
 .
 ├── agents/                      # Python backend — ADK agents
-│   ├── adk_agent_builder/      # Meta-agent for building agents
+│   ├── adk_agent_builder/      # Agent builder: designs and builds agents on nuvel
 │   ├── data_analyst_agent/     # Code execution & data analysis
 │   ├── deep_research_agent/    # Multi-agent loop research with Tavily
 │   ├── exa_mcp_agent/          # EXA AI research agent
