@@ -23,14 +23,18 @@ import {
   type AgentEngagementStat,
   type CountryStat,
   type PageviewStats,
+  type PeriodTotals,
   type TimelineDay,
 } from './stats-types';
+import { pageLabel, rankShares, referrerSource } from './dashboard-math';
 
 /** @deprecated Prefer TimelineRange — kept for older imports. */
 export const TIMELINE_DAYS = 30;
 export const TOP_AGENTS = 8;
 /** How many countries the analytics page surfaces for human traffic. */
-export const TOP_COUNTRIES = 5;
+export const TOP_COUNTRIES = 6;
+export const TOP_PAGES = 6;
+export const TOP_SOURCES = 6;
 
 export type { TimelineRange };
 export type {
@@ -50,7 +54,11 @@ const EMPTY: PageviewStats = {
   visits: 0,
   peopleApprox: 0,
   returning: 0,
+  previous: null,
   topCountries: [],
+  topPages: [],
+  topSources: [],
+  devices: [],
   botCompanies: [],
   byBot: [],
   topAgents: [],
@@ -108,6 +116,95 @@ function fillTimeline(
   return skeleton;
 }
 
+/** Half-open [from, to) window in ISO strings; null bounds are open. */
+type Window = { from: string | null; to: string | null };
+
+function windowFor(range: TimelineRange, now = new Date()): { current: Window; previous: Window | null } {
+  const days = timelineRangeDays(range);
+  if (days === null) return { current: { from: null, to: null }, previous: null };
+  const start = new Date(now);
+  start.setUTCHours(0, 0, 0, 0);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  const prevStart = new Date(start);
+  prevStart.setUTCDate(prevStart.getUTCDate() - days);
+  return {
+    current: { from: start.toISOString(), to: null },
+    previous: { from: prevStart.toISOString(), to: start.toISOString() },
+  };
+}
+
+function whereIn(w: Window, extra?: ReturnType<typeof sql>) {
+  const parts = [
+    w.from ? sql`created_at >= ${w.from}` : null,
+    w.to ? sql`created_at < ${w.to}` : null,
+    extra ?? null,
+  ].filter((p): p is ReturnType<typeof sql> => p !== null);
+  return parts.length ? sql`WHERE ${sql.join(parts, sql` AND `)}` : sql``;
+}
+
+const HUMAN = sql`coalesce(is_bot, false) = false`;
+
+/** Hosts whose referrers count as internal navigation, not a traffic source. */
+function ownHosts(): string[] {
+  const hosts = ['localhost', '127.0.0.1'];
+  for (const raw of [process.env.NEXT_PUBLIC_BASE_URL, 'https://agentdirectory.folch.ai', process.env.VERCEL_URL]) {
+    if (!raw) continue;
+    try {
+      hosts.push(new URL(raw.includes('://') ? raw : `https://${raw}`).hostname.replace(/^www\./, ''));
+    } catch {
+      // ignore malformed env
+    }
+  }
+  return hosts;
+}
+
+/** Headline counts for one window (used for the current and the previous period). */
+async function windowTotals(w: Window): Promise<PeriodTotals> {
+  const pathRows = unwrapExecuteRows<{ path: string; humans: number; bots: number }>(
+    await db.execute(sql`
+      SELECT path,
+        count(*) FILTER (WHERE ${HUMAN})::int AS humans,
+        count(*) FILTER (WHERE is_bot = true)::int AS bots
+      FROM page_views ${whereIn(w)}
+      GROUP BY path
+    `)
+  );
+  let visits = 0;
+  let crawls = 0;
+  for (const row of pathRows) {
+    crawls += Number(row.bots);
+    if (isPageView(normalizePath(row.path))) visits += Number(row.humans);
+  }
+
+  // Distinct hashed_ip on real pages only (IP-based people estimate).
+  const ipRows = unwrapExecuteRows<{ hashed_ip: string; path: string }>(
+    await db.execute(sql`
+      SELECT DISTINCT hashed_ip, path FROM page_views
+      ${whereIn(w, sql`${HUMAN} AND hashed_ip IS NOT NULL`)}
+    `)
+  );
+  const people = new Set<string>();
+  for (const row of ipRows) if (isPageView(row.path)) people.add(row.hashed_ip);
+
+  // Returning = persistent visitor_id with >1 human page view in the window.
+  const visitorRows = unwrapExecuteRows<{ visitor_id: string; path: string; hits: number }>(
+    await db.execute(sql`
+      SELECT visitor_id, path, count(*)::int AS hits FROM page_views
+      ${whereIn(w, HUMAN)}
+      GROUP BY visitor_id, path
+    `)
+  );
+  const hitsByVisitor = new Map<string, number>();
+  for (const row of visitorRows) {
+    if (!isPageView(row.path)) continue;
+    hitsByVisitor.set(row.visitor_id, (hitsByVisitor.get(row.visitor_id) ?? 0) + Number(row.hits));
+  }
+  let returning = 0;
+  for (const hits of hitsByVisitor.values()) if (hits > 1) returning++;
+
+  return { visits, peopleApprox: people.size, returning, bots: crawls };
+}
+
 async function fetchPageviewStatsUncached(
   range: TimelineRange
 ): Promise<PageviewStats | null> {
@@ -115,86 +212,49 @@ async function fetchPageviewStatsUncached(
 
   try {
     await ensurePageViewsSchema();
+    const { current, previous } = windowFor(range);
 
-    // Path-level rollup so we can drop scanner / infra / missing from public
-    // "people" and visit counts (classification is richer than SQL patterns).
-    const pathRows = unwrapExecuteRows<{
+    const [totals, previousTotals] = await Promise.all([
+      windowTotals(current),
+      previous ? windowTotals(previous) : Promise.resolve(null),
+    ]);
+
+    // Human breakdowns in one pass: path × country × device × referrer host.
+    const humanRows = unwrapExecuteRows<{
       path: string;
-      total: number;
-      humans: number;
-      bots: number;
-      country: string | null;
+      country: string;
+      device: string;
+      ref_host: string | null;
+      hits: number;
     }>(
       await db.execute(sql`
         SELECT
           path,
           coalesce(nullif(country, ''), 'ZZ') AS country,
-          count(*)::int AS total,
-          count(*) FILTER (WHERE coalesce(is_bot, false) = false)::int AS humans,
-          count(*) FILTER (WHERE is_bot = true)::int AS bots
+          coalesce(nullif(device_type, ''), 'unknown') AS device,
+          substring(referrer from '^[a-zA-Z][a-zA-Z0-9+.-]*://([^/?#:]+)') AS ref_host,
+          count(*)::int AS hits
         FROM page_views
-        GROUP BY path, coalesce(nullif(country, ''), 'ZZ')
+        ${whereIn(current, HUMAN)}
+        GROUP BY 1, 2, 3, 4
       `)
     );
 
-    let visits = 0;
-    let total = 0;
     const countryCounts = new Map<string, number>();
-
-    for (const row of pathRows) {
+    const pageCounts = new Map<string, number>();
+    const sourceCounts = new Map<string, { label: string; count: number }>();
+    const deviceCounts = new Map<string, number>();
+    const own = ownHosts();
+    for (const row of humanRows) {
       const path = normalizePath(row.path);
-      const rowTotal = Number(row.total);
-      const rowHumans = Number(row.humans);
-      total += rowTotal;
-
       if (!isPageView(path)) continue;
-
-      visits += rowHumans;
-      if (rowHumans > 0) {
-        const c = row.country || 'ZZ';
-        countryCounts.set(c, (countryCounts.get(c) ?? 0) + rowHumans);
-      }
-    }
-
-    // Distinct hashed_ip on real pages only (IP-based people estimate).
-    const ipRows = unwrapExecuteRows<{ hashed_ip: string; path: string }>(
-      await db.execute(sql`
-        SELECT DISTINCT hashed_ip, path
-        FROM page_views
-        WHERE coalesce(is_bot, false) = false
-          AND hashed_ip IS NOT NULL
-      `)
-    );
-    const peopleSet = new Set<string>();
-    for (const row of ipRows) {
-      if (isPageView(row.path)) peopleSet.add(row.hashed_ip);
-    }
-
-    // Returning = persistent visitor_id with >1 human page view (ephemeral
-    // one-shot UUIDs never qualify).
-    const visitorRows = unwrapExecuteRows<{
-      visitor_id: string;
-      path: string;
-      hits: number;
-    }>(
-      await db.execute(sql`
-        SELECT visitor_id, path, count(*)::int AS hits
-        FROM page_views
-        WHERE coalesce(is_bot, false) = false
-        GROUP BY visitor_id, path
-      `)
-    );
-    const hitsByVisitor = new Map<string, number>();
-    for (const row of visitorRows) {
-      if (!isPageView(row.path)) continue;
-      hitsByVisitor.set(
-        row.visitor_id,
-        (hitsByVisitor.get(row.visitor_id) ?? 0) + Number(row.hits)
-      );
-    }
-    let returning = 0;
-    for (const hits of hitsByVisitor.values()) {
-      if (hits > 1) returning++;
+      const hits = Number(row.hits);
+      countryCounts.set(row.country, (countryCounts.get(row.country) ?? 0) + hits);
+      pageCounts.set(path, (pageCounts.get(path) ?? 0) + hits);
+      const src = referrerSource(row.ref_host ? `https://${row.ref_host}/` : null, own);
+      const prev = sourceCounts.get(src.id);
+      sourceCounts.set(src.id, { label: src.label, count: (prev?.count ?? 0) + hits });
+      deviceCounts.set(row.device, (deviceCounts.get(row.device) ?? 0) + hits);
     }
 
     const botUaRows = unwrapExecuteRows<{
@@ -208,7 +268,7 @@ async function fetchPageviewStatsUncached(
           user_agent,
           count(*)::int AS count
         FROM page_views
-        WHERE is_bot = true
+        ${whereIn(current, sql`is_bot = true`)}
         GROUP BY coalesce(bot_name, 'UnknownBot'), user_agent
         ORDER BY count(*) DESC
         LIMIT 500
@@ -223,19 +283,7 @@ async function fetchPageviewStatsUncached(
     const byBotSorted = [...botCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 100);
-
-    const botTotal = byBotSorted.reduce((s, [, n]) => s + n, 0);
-
-    const fixedDays = timelineRangeDays(range);
-    const since =
-      fixedDays === null
-        ? null
-        : (() => {
-            const d = new Date();
-            d.setUTCHours(0, 0, 0, 0);
-            d.setUTCDate(d.getUTCDate() - (fixedDays - 1));
-            return d.toISOString();
-          })();
+    const botTotal = byBotSorted.reduce((sum, [, n]) => sum + n, 0);
 
     const byDayRaw = unwrapExecuteRows<{
       day: string;
@@ -249,29 +297,28 @@ async function fetchPageviewStatsUncached(
           to_char((created_at AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD') AS day,
           path,
           count(*)::int AS total,
-          count(*) FILTER (WHERE coalesce(is_bot, false) = false)::int AS humans,
+          count(*) FILTER (WHERE ${HUMAN})::int AS humans,
           count(*) FILTER (WHERE is_bot = true)::int AS bots
         FROM page_views
-        ${since ? sql`WHERE created_at >= ${since}` : sql``}
+        ${whereIn(current)}
         GROUP BY (created_at AT TIME ZONE 'UTC')::date, path
         ORDER BY (created_at AT TIME ZONE 'UTC')::date ASC
       `)
     );
 
-    const byDayMap = new Map<
-      string,
-      { total: number; humans: number; bots: number }
-    >();
+    // Daily human visits count real pages only; crawls count every bot hit,
+    // matching the crawler total.
+    const byDayMap = new Map<string, { total: number; humans: number; bots: number }>();
     for (const row of byDayRaw) {
-      if (!isPageView(row.path)) continue;
       const prev = byDayMap.get(row.day) ?? { total: 0, humans: 0, bots: 0 };
-      prev.total += Number(row.total);
-      prev.humans += Number(row.humans);
+      const humans = isPageView(normalizePath(row.path)) ? Number(row.humans) : 0;
+      prev.humans += humans;
       prev.bots += Number(row.bots);
+      prev.total = prev.humans + prev.bots;
       byDayMap.set(row.day, prev);
     }
 
-    // Engagement is all-time — independent of the chart window.
+    const engagementWhere = current.from ? sql`${engagementEvents.createdAt} >= ${current.from}` : sql`true`;
     const topAgentRows = await db
       .select({
         agentSlug: sql<string>`coalesce(${engagementEvents.agentSlug}, 'unknown')`,
@@ -279,12 +326,14 @@ async function fetchPageviewStatsUncached(
         activeMs: sql<number>`coalesce(sum(${engagementEvents.durationMs}) filter (where ${engagementEvents.eventType} = 'heartbeat'), 0)::int`,
       })
       .from(engagementEvents)
+      .where(engagementWhere)
       .groupBy(sql`coalesce(${engagementEvents.agentSlug}, 'unknown')`)
       .orderBy(
         sql`count(*) filter (where ${engagementEvents.eventType} = 'message_sent') desc`
       )
       .limit(TOP_AGENTS);
 
+    const fixedDays = timelineRangeDays(range);
     const today = utcDayString(new Date());
     let timeline: TimelineDay[];
     if (fixedDays !== null) {
@@ -300,6 +349,7 @@ async function fetchPageviewStatsUncached(
       toBotAgentStat(botName, count)
     );
 
+    const visits = totals.visits;
     const topCountries = [...countryCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, TOP_COUNTRIES)
@@ -312,13 +362,26 @@ async function fetchPageviewStatsUncached(
       }));
 
     return {
-      total,
+      total: visits + botTotal,
       humans: visits,
       bots: botTotal,
       visits,
-      peopleApprox: peopleSet.size,
-      returning,
+      peopleApprox: totals.peopleApprox,
+      returning: totals.returning,
+      previous: previousTotals,
       topCountries,
+      topPages: rankShares(
+        [...pageCounts.entries()].map(([path, count]) => ({ id: path, label: pageLabel(path), count })),
+        TOP_PAGES,
+      ),
+      topSources: rankShares(
+        [...sourceCounts.entries()].map(([id, v]) => ({ id, label: v.label, count: v.count })),
+        TOP_SOURCES,
+      ),
+      devices: rankShares(
+        [...deviceCounts.entries()].map(([id, count]) => ({ id, label: deviceLabel(id), count })),
+        4,
+      ),
       botCompanies: rollUpBotCompanies(agents, botTotal),
       byBot: agents,
       topAgents: topAgentRows
@@ -337,16 +400,22 @@ async function fetchPageviewStatsUncached(
   }
 }
 
+function deviceLabel(id: string): string {
+  const labels: Record<string, string> = { desktop: 'Desktop', mobile: 'Mobile', tablet: 'Tablet', unknown: 'Unknown' };
+  return labels[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
+}
+
 const getCachedPageviewStats = unstable_cache(
   async (range: TimelineRange) => fetchPageviewStatsUncached(range),
-  ['pageview-stats-v8'],
+  ['pageview-stats-v9'],
   { revalidate: 15, tags: ['pageview-stats'] }
 );
 
 /**
  * Short TTL plus `revalidateTag('pageview-stats')` on each recorded visit.
  * Keeps the homepage pill / analytics page from serving a minute-old total.
- * `range` only affects `timeline`; totals and rankings stay all-time.
+ * Every figure is scoped to `range`; `previous` holds the same counts for the
+ * preceding window of equal length (null for all-time).
  */
 export async function getPageviewStats(
   range: TimelineRange = '30'

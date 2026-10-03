@@ -10,8 +10,9 @@ function formatCount(n: number): string {
 
 /** Tiny homepage badge — hidden until Neon has real visits. */
 export default function DirectoryPulse() {
-  const { stats, loaded } = usePageviewStats();
-  const total = loaded ? (stats?.total ?? 0) : null;
+  // All-time human visits: the homepage badge is a lifetime figure, not a window.
+  const { stats, loaded } = usePageviewStats('all');
+  const total = loaded ? (stats?.visits ?? 0) : null;
 
   // Hide while loading and when there is nothing real to show.
   if (total === null || total <= 0) return null;

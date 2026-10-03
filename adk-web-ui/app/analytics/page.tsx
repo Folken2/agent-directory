@@ -1,24 +1,16 @@
-import AnalyticsPreview from '@/components/analytics/AnalyticsPreview';
+import AnalyticsDashboard from '@/components/analytics/dashboard/AnalyticsDashboard';
 import AnalyticsOpsLink from '@/components/analytics/AnalyticsOpsLink';
 
 export const metadata = {
   title: 'Analytics | ADK Agent Directory',
-  description: 'Directory visit analytics by country and crawler.',
+  description: 'Directory traffic: visits, sources, pages, countries and crawlers.',
 };
 
 export default function AnalyticsPage() {
   return (
-    <div className="min-h-screen bg-md-surface pt-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <header className="mb-10 sm:mb-12">
-          <h1 className="text-display-small text-md-on-surface mb-3 tracking-tight">
-            Analytics
-          </h1>
-          <p className="text-body-large text-md-on-surface-variant max-w-xl">
-            Where the directory is being read — people and crawlers.
-          </p>
-        </header>
-        <AnalyticsPreview />
+    <div className="min-h-screen bg-md-surface-container-low">
+      <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+        <AnalyticsDashboard />
         <AnalyticsOpsLink />
       </div>
     </div>

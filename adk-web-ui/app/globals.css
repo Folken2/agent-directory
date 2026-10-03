@@ -111,6 +111,13 @@
   --shadow-elevation-4: 0 6px 10px 4px rgb(60 64 67 / 0.15), 0 2px 3px 0 rgb(60 64 67 / 0.30);
   --shadow-elevation-5: 0 8px 12px 6px rgb(60 64 67 / 0.15), 0 4px 4px 0 rgb(60 64 67 / 0.30);
 
+
+  /* Chart series (validated with the dataviz palette checker against
+     --md-surface in each theme): people = slot 1 blue, crawlers = slot 2 orange. */
+  --chart-people: #2a78d6;
+  --chart-crawlers: #eb6834;
+  --chart-good-text: #006300;
+  --chart-bad-text: #b3261e;
 }
 
 .dark {
@@ -162,9 +169,17 @@
   --shadow-elevation-4: 0 6px 10px 4px rgb(0 0 0 / 0.3), 0 2px 3px 0 rgb(0 0 0 / 0.5);
   --shadow-elevation-5: 0 8px 12px 6px rgb(0 0 0 / 0.3), 0 4px 4px 0 rgb(0 0 0 / 0.5);
 
+  --chart-people: #3987e5;
+  --chart-crawlers: #d95926;
+  --chart-good-text: #0ca30c;
+  --chart-bad-text: #f2b8b5;
 }
 
 @theme inline {
+  --color-chart-people: var(--chart-people);
+  --color-chart-crawlers: var(--chart-crawlers);
+  --color-chart-good-text: var(--chart-good-text);
+  --color-chart-bad-text: var(--chart-bad-text);
   --font-sans: var(--font-google-sans), Inter, system-ui, sans-serif;
   --font-mono: var(--font-google-sans-code), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-md-primary: hsl(var(--md-primary));
