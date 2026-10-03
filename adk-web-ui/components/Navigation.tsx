@@ -3,13 +3,21 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, LogIn } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { Menu, LogIn, LogOut } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import UserProfile from '@/components/auth/UserProfile';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import SignOutButton from '@/components/auth/SignOutButton';
 
 const destinations = [
@@ -38,6 +46,17 @@ function NavLink({ href, className, ...props }: React.ComponentProps<typeof Link
       )}
       {...props}
     />
+  );
+}
+
+function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
+  if (image) {
+    return <Image src={image} alt="" width={32} height={32} className="h-8 w-8 rounded-full" />;
+  }
+  return (
+    <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-md-primary-container text-sm font-medium text-md-on-primary-container">
+      {(name || 'U').charAt(0).toUpperCase()}
+    </span>
   );
 }
 
@@ -72,15 +91,33 @@ export default function Navigation() {
           {destinations.map((d) => (
             <NavLink key={d.href} href={d.href}>{d.name}</NavLink>
           ))}
-          {accountLinks.map((d) => (
-            <NavLink key={d.href} href={d.href}>{d.name}</NavLink>
-          ))}
           <ThemeToggle className="ml-2" />
           {isAuthenticated ? (
-            <div className="ml-2 flex items-center gap-2">
-              <UserProfile />
-              <SignOutButton />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="text" size="icon" className="ml-2" aria-label="Account">
+                  <Avatar name={session?.user?.name} image={session?.user?.image} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>
+                  <span className="block text-sm font-medium text-md-on-surface">{session?.user?.name || 'User'}</span>
+                  {session?.user?.email && (
+                    <span className="block text-xs font-normal text-md-on-surface-variant">{session.user.email}</span>
+                  )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {accountLinks.map((d) => (
+                  <DropdownMenuItem key={d.href} asChild>
+                    <Link href={d.href}>{d.name}</Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => { void signOut({ callbackUrl: '/' }); }}>
+                  <LogOut /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           ) : (
             <Link href="/auth/signin" className={cn(buttonVariants({ variant: 'filled', size: 'sm' }), 'ml-2')}>
               Sign in
