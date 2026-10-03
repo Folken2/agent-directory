@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import AgentGrid from '@/components/AgentGrid';
+import { loadExampleAgents } from '@/lib/agent-catalog';
 
 export const metadata: Metadata = {
   title: 'Example agents | ADK Agent Directory',
@@ -10,14 +11,12 @@ export const metadata: Metadata = {
 
 export default function ExamplesPage() {
   return (
-    <div className="min-h-screen bg-md-surface">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-        <h1 className="text-display-small tracking-tight text-md-on-surface">Examples</h1>
-        <p className="mb-10 mt-2 max-w-2xl text-body-large text-md-on-surface-variant">
-          Agents built with the Agent Development Kit. Open one to see what it does, then try it in chat.
-        </p>
-        <AgentGrid />
-      </div>
+    <div className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14 lg:px-8">
+      <h1 className="text-headline-large tracking-tight text-md-on-surface">Examples</h1>
+      <p className="mb-8 mt-2 max-w-2xl text-body-large text-md-on-surface-variant">
+        Agents built with the Agent Development Kit. Open one to see what it does, then try it in chat.
+      </p>
+      <AgentGrid agents={loadExampleAgents()} />
     </div>
   );
 }

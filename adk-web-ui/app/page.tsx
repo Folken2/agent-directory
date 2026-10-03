@@ -1,23 +1,21 @@
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import AgentGrid from '@/components/AgentGrid';
-import DirectoryPulse from '@/components/analytics/DirectoryPulse';
 import BuilderHero from '@/components/home/BuilderHero';
-import { buttonVariants } from '@/components/ui/button';
+import { loadExampleAgents } from '@/lib/agent-catalog';
 
 export default function Home() {
+  const examples = loadExampleAgents();
+
   return (
-    <div className="min-h-screen bg-md-surface">
-      <section className="mx-auto max-w-7xl px-4 pb-20 pt-20 sm:px-6 sm:pt-28 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-5 flex justify-center">
-            <DirectoryPulse />
-          </div>
-          <h1 className="mb-4 text-display-small tracking-tight text-md-on-surface sm:text-display-medium">
+    <>
+      <section className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 sm:pt-28 lg:px-8">
+        <div className="mx-auto max-w-2xl text-center">
+          <h1 className="text-display-small tracking-tight text-md-on-surface sm:text-display-medium">
             What agent do you want to build?
           </h1>
-          <p className="mx-auto mb-10 max-w-2xl text-body-large text-md-on-surface-variant">
-            Describe it in a sentence. The agent builder helps you design it with Google&apos;s Agent
+          <p className="mx-auto mb-10 mt-4 max-w-xl text-body-large text-md-on-surface-variant">
+            Describe it in a sentence. The agent builder designs it with you using Google&apos;s Agent
             Development Kit: architecture, tools, prompts and code.
           </p>
         </div>
@@ -27,24 +25,25 @@ export default function Home() {
       <section
         id="examples"
         aria-labelledby="examples-heading"
-        className="mx-auto max-w-7xl px-4 pb-24 sm:px-6 lg:px-8"
+        className="mx-auto max-w-7xl px-4 pb-20 sm:px-6 lg:px-8"
       >
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <h2 id="examples-heading" className="text-headline-small tracking-tight text-md-on-surface">
-              Examples
-            </h2>
-            <p className="mt-1 text-body-medium text-md-on-surface-variant">
-              Working agents you can try right now, free and without an account.
-            </p>
-          </div>
-          <Link href="/examples" className={buttonVariants({ variant: 'text' })}>
+        <div className="flex items-baseline justify-between gap-4">
+          <h2 id="examples-heading" className="text-title-large tracking-tight text-md-on-surface">
+            Examples
+          </h2>
+          <Link
+            href="/examples"
+            className="inline-flex shrink-0 items-center gap-1 rounded-full text-label-large text-md-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
+          >
             Browse all examples
-            <ArrowRight />
+            <ArrowRight className="size-4" aria-hidden />
           </Link>
         </div>
-        <AgentGrid limit={4} showControls={false} />
+        <p className="mb-5 mt-1 text-body-medium text-md-on-surface-variant">
+          Working agents you can try now. No account needed.
+        </p>
+        <AgentGrid agents={examples} limit={4} showControls={false} />
       </section>
-    </div>
+    </>
   );
 }

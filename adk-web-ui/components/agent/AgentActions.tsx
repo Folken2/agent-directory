@@ -4,10 +4,9 @@ import { useEffect, useState } from 'react';
 import { Share2, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppStore } from '@/lib/store';
+import { COMMUNITY_WRITES, fetchStarCounts, postStar } from '@/lib/stars-client';
 import { Button } from '@/components/ui/button';
 import { notify } from '@/components/ui/snackbar';
-
-const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
 
 /** Client-only controls on the server-rendered agent page: star and share. */
 export default function AgentActions({ name, displayName, description }: {
@@ -15,26 +14,38 @@ export default function AgentActions({ name, displayName, description }: {
   displayName: string;
   description: string;
 }) {
-  const { toggleStarAgent, isAgentStarred, loadPreferences } = useAppStore();
+  const starredAgents = useAppStore((s) => s.starredAgents);
+  const toggleStarAgent = useAppStore((s) => s.toggleStarAgent);
+  const loadStarredAgents = useAppStore((s) => s.loadStarredAgents);
   const [starsCount, setStarsCount] = useState<number | undefined>(undefined);
+  const isStarred = starredAgents.includes(name);
 
   useEffect(() => {
     if (!COMMUNITY_WRITES) return;
-    loadPreferences();
+    loadStarredAgents();
     let cancelled = false;
-    fetch('/api/agents')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((json) => {
-        const agent = Array.isArray(json?.data)
-          ? (json.data as Array<{ name: string; starsCount?: number }>).find((a) => a.name === name)
-          : undefined;
-        if (!cancelled && typeof agent?.starsCount === 'number') setStarsCount(agent.starsCount);
-      })
-      .catch(() => {});
+    void fetchStarCounts().then((counts) => {
+      if (!cancelled && counts.has(name)) setStarsCount(counts.get(name));
+    });
     return () => {
       cancelled = true;
     };
-  }, [name, loadPreferences]);
+  }, [name, loadStarredAgents]);
+
+  const handleStar = async () => {
+    const action = isStarred ? 'unstar' : 'star';
+    const delta = action === 'star' ? 1 : -1;
+    toggleStarAgent(name);
+    setStarsCount((c) => (c === undefined ? c : Math.max(0, c + delta)));
+    try {
+      const count = await postStar(name, action);
+      if (count !== null) setStarsCount(count);
+    } catch {
+      toggleStarAgent(name);
+      setStarsCount((c) => (c === undefined ? c : Math.max(0, c - delta)));
+      notify('Could not update the star');
+    }
+  };
 
   const handleShare = async () => {
     const url = window.location.href;
@@ -54,25 +65,23 @@ export default function AgentActions({ name, displayName, description }: {
     }
   };
 
-  const isStarred = isAgentStarred(name);
-
   return (
     <>
-      {COMMUNITY_WRITES && (
-        <Button
-          variant={isStarred ? 'filled' : 'tonal'}
-          onClick={() => toggleStarAgent(name)}
-          aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
-        >
-          <Star className={cn(isStarred && 'fill-current')} />
-          {isStarred ? 'Starred' : 'Star'}
-          {starsCount !== undefined && <span className="text-sm">({starsCount})</span>}
-        </Button>
-      )}
       <Button variant="outlined" onClick={handleShare} aria-label="Share agent">
         <Share2 />
         Share
       </Button>
+      {COMMUNITY_WRITES && (
+        <Button
+          variant="text"
+          onClick={() => void handleStar()}
+          aria-pressed={isStarred}
+          aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
+        >
+          <Star className={cn(isStarred && 'fill-current')} />
+          {starsCount ? starsCount : isStarred ? 'Starred' : 'Star'}
+        </Button>
+      )}
     </>
   );
 }

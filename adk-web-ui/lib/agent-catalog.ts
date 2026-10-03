@@ -12,6 +12,7 @@
 import { readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { formatAgentDisplayName } from './agent-utils';
+import { exampleAgents } from './builder';
 import { loadAgentMetadata, type AgentMetadata } from './agent-metadata';
 import type { Agent, AgentsListSource } from './types';
 import snapshotJson from './agent-catalog.snapshot.json';
@@ -202,4 +203,9 @@ export function asPublicAgents(agents: CatalogAgent[]): Agent[] {
     useCases: agent.useCases ?? [],
     samplePrompts: agent.samplePrompts ?? [],
   }));
+}
+
+/** The example agents (everything but the builder) for server-rendered lists. */
+export function loadExampleAgents(): Agent[] {
+  return exampleAgents(asPublicAgents(loadOfflineCatalog()));
 }

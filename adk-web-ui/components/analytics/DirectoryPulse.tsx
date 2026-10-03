@@ -8,23 +8,17 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-/** Tiny homepage badge — hidden until Neon has real visits. */
-export default function DirectoryPulse() {
-  // All-time human visits: the homepage badge is a lifetime figure, not a window.
+/** Footer link to the visits dashboard — hidden until there are real visits. */
+export default function DirectoryPulse({ className }: { className?: string }) {
+  // All-time human visits: a lifetime figure, not a window.
   const { stats, loaded } = usePageviewStats('all');
   const total = loaded ? (stats?.visits ?? 0) : null;
 
-  // Hide while loading and when there is nothing real to show.
   if (total === null || total <= 0) return null;
 
   return (
-    <Link
-      href="/analytics"
-      className="inline-flex items-center gap-1.5 rounded-full border border-md-outline/70 bg-md-surface-container-low/80 px-2.5 py-1 text-[11px] font-medium tracking-wide text-md-on-surface-variant hover:border-md-outline hover:text-md-on-surface transition-colors"
-      title="Directory visit analytics"
-    >
-      <span className="inline-block h-1.5 w-1.5 rounded-full bg-md-secondary" aria-hidden />
-      <span>{formatCount(total)} visits</span>
+    <Link href="/analytics" className={className}>
+      {formatCount(total)} visits
     </Link>
   );
 }

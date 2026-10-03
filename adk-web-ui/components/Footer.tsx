@@ -1,74 +1,46 @@
 'use client';
 
 import Link from 'next/link';
-import { Github, Linkedin, Globe2 } from 'lucide-react';
 import { NOT_AFFILIATED_NOTICE } from '@/lib/site';
+import DirectoryPulse from '@/components/analytics/DirectoryPulse';
+
+/** Only render an external link when its URL is configured and valid. */
+function configuredUrl(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    return new URL(value).toString();
+  } catch {
+    return null;
+  }
+}
+
+const linkClass =
+  'rounded-sm transition-colors hover:text-md-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary';
 
 export default function Footer() {
-  const normalizeUrl = (value: string | undefined, fallback: string) => {
-    if (!value) return fallback;
-    try {
-      return new URL(value).toString();
-    } catch {
-      return fallback;
-    }
-  };
-
-  const githubUrl = normalizeUrl(process.env.NEXT_PUBLIC_GITHUB_URL, 'https://github.com');
-  const linkedinUrl = normalizeUrl(process.env.NEXT_PUBLIC_LINKEDIN_URL, 'https://www.linkedin.com');
-  const personalUrl = normalizeUrl(process.env.NEXT_PUBLIC_PERSONAL_URL, 'https://example.com');
+  const external = [
+    { label: 'GitHub', href: configuredUrl(process.env.NEXT_PUBLIC_GITHUB_URL) },
+    { label: 'LinkedIn', href: configuredUrl(process.env.NEXT_PUBLIC_LINKEDIN_URL) },
+    { label: 'Website', href: configuredUrl(process.env.NEXT_PUBLIC_PERSONAL_URL) },
+  ].filter((l): l is { label: string; href: string } => l.href !== null);
 
   return (
-    <footer className="border-t border-md-outline-variant bg-md-surface-container">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <div className="text-label-medium text-md-on-surface-variant flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span>© {new Date().getFullYear()} ADK Agent Directory. Built with Google ADK.</span>
-              <Link
-                href="/privacy"
-                className="underline underline-offset-2 hover:text-md-on-surface"
-              >
-                Privacy
-              </Link>
-            </div>
-            <p className="text-label-medium text-md-on-surface-variant">{NOT_AFFILIATED_NOTICE}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href={githubUrl}
-              target="_blank"
-              rel="noreferrer"
-              prefetch={false}
-              className="inline-flex size-10 items-center justify-center rounded-full text-md-on-surface-variant transition-colors hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
-              aria-label="GitHub"
-            >
-              <Github className="w-4 h-4" />
-            </Link>
-            <Link
-              href={linkedinUrl}
-              target="_blank"
-              rel="noreferrer"
-              prefetch={false}
-              className="inline-flex size-10 items-center justify-center rounded-full text-md-on-surface-variant transition-colors hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
-              aria-label="LinkedIn"
-            >
-              <Linkedin className="w-4 h-4" />
-            </Link>
-            <Link
-              href={personalUrl}
-              target="_blank"
-              rel="noreferrer"
-              prefetch={false}
-              className="inline-flex size-10 items-center justify-center rounded-full text-md-on-surface-variant transition-colors hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
-              aria-label="Website"
-            >
-              <Globe2 className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
+    <footer className="border-t border-md-outline/60">
+      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-6 sm:px-6 lg:px-8">
+        <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-md-on-surface-variant">
+          <Link href="/about" className={linkClass}>About</Link>
+          <Link href="/privacy" className={linkClass}>Privacy</Link>
+          {external.map((l) => (
+            <a key={l.label} href={l.href} target="_blank" rel="noreferrer" className={linkClass}>
+              {l.label}
+            </a>
+          ))}
+          <DirectoryPulse className={linkClass} />
+        </nav>
+        <p className="text-xs leading-relaxed text-md-on-surface-variant">
+          © {new Date().getFullYear()} Agent Directory. {NOT_AFFILIATED_NOTICE}
+        </p>
       </div>
     </footer>
   );
 }
-

@@ -7,12 +7,28 @@ test('desktop nav shows destinations and theme switch', async ({ page }) => {
   await expect(nav.getByRole('link', { name: 'Examples' })).toHaveAttribute('href', '/examples');
   await expect(nav.getByRole('link', { name: 'Agents' })).toHaveCount(0);
   await expect(nav.getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
-  await expect(nav.getByRole('radiogroup', { name: 'Theme' })).toBeVisible();
+  await expect(nav.getByRole('button', { name: /^Theme:/ })).toBeVisible();
 });
 
-test('theme radio group supports arrow-key navigation with roving tabindex', async ({ page }) => {
+test('theme menu opens from the top bar and applies a choice', async ({ page }) => {
   await page.goto('/about');
-  const group = page.getByRole('navigation', { name: 'Main' }).getByRole('radiogroup', { name: 'Theme' });
+  const trigger = page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /^Theme:/ });
+  await trigger.click();
+  const menu = page.getByRole('menu');
+  await expect(menu.getByRole('menuitemradio')).toHaveCount(3);
+  await expect(menu.getByRole('menuitemradio', { checked: true })).toHaveCount(1);
+  await menu.getByRole('menuitemradio', { name: 'Dark' }).click();
+  await expect(menu).toBeHidden();
+  await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+  await expect(trigger).toHaveAccessibleName('Theme: Dark');
+});
+
+test('theme radio group in the mobile menu supports arrow keys with roving tabindex', async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const page = await ctx.newPage();
+  await page.goto('/about');
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const group = page.getByRole('dialog', { name: 'Menu' }).getByRole('radiogroup', { name: 'Theme' });
   const checked = group.locator('[role="radio"][aria-checked="true"]');
   await expect(checked).toHaveCount(1);
   await expect(group.locator('[role="radio"][tabindex="0"]')).toHaveCount(1);
@@ -25,6 +41,7 @@ test('theme radio group supports arrow-key navigation with roving tabindex', asy
   const nextRadio = group.getByRole('radio', { name: next });
   await expect(nextRadio).toBeChecked();
   await expect(nextRadio).toBeFocused();
+  await ctx.close();
 });
 
 test('mobile menu is an accessible sheet', async ({ browser }) => {

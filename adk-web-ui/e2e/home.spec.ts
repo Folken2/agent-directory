@@ -56,8 +56,7 @@ test.describe('Home: builder hero', () => {
     await page.goto('/');
     const examples = page.getByRole('region', { name: 'Examples' });
     const cards = examples.getByRole('heading', { level: 3 });
-    // /api/agents can take several seconds to fall back to the bundled catalog.
-    await expect(cards).toHaveCount(4, { timeout: 30_000 });
+    await expect(cards).toHaveCount(4);
     await expect(examples.getByRole('link', { name: 'ADK Agent Builder' })).toHaveCount(0);
     await expect(page.getByText(/not an official google product/i)).toBeVisible();
 
@@ -90,15 +89,31 @@ test('/chat?prompt without send=1 prefills instead of sending', async ({ page })
   expect(bodies).toHaveLength(0);
 });
 
-test('examples sort menu is keyboard accessible', async ({ page }) => {
+test('examples category chips filter the grid', async ({ page }) => {
   await page.goto('/examples');
-  const trigger = page.getByRole('button', { name: /sort/i });
-  await trigger.focus();
-  await page.keyboard.press('Enter');
-  const menu = page.getByRole('menu');
-  await expect(menu).toBeVisible();
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('Escape');
-  await expect(menu).toBeHidden();
-  await expect(trigger).toBeFocused();
+  const filters = page.getByRole('group', { name: 'Filter by category' });
+  const all = filters.getByRole('button', { name: 'All' });
+  await expect(all).toHaveAttribute('aria-pressed', 'true');
+  const cards = page.getByRole('heading', { level: 3 });
+  const total = await cards.count();
+
+  const research = filters.getByRole('button', { name: 'Research' });
+  await research.click();
+  await expect(research).toHaveAttribute('aria-pressed', 'true');
+  await expect(all).toHaveAttribute('aria-pressed', 'false');
+  const filtered = await cards.count();
+  expect(filtered).toBeGreaterThan(0);
+  expect(filtered).toBeLessThan(total);
+
+  // Clicking the selected chip again clears the filter.
+  await research.click();
+  await expect(all).toHaveAttribute('aria-pressed', 'true');
+  await expect(cards).toHaveCount(total);
+});
+
+test('examples render on the server without a loading state', async ({ page }) => {
+  await page.route('**/api/agents', (r) => r.abort());
+  await page.goto('/examples');
+  await expect(page.getByRole('heading', { level: 3 }).first()).toBeVisible();
+  await expect(page.getByText(/loading examples|server unavailable/i)).toHaveCount(0);
 });

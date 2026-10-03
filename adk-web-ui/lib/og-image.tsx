@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 import { ImageResponse } from 'next/og';
 
-const ADK_LOGO = `data:image/png;base64,${readFileSync(join(process.cwd(), 'public/adk_logo.png')).toString('base64')}`;
+const ADK_LOGO = `data:image/png;base64,${readFileSync(join(process.cwd(), 'public/adk-logo.png')).toString('base64')}`;
 
 export const OG_SIZE = { width: 1200, height: 630 };
 
@@ -25,7 +25,7 @@ export function renderOgCard({ eyebrow, title, subtitle }: { eyebrow: string; ti
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- ImageResponse renders plain <img> */}
-          <img src={ADK_LOGO} width={64} height={56} alt="" />
+          <img src={ADK_LOGO} width={64} height={64} alt="" />
           <div style={{ fontSize: 32, color: '#444746' }}>{eyebrow}</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>

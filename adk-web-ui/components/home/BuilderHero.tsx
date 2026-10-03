@@ -48,7 +48,7 @@ export default function BuilderHero() {
           e.preventDefault();
           submit();
         }}
-        className="flex items-end gap-2 rounded-[var(--md-shape-xl)] bg-md-surface-container-high p-2 pl-6 transition-shadow focus-within:shadow-elevation-2 focus-within:ring-2 focus-within:ring-md-primary"
+        className="flex items-end gap-2 rounded-[var(--md-shape-xl)] border border-md-outline/70 bg-md-surface p-2 pl-6 shadow-sm transition-all duration-200 hover:border-md-outline focus-within:border-md-primary/70 focus-within:shadow-md focus-within:ring-2 focus-within:ring-md-primary/25"
       >
         <label htmlFor="builder-prompt" className="sr-only">
           Describe the agent you want to build
@@ -72,17 +72,22 @@ export default function BuilderHero() {
               submit();
             }
           }}
-          placeholder="Describe the agent you want to build…"
+          placeholder="Describe your agent…"
           className="max-h-[200px] min-h-12 flex-1 resize-none overflow-hidden bg-transparent py-3 text-body-large text-md-on-surface placeholder:text-md-on-surface-variant focus:outline-none"
         />
-        <Button type="submit" size="icon" disabled={!canSubmit} aria-label="Start building" className="mb-0.5 shrink-0 text-md-on-primary hover:bg-md-primary/92">
+        <Button type="submit" size="icon" disabled={!canSubmit} aria-label="Start building" className="mb-0.5 shrink-0 bg-md-primary text-md-on-primary hover:bg-md-primary/92 disabled:bg-md-on-surface/12 disabled:text-md-on-surface-variant disabled:opacity-100">
           <ArrowUp />
         </Button>
       </form>
 
       <div className="mt-5 flex flex-wrap justify-center gap-2" aria-label="Example ideas">
         {BUILDER_EXAMPLE_PROMPTS.map((example) => (
-          <Chip key={example.label} variant="assist" onClick={() => fill(example.prompt)}>
+          <Chip
+            key={example.label}
+            variant="assist"
+            onClick={() => fill(example.prompt)}
+            className="h-9 rounded-full border-md-outline/60 bg-md-surface px-4 font-normal text-md-on-surface/90 hover:border-md-primary/40 hover:bg-md-surface"
+          >
             {example.label}
           </Chip>
         ))}
