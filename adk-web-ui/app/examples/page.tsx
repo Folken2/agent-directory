@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import AgentGrid from '@/components/AgentGrid';
+import BuildCta from '@/components/story/BuildCta';
+import { Page, PageHeader } from '@/components/layout/Page';
 import { loadExampleAgents } from '@/lib/agent-catalog';
 
 export const metadata: Metadata = {
@@ -11,12 +13,13 @@ export const metadata: Metadata = {
 
 export default function ExamplesPage() {
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14 lg:px-8">
-      <h1 className="text-headline-large tracking-tight text-md-on-surface">Examples</h1>
-      <p className="mb-8 mt-2 max-w-2xl text-body-large text-md-on-surface-variant">
-        Agents built with the Agent Development Kit. Open one to see what it does, then try it in chat.
-      </p>
+    <Page>
+      <PageHeader
+        title="Examples"
+        description="Working agents built with the Agent Development Kit. Open one to see how it is put together, then try it in chat."
+      />
       <AgentGrid agents={loadExampleAgents()} />
-    </div>
+      <BuildCta title="Don't see what you need?" body="Describe your own agent and the builder will design it with you." />
+    </Page>
   );
 }

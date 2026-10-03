@@ -9,7 +9,7 @@ test('agent detail: start chat and share via snackbar', async ({ page, context }
   });
 
   await page.goto('/agents/deep_research_agent');
-  await expect(page.getByRole('link', { name: /start chat/i })).toHaveAttribute(
+  await expect(page.getByRole('link', { name: /try it in chat/i })).toHaveAttribute(
     'href',
     /\/chat\?agent=deep_research_agent/,
     { timeout: 20_000 } // /api/agents can take several seconds to fall back to the bundled catalog

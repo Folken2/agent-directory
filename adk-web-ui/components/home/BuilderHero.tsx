@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { BUILDER_EXAMPLE_PROMPTS, MAX_BUILDER_PROMPT_LENGTH, builderChatHref } from '@/lib/builder';
@@ -16,8 +17,21 @@ function autoGrow(el: HTMLTextAreaElement | null) {
   el.style.overflowY = el.scrollHeight > MAX_HEIGHT ? 'auto' : 'hidden';
 }
 
-export default function BuilderHero() {
+/**
+ * The builder composer: submitting opens a builder chat with the prompt.
+ * `compact` drops the example chips for use at the end of other pages.
+ */
+export default function BuilderHero({
+  compact = false,
+  label = 'Describe the agent you want to build',
+  placeholder = 'Describe your agent…',
+}: {
+  compact?: boolean;
+  label?: string;
+  placeholder?: string;
+}) {
   const router = useRouter();
+  const inputId = useId();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isComposingRef = useRef(false);
   const [value, setValue] = useState('');
@@ -42,7 +56,7 @@ export default function BuilderHero() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className={cn('w-full', compact ? 'max-w-2xl' : 'mx-auto max-w-3xl')}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -50,11 +64,11 @@ export default function BuilderHero() {
         }}
         className="flex items-end gap-2 rounded-[var(--md-shape-xl)] border border-md-outline/70 bg-md-surface p-2 pl-6 shadow-sm transition-all duration-200 hover:border-md-outline focus-within:border-md-primary/70 focus-within:shadow-md focus-within:ring-2 focus-within:ring-md-primary/25"
       >
-        <label htmlFor="builder-prompt" className="sr-only">
-          Describe the agent you want to build
+        <label htmlFor={inputId} className="sr-only">
+          {label}
         </label>
         <textarea
-          id="builder-prompt"
+          id={inputId}
           ref={textareaRef}
           rows={1}
           value={value}
@@ -72,26 +86,34 @@ export default function BuilderHero() {
               submit();
             }
           }}
-          placeholder="Describe your agent…"
+          placeholder={placeholder}
           className="max-h-[200px] min-h-12 flex-1 resize-none overflow-hidden bg-transparent py-3 text-body-large text-md-on-surface placeholder:text-md-on-surface-variant focus:outline-none"
         />
-        <Button type="submit" size="icon" disabled={!canSubmit} aria-label="Start building" className="mb-0.5 shrink-0 bg-md-primary text-md-on-primary hover:bg-md-primary/92 disabled:bg-md-on-surface/12 disabled:text-md-on-surface-variant disabled:opacity-100">
+        <Button
+          type="submit"
+          size="icon"
+          disabled={!canSubmit}
+          aria-label="Start building"
+          className="mb-0.5 shrink-0 bg-md-primary text-md-on-primary hover:bg-md-primary/92 disabled:bg-md-on-surface/12 disabled:text-md-on-surface-variant disabled:opacity-100"
+        >
           <ArrowUp />
         </Button>
       </form>
 
-      <div className="mt-5 flex flex-wrap justify-center gap-2" aria-label="Example ideas">
-        {BUILDER_EXAMPLE_PROMPTS.map((example) => (
-          <Chip
-            key={example.label}
-            variant="assist"
-            onClick={() => fill(example.prompt)}
-            className="h-9 rounded-full border-md-outline/60 bg-md-surface px-4 font-normal text-md-on-surface/90 hover:border-md-primary/40 hover:bg-md-surface"
-          >
-            {example.label}
-          </Chip>
-        ))}
-      </div>
+      {compact ? null : (
+        <div className="mt-5 flex flex-wrap justify-center gap-2" role="group" aria-label="Example ideas">
+          {BUILDER_EXAMPLE_PROMPTS.map((example) => (
+            <Chip
+              key={example.label}
+              variant="assist"
+              onClick={() => fill(example.prompt)}
+              className="h-9 rounded-full border-md-outline/60 bg-md-surface px-4 font-normal text-md-on-surface/90 hover:border-md-primary/40 hover:bg-md-surface"
+            >
+              {example.label}
+            </Chip>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
