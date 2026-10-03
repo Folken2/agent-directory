@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useId } from 'react';
 import mermaid from 'mermaid';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 
@@ -195,7 +195,11 @@ export default function MermaidDiagram({ code, id, isStreaming = false }: Mermai
   const [error, setError] = useState<string | null>(null);
   const [isRendering, setIsRendering] = useState(true);
   const isDark = useDarkMode();
-  const diagramId = id || `mermaid-${Math.random().toString(36).substr(2, 9)}`;
+  // Stable per mounted diagram: a fresh random id each render re-ran the
+  // render effect on every parent update. useId's colons aren't valid in
+  // the SVG element id mermaid creates, so strip them.
+  const reactId = useId();
+  const diagramId = id || `mermaid-${reactId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   useEffect(() => {
     // While streaming we intentionally DO NOT attempt to parse/render.
@@ -313,7 +317,7 @@ export default function MermaidDiagram({ code, id, isStreaming = false }: Mermai
   return (
     <div className="my-4">
       {isRendering && (
-        <div className="flex items-center justify-center py-8 text-muted-foreground">
+        <div className="flex items-center justify-center py-8 text-md-on-surface-variant">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
             <span className="text-sm">Rendering diagram...</span>
@@ -322,7 +326,7 @@ export default function MermaidDiagram({ code, id, isStreaming = false }: Mermai
       )}
       <div
         ref={containerRef}
-        className="mermaid-diagram flex justify-center items-center overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-lg border border-border"
+        className="mermaid-diagram flex justify-center items-center overflow-x-auto bg-white dark:bg-gray-900 p-4 rounded-lg border border-md-outline"
         style={{ minHeight: isRendering ? '100px' : 'auto' }}
       />
     </div>

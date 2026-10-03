@@ -71,8 +71,7 @@ test.describe('Home: builder hero', () => {
 test('/chat with no agent defaults to the builder', async ({ page }) => {
   const bodies = await stubRunSse(page);
   await page.goto('/chat');
-  const header = page.locator('header');
-  await expect(header.getByRole('link', { name: 'ADK Agent Builder' })).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole('button', { name: /Agent: ADK Agent Builder/ })).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/select an agent to begin/i)).toHaveCount(0);
 
   const composer = page.locator('textarea').last();
