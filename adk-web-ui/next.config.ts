@@ -48,7 +48,11 @@ const nextConfig: NextConfig = {
   // headers, so the lookup never runs there) and would crowd its function
   // size limit, so it is pinned off Vercel and excluded on Vercel.
   outputFileTracingIncludes: {
+    '/': ['../agents/**/metadata.json'],
+    '/examples': ['../agents/**/metadata.json'],
     '/api/agents': ['../agents/**/metadata.json'],
+    '/agents/[name]': ['../agents/**/metadata.json'],
+    '/agents/[name]/opengraph-image': ['../agents/**/metadata.json', './public/adk-logo.png'],
     ...(process.env.VERCEL ? {} : { '/api/analytics/pageview': [GEOIP_DATA] }),
   },
   ...(process.env.VERCEL
@@ -75,6 +79,8 @@ const nextConfig: NextConfig = {
       { source: '/learn', destination: '/', permanent: true },
       { source: '/contribute', destination: '/about', permanent: true },
       { source: '/contribute/:path*', destination: '/about', permanent: true },
+      { source: '/settings/keys', destination: '/settings', permanent: false },
+      { source: '/settings/connections', destination: '/settings', permanent: false },
     ];
   },
   async headers() {

@@ -3,9 +3,9 @@
 import type { OpsSignal, SignalSeverity } from '@/lib/analytics/signals';
 
 function severityClass(severity: SignalSeverity): string {
-  if (severity === 'high') return 'border-red-500/40 bg-red-500/5';
-  if (severity === 'medium') return 'border-amber-500/40 bg-amber-500/5';
-  return 'border-md-outline/40 bg-md-surface';
+  if (severity === 'high') return 'border-md-error/50 bg-md-error-container/40';
+  if (severity === 'medium') return 'border-md-tertiary/50 bg-md-tertiary-container/40';
+  return 'border-md-outline/60 bg-md-surface dark:bg-md-surface-container';
 }
 
 function severityLabel(severity: SignalSeverity): string {

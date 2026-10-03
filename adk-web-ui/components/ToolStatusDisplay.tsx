@@ -35,19 +35,19 @@ function ToolDetails({ tool }: { tool: ToolStatus }) {
   return (
     <div className="pl-5 pr-1 pb-1 space-y-1">
       {tool.args && Object.keys(tool.args).length > 0 && (
-        <pre className="text-[10px] bg-muted/30 p-1.5 rounded border border-border/20 overflow-x-auto font-mono text-muted-foreground max-h-24 overflow-y-auto whitespace-pre-wrap">
+        <pre className="text-[10px] bg-md-surface-container/30 p-1.5 rounded border border-md-outline/20 overflow-x-auto font-mono text-md-on-surface-variant max-h-24 overflow-y-auto whitespace-pre-wrap">
           {JSON.stringify(tool.args, null, 2)}
         </pre>
       )}
       {tool.response !== undefined && (
-        <pre className="text-[10px] bg-muted/30 p-1.5 rounded border border-border/20 overflow-x-auto font-mono text-muted-foreground max-h-24 overflow-y-auto whitespace-pre-wrap">
+        <pre className="text-[10px] bg-md-surface-container/30 p-1.5 rounded border border-md-outline/20 overflow-x-auto font-mono text-md-on-surface-variant max-h-24 overflow-y-auto whitespace-pre-wrap">
           {typeof tool.response === 'string'
             ? tool.response
             : JSON.stringify(tool.response, null, 2)}
         </pre>
       )}
       {tool.error && (
-        <div className="text-[11px] text-destructive/90 px-0.5">{tool.error}</div>
+        <div className="text-[11px] text-md-error/90 px-0.5">{tool.error}</div>
       )}
     </div>
   );
@@ -64,16 +64,16 @@ function LiveToolRow({ tool }: { tool: ToolStatus }) {
         type="button"
         onClick={() => hasDetails && setOpen((v) => !v)}
         className={cn(
-          'flex w-full items-center gap-2 py-0.5 text-left text-[12px] text-muted-foreground',
-          hasDetails && 'hover:text-foreground cursor-pointer',
+          'flex w-full items-center gap-2 py-0.5 text-left text-[12px] text-md-on-surface-variant',
+          hasDetails && 'hover:text-md-on-surface cursor-pointer',
         )}
       >
-        <Loader2 className="w-3 h-3 animate-spin shrink-0 text-muted-foreground/80" />
+        <Loader2 className="w-3 h-3 animate-spin shrink-0 text-md-on-surface-variant/80" />
         <span className="truncate min-w-0">
           <span className="stream-shimmer">Running</span>{' '}
-          <span className="text-foreground/85">{friendlyName(tool.name)}</span>
+          <span className="text-md-on-surface/85">{friendlyName(tool.name)}</span>
           {preview && (
-            <span className="text-muted-foreground/65"> · {preview}</span>
+            <span className="text-md-on-surface-variant/65"> · {preview}</span>
           )}
         </span>
       </button>
@@ -105,8 +105,8 @@ function DoneToolRow({ tool }: { tool: ToolStatus }) {
         onClick={() => hasDetails && setOpen((v) => !v)}
         className={cn(
           'flex w-full items-center gap-2 py-0.5 text-left text-[12px]',
-          isError ? 'text-destructive/80' : 'text-muted-foreground/80',
-          hasDetails && 'hover:text-foreground cursor-pointer',
+          isError ? 'text-md-error/80' : 'text-md-on-surface-variant/80',
+          hasDetails && 'hover:text-md-on-surface cursor-pointer',
         )}
       >
         {isError ? (
@@ -145,7 +145,7 @@ function RanToolsGroup({ tools }: { tools: ToolStatus[] }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 py-0.5 text-left text-[12px] text-muted-foreground/75 hover:text-foreground"
+        className="flex w-full items-center gap-2 py-0.5 text-left text-[12px] text-md-on-surface-variant/75 hover:text-md-on-surface"
       >
         <Check className="w-3 h-3 shrink-0 opacity-70" />
         <span className="flex-1">
@@ -162,7 +162,7 @@ function RanToolsGroup({ tools }: { tools: ToolStatus[] }) {
             transition={{ duration: 0.12 }}
             className="overflow-hidden"
           >
-            <div className="ml-1 pl-3 border-l border-border/25 space-y-0.5 py-0.5">
+            <div className="ml-1 pl-3 border-l border-md-outline/25 space-y-0.5 py-0.5">
               {tools.map((tool) => (
                 <DoneToolRow key={tool.id} tool={tool} />
               ))}
@@ -194,7 +194,7 @@ export default function ToolStatusDisplay({ messageId }: ToolStatusDisplayProps 
   const completed = tools.filter((t) => t.status === 'completed');
 
   return (
-    <div className="py-0.5 space-y-0.5 pl-0.5 border-l border-border/20 ml-0.5">
+    <div className="py-0.5 space-y-0.5 pl-0.5 border-l border-md-outline/20 ml-0.5">
       <div className="pl-2.5 space-y-0.5">
         <AnimatePresence initial={false}>
           {active.map((tool) => (

@@ -9,6 +9,7 @@ import {
   ToolResponse,
 } from './types';
 import { parseGuideDocument } from './guide/parse';
+import { parseBlueprint } from './blueprint/parse';
 import { ChatApiError, errorFromResponse, friendlyMessage } from './api-error';
 
 const API_BASE_URL = '';
@@ -438,6 +439,13 @@ class ADKClient {
                   if (doc) {
                     yield { type: 'guideDocument', guideDocument: doc, author: eventData.author };
                   }
+                }
+
+                // The builder's blueprint (agents/adk_agent_builder/callbacks/blueprint_document.py).
+                const blueprintRaw = stateDelta?.['blueprint:document'];
+                if (blueprintRaw) {
+                  const blueprint = parseBlueprint(blueprintRaw);
+                  if (blueprint) yield { type: 'blueprint', blueprint, author: eventData.author };
                 }
 
                 // Handle Event object - check content.parts first (ADK structure)

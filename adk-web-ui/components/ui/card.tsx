@@ -2,12 +2,19 @@ import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
+/**
+ * The one surface used for panels across the site: white on the off-white
+ * page in light mode, a lifted container in dark mode.
+ */
+export const panelClass =
+  'rounded-[var(--md-shape-lg)] border border-md-outline/70 bg-md-surface dark:border-md-outline-variant dark:bg-md-surface-container';
+
 const cardVariants = cva('rounded-[var(--md-shape-lg)] text-md-on-surface', {
   variants: {
     variant: {
       elevated: 'bg-md-surface-container-low dark:bg-md-surface-container shadow-elevation-1',
       filled: 'bg-md-surface-container-highest',
-      outlined: 'bg-md-surface border border-md-outline',
+      outlined: 'border border-md-outline/70 bg-md-surface dark:border-md-outline-variant dark:bg-md-surface-container',
     },
     interactive: {
       true: 'transition-shadow hover:shadow-elevation-2 focus-within:ring-2 focus-within:ring-md-primary',

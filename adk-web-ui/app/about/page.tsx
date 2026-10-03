@@ -1,172 +1,63 @@
-'use client';
-
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import { NOT_AFFILIATED_NOTICE } from '@/lib/site';
-import { Card } from '@/components/ui/card';
-import { buttonVariants } from '@/components/ui/button';
-import { ArrowRight, Github, Code, Zap, Users, BookOpen } from 'lucide-react';
+import { Page, PageHeader } from '@/components/layout/Page';
+import { proseLink } from '@/components/ProsePage';
+import BuildCta from '@/components/story/BuildCta';
+
+const REPO_URL = 'https://github.com/Folken2/agent-directory';
+const ADK_URL = 'https://google.github.io/adk-docs/';
+
+export const metadata: Metadata = {
+  title: 'About | ADK Agent Directory',
+  description:
+    "An agent builder and working example agents built with Google's Agent Development Kit (ADK). Independent open-source project, not affiliated with Google.",
+  alternates: { canonical: '/about' },
+};
 
 export default function AboutPage() {
-  const features = [
-    {
-      icon: Zap,
-      title: 'Powerful Agents',
-      description: 'Each agent is designed with specific tools and capabilities to accomplish tasks efficiently.',
-    },
-    {
-      icon: Code,
-      title: 'Open Source',
-      description: 'Built on Google ADK and open-source technologies. Contribute and improve the ecosystem.',
-    },
-    {
-      icon: Users,
-      title: 'Community Driven',
-      description: 'Discover agents created by the community and share your own creations.',
-    },
-    {
-      icon: BookOpen,
-      title: 'Well Documented',
-      description: 'Every agent includes documentation, use cases, and sample prompts.',
-    },
-  ];
-
   return (
-    <div className="min-h-screen bg-md-surface pt-16">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
-        <div className="mb-12 text-center">
-          <h1 className="text-display-small text-md-on-surface mb-4">
-            About ADK Agent Directory
-          </h1>
-          <p className="text-body-large text-md-on-surface-variant max-w-2xl mx-auto">
-            A directory of intelligent AI agents powered by Google Gemini 3 Flash. Discover, use, and contribute agents for various use cases.
-          </p>
-          <p className="text-body-medium text-md-on-surface-variant max-w-2xl mx-auto mt-4">
-            {NOT_AFFILIATED_NOTICE}
-          </p>
-        </div>
+    <Page>
+      <PageHeader
+        title="About"
+        description="Agent Directory helps you go from an idea to an agent design you can build, and shows working examples built with Google's Agent Development Kit (ADK)."
+      />
 
-        {/* What is Agent Directory */}
-        <div className="mb-12">
-          <h2 className="text-headline-medium text-md-on-surface mb-4">
-            What is ADK Agent Directory?
-          </h2>
-          <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-4">
-            ADK Agent Directory is a curated directory of AI agents built with Google&apos;s Agent Development Kit (ADK).
-            Each agent is designed to solve specific problems using specialized tools and capabilities.
+      <div className="grid gap-12 text-body-large text-md-on-surface-variant lg:grid-cols-3">
+        <section className="space-y-3">
+          <h2 className="text-headline-small tracking-tight text-md-on-surface">Design with the builder</h2>
+          <p>
+            Describe the agent you have in mind on the <Link href="/" className={proseLink}>Build</Link> page.
+            The agent builder asks about your goal, then proposes the agents, tools and prompts, and explains
+            why. The design collects in a blueprint you can copy, download or save.
           </p>
-          <p className="text-body-medium text-md-on-surface-variant leading-relaxed">
-            Whether you&apos;re looking for an agent to help with web search, image generation, document processing,
-            or any other task, ADK Agent Directory makes it easy to discover and use the right agent for your needs.
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-headline-small tracking-tight text-md-on-surface">Learn from examples</h2>
+          <p>
+            The <Link href="/examples" className={proseLink}>examples</Link> are complete agents you can try in
+            the browser without an account: web research, data analysis, image generation, diagrams, repository
+            exploration and more. Each page lists the tools it uses and links to its source.
           </p>
-        </div>
-
-        {/* Features */}
-        <div className="mb-12">
-          <h2 className="text-headline-medium text-md-on-surface mb-6">
-            Features
-          </h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <Card key={feature.title} variant="outlined" className="p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-md-primary-container rounded-[var(--md-shape-md)]">
-                      <Icon className="w-5 h-5 text-md-on-primary-container" />
-                    </div>
-                    <h3 className="text-title-medium text-md-on-surface">{feature.title}</h3>
-                  </div>
-                  <p className="text-body-small text-md-on-surface-variant">{feature.description}</p>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* How Agents Work */}
-        <Card variant="filled" className="mb-12 p-8">
-          <h2 className="text-headline-medium text-md-on-surface mb-4">
-            How Agents Work
-          </h2>
-          <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-4">
-            Agents in ADK Agent Directory are built using Google&apos;s Agent Development Kit (ADK), which provides:
+        </section>
+        <section className="space-y-3">
+          <h2 className="text-headline-small tracking-tight text-md-on-surface">Built with ADK, in the open</h2>
+          <p>
+            Every agent runs on the{' '}
+            <a href={ADK_URL} target="_blank" rel="noreferrer" className={proseLink}>Agent Development Kit</a>,
+            an open-source framework for agents with tools, sub-agents and session state. The site and the
+            examples are open source on{' '}
+            <a href={REPO_URL} target="_blank" rel="noreferrer" className={proseLink}>GitHub</a>; contributions are
+            welcome.
           </p>
-          <ul className="space-y-2 text-body-medium text-md-on-surface-variant list-disc list-inside">
-            <li>Integration with Google Gemini 3 Flash for natural language understanding</li>
-            <li>Tool calling capabilities for interacting with external services</li>
-            <li>Session management for maintaining conversation context</li>
-            <li>Artifact handling for generating and managing outputs</li>
-            <li>Sub-agent coordination for complex workflows</li>
-          </ul>
-        </Card>
-
-        {/* Technology Stack */}
-        <div className="mb-12">
-          <h2 className="text-headline-medium text-md-on-surface mb-6">
-            Technology Stack
-          </h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <Card variant="outlined" className="p-6">
-              <h3 className="text-title-medium text-md-on-surface mb-3">Backend</h3>
-              <ul className="text-body-small text-md-on-surface-variant space-y-1.5">
-                <li>• Google ADK (Agent Development Kit)</li>
-                <li>• Python</li>
-                <li>• FastAPI</li>
-                <li>• PostgreSQL / Neon</li>
-              </ul>
-            </Card>
-            <Card variant="outlined" className="p-6">
-              <h3 className="text-title-medium text-md-on-surface mb-3">Frontend</h3>
-              <ul className="text-body-small text-md-on-surface-variant space-y-1.5">
-                <li>• Next.js 16</li>
-                <li>• React 19</li>
-                <li>• TypeScript</li>
-                <li>• Tailwind CSS v4</li>
-                <li>• Material Design 3</li>
-              </ul>
-            </Card>
-          </div>
-        </div>
-
-        {/* How to Contribute */}
-        <Card variant="filled" className="mb-12 bg-md-primary-container/40 p-8">
-          <h2 className="text-headline-medium text-md-on-surface mb-4">
-            How to Contribute
-          </h2>
-          <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-6">
-            We welcome contributions! Whether you want to add a new agent, improve existing ones,
-            or enhance the platform, your contributions are valuable.
-          </p>
-          <a
-            href="https://github.com/Folken2/agent-directory"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ variant: 'filled' })}
-          >
-            Contribute on GitHub
-            <ArrowRight />
-          </a>
-        </Card>
-
-        {/* Contact */}
-        <div className="text-center">
-          <h2 className="text-headline-medium text-md-on-surface mb-4">
-            Get in Touch
-          </h2>
-          <p className="text-body-medium text-md-on-surface-variant mb-6">
-            Have questions or suggestions? Reach out through GitHub or contribute directly to the project.
-          </p>
-          <a
-            href="https://github.com/Folken2/agent-directory"
-            target="_blank"
-            rel="noreferrer"
-            className={buttonVariants({ variant: 'outlined' })}
-          >
-            <Github />
-            View on GitHub
-          </a>
-        </div>
+        </section>
       </div>
-    </div>
+
+      <p className="mt-16 max-w-3xl border-t border-md-outline/60 pt-6 text-body-medium text-md-on-surface-variant">
+        {NOT_AFFILIATED_NOTICE}
+      </p>
+
+      <BuildCta />
+    </Page>
   );
 }

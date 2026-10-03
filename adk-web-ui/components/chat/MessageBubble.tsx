@@ -3,61 +3,18 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Copy, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Message } from '@/lib/types';
-import { filterInternalInstructions } from '@/lib/instruction-filter';
 import { MarkdownRenderer } from './markdown';
 import ToolStatusDisplay from '../ToolStatusDisplay';
 import ThinkingBlock from '../ThinkingBlock';
-import InlineArtifact from '../InlineArtifact';
-import { MapsEmbed } from './MapsEmbed';
 import SubAgentProgress from './SubAgentProgress';
-import { GuideAnswer } from './guide/GuideAnswer';
-import { GuideMap } from './guide/GuideMap';
-import { mergeGuideWithCaptures } from '@/lib/guide/merge';
-import { parseGuideDocument } from '@/lib/guide/parse';
+import { PayloadList } from './renderers';
+import { getDisplayContent, messagePayloads } from '@/lib/chat/payloads';
 
-// Note: the optional P1 detail of stacking a single MapsEmbed (attribution
-// iframe) under the JS map for the selected place is intentionally omitted —
-// default off per brief; the JS map + PlaceCard already carry enough
-// context, and it would require lifting GuideAnswer's selection state.
-
-function safeParseDate(date: any): Date | undefined {
+export function safeParseDate(date: unknown): Date | undefined {
   if (!date) return undefined;
-  try {
-    const parsed = new Date(date);
-    if (isNaN(parsed.getTime())) return undefined;
-    return parsed;
-  } catch {
-    return undefined;
-  }
-}
-
-function getDisplayContent(raw: any): string {
-  if (raw === null || raw === undefined) return '';
-  const asString = typeof raw === 'string' ? raw : JSON.stringify(raw);
-  const trimmed = asString.trim();
-  if (!trimmed) return '';
-
-  let extractedText = '';
-  try {
-    const parsed = JSON.parse(trimmed);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      const keys = Object.keys(parsed);
-      const hasArtifacts = Array.isArray((parsed as any).artifacts);
-      const otherKeys = keys.filter((k) => k !== 'artifacts');
-      if (hasArtifacts && otherKeys.length === 0) return '';
-      if (typeof (parsed as any).response === 'string') extractedText = (parsed as any).response.trim();
-      else if (typeof (parsed as any).text === 'string') extractedText = (parsed as any).text.trim();
-      else if (typeof (parsed as any).message === 'string') extractedText = (parsed as any).message.trim();
-      else extractedText = trimmed;
-    } else {
-      extractedText = trimmed;
-    }
-  } catch {
-    extractedText = trimmed;
-  }
-  return filterInternalInstructions(extractedText);
+  const parsed = new Date(date as string | number | Date);
+  return isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
 interface MessageBubbleProps {
@@ -81,7 +38,7 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
         className="flex w-full justify-end"
         title={timestamp?.toLocaleString()}
       >
-        <div className="max-w-[min(85%,36rem)] rounded-2xl bg-muted/40 px-3.5 py-2 text-[15px] leading-relaxed text-foreground/90 text-left">
+        <div className="max-w-[min(85%,36rem)] rounded-2xl bg-md-surface-container/40 px-3.5 py-2 text-[15px] leading-relaxed text-md-on-surface/90 text-left">
           <MarkdownRenderer
             content={text}
             isStreaming={false}
@@ -92,18 +49,10 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
     );
   }
 
+  const payloads = messagePayloads(message);
   const displayContent = getDisplayContent(message.content);
-  const hasArtifacts = !!(message.artifacts && message.artifacts.length > 0);
+  const artifacts = message.artifacts ?? [];
   const isCopied = copiedMessageId === message.id;
-
-  // Re-validate on every render rather than trusting the stored shape: the
-  // document may have been persisted/rehydrated (e.g. from history), and a
-  // parse failure here must fall back to the legacy markdown + embeds path
-  // rather than throwing.
-  const guideDoc = message.guideDocument ? parseGuideDocument(message.guideDocument) : null;
-  const mergedGuide = guideDoc ? mergeGuideWithCaptures(guideDoc, message.mapsCaptures ?? []) : null;
-
-  const showAnything = !!displayContent || hasArtifacts || !!mergedGuide;
 
   return (
     <motion.div
@@ -123,48 +72,15 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
           </>
         )}
 
-        {showAnything && (
-          <div className="text-[15px] leading-relaxed text-foreground">
-            {mergedGuide ? (
-              <GuideAnswer
-                document={mergedGuide}
-                mapSlot={({ places, selectedPlaceId, onSelectPlace }) => (
-                  <GuideMap
-                    places={places}
-                    selectedPlaceId={selectedPlaceId}
-                    onSelectPlace={onSelectPlace}
-                  />
-                )}
-              />
-            ) : (
-              <>
-                {displayContent && (
-                  <MarkdownRenderer content={displayContent} isStreaming={false} isDarkMode={isDarkMode} />
-                )}
+        {payloads.length > 0 && (
+          <div className="text-[15px] leading-relaxed text-md-on-surface">
+            <PayloadList payloads={payloads} isDarkMode={isDarkMode} />
 
-                {hasArtifacts && (
-                  <div className={cn('space-y-3', displayContent && 'mt-4')}>
-                    {message.artifacts!.map((artifact) => (
-                      <InlineArtifact key={artifact.id} artifact={artifact} />
-                    ))}
-                  </div>
-                )}
-
-                {message.mapsCaptures && message.mapsCaptures.length > 0 && (
-                  <div className={cn('space-y-3', displayContent && 'mt-4')}>
-                    {message.mapsCaptures.map((capture, idx) => (
-                      <MapsEmbed key={`${capture.captured_at}-${idx}`} capture={capture} />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-
-            {(displayContent || (hasArtifacts && message.artifacts!.length > 1)) && (
-              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
+            {(displayContent || artifacts.length > 1) && (
+              <div className="mt-2 flex items-center gap-1 text-xs text-md-on-surface-variant opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
                 {displayContent && (
                   <button
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted/70 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-md-surface-container/70 transition-colors"
                     onClick={() => onCopy(displayContent, message.id)}
                     aria-label={isCopied ? 'Copied' : 'Copy message'}
                   >
@@ -172,11 +88,11 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
                     <span>{isCopied ? 'Copied' : 'Copy'}</span>
                   </button>
                 )}
-                {hasArtifacts && message.artifacts!.length > 1 && (
+                {artifacts.length > 1 && (
                   <button
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted/70 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-md-surface-container/70 transition-colors"
                     onClick={() => {
-                      message.artifacts?.forEach((a) => {
+                      artifacts.forEach((a) => {
                         const link = document.createElement('a');
                         link.href = a.url;
                         link.download = a.name;
@@ -188,7 +104,7 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
                   </button>
                 )}
                 {timestamp && (
-                  <span className="ml-auto text-muted-foreground/70">{timestamp.toLocaleTimeString()}</span>
+                  <span className="ml-auto text-md-on-surface-variant/70">{timestamp.toLocaleTimeString()}</span>
                 )}
               </div>
             )}
@@ -210,4 +126,3 @@ const MessageBubble = memo(MessageBubbleImpl, (prev, next) => {
 });
 
 export default MessageBubble;
-export { getDisplayContent, safeParseDate };

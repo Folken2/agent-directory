@@ -20,9 +20,9 @@ export function GuideSectionList({ section, placeById, selectedPlaceId, onSelect
   return (
     <div>
       <div className="mb-1.5">
-        <h3 className="text-[15px] font-medium leading-snug text-foreground">{section.title}</h3>
+        <h3 className="text-[15px] font-medium leading-snug text-md-on-surface">{section.title}</h3>
         {section.blurb && (
-          <p className="mt-0.5 text-sm leading-snug text-muted-foreground line-clamp-2">
+          <p className="mt-0.5 text-sm leading-snug text-md-on-surface-variant line-clamp-2">
             {section.blurb}
           </p>
         )}

@@ -4,16 +4,16 @@ import { auth } from '@/lib/auth';
 import { listSessionsForUser, type ChatSessionSummary } from '@/lib/sessions';
 import { loadAgentMetadata, type AgentMetadata } from '@/lib/agent-metadata';
 import { formatAgentDisplayName } from '@/lib/agent-utils';
-import { Card } from '@/components/ui/card';
-import { Chip } from '@/components/ui/chip';
 import { buttonVariants } from '@/components/ui/button';
+import { panelClass } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { ArrowRight, MessageSquare, Sparkles } from 'lucide-react';
+import { Page, PageHeader } from '@/components/layout/Page';
+import AgentLogo from '@/components/agent/AgentLogo';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Your sessions',
+  title: 'Chat history | ADK Agent Directory',
   robots: { index: false, follow: false },
 };
 
@@ -67,27 +67,6 @@ function truncate(s: string | null, max = 220): string {
   return s.length > max ? s.slice(0, max).trimEnd() + '…' : s;
 }
 
-// Stable color from a slug for the avatar fallback when an agent has no logo.
-// Picks from a small palette so the page stays visually coherent.
-const AVATAR_PALETTE = [
-  'bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300',
-  'bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300',
-  'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300',
-  'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300',
-  'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300',
-  'bg-teal-100 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300',
-];
-function colorForSlug(slug: string): string {
-  let hash = 0;
-  for (let i = 0; i < slug.length; i++) hash = (hash * 31 + slug.charCodeAt(i)) | 0;
-  return AVATAR_PALETTE[Math.abs(hash) % AVATAR_PALETTE.length];
-}
-
-function initialFor(slug: string, displayName: string): string {
-  const source = displayName || formatAgentDisplayName(slug);
-  return source.charAt(0).toUpperCase();
-}
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
@@ -100,20 +79,16 @@ export default async function MySessionsPage() {
 
   if (!process.env.DATABASE_URL) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Your sessions</h1>
-        <p className="mt-3 text-md-on-surface-variant">
-          Database isn&apos;t configured, so we can&apos;t show your past chats.
-        </p>
-      </div>
+      <Page>
+        <PageHeader title="Chat history" description="Chat history isn't available right now." />
+      </Page>
     );
   }
 
   const sessions = await listSessionsForUser(session.user.id);
 
-  // Load agent metadata once per unique slug so cards can show logos +
-  // category colors. listSessionsForUser already returns sessions sorted
-  // newest-first, so sessions[0] is the most recent.
+  // Load agent metadata once per unique slug so rows can show names and
+  // logos. listSessionsForUser already returns sessions newest-first.
   const uniqueSlugs = Array.from(new Set(sessions.map((s) => s.agentSlug)));
   const metaBySlug = new Map<string, AgentMetadata | null>();
   for (const slug of uniqueSlugs) {
@@ -121,15 +96,16 @@ export default async function MySessionsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-      <PageHeader sessions={sessions} agentCount={uniqueSlugs.length} />
-
-      {sessions.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <SessionsList sessions={sessions} metaBySlug={metaBySlug} />
-      )}
-    </div>
+    <Page>
+      <PageHeader title="Chat history" description={historySummary(sessions, uniqueSlugs.length)} />
+      <div className="max-w-3xl">
+        {sessions.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <SessionsList sessions={sessions} metaBySlug={metaBySlug} />
+        )}
+      </div>
+    </Page>
   );
 }
 
@@ -137,65 +113,30 @@ export default async function MySessionsPage() {
 // Pieces
 // ---------------------------------------------------------------------------
 
-function PageHeader({
-  sessions,
-  agentCount,
-}: {
-  sessions: ChatSessionSummary[];
-  agentCount: number;
-}) {
+function historySummary(sessions: ChatSessionSummary[], agentCount: number): string {
+  if (sessions.length === 0) return 'Conversations you have while signed in.';
   const lastActivity = sessions[0]?.lastActivityAt;
-
-  return (
-    <header className="mb-8">
-      <div className="flex items-center gap-3 mb-2">
-        <div className="w-9 h-9 rounded-xl bg-md-primary-container/40 text-md-on-primary-container flex items-center justify-center">
-          <MessageSquare className="w-4 h-4" />
-        </div>
-        <div className="text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
-          Your sessions
-        </div>
-      </div>
-
-      <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-md-on-surface">
-        {sessions.length === 0
-          ? 'No conversations yet'
-          : `${sessions.length} ${sessions.length === 1 ? 'conversation' : 'conversations'}`}
-      </h1>
-
-      {sessions.length > 0 && (
-        <p className="mt-2 text-md-on-surface-variant text-body-large">
-          Across {agentCount} {agentCount === 1 ? 'agent' : 'agents'}
-          {lastActivity && (
-            <>
-              {' '}· last activity{' '}
-              <span className="text-md-on-surface">{relativeTime(lastActivity)}</span>
-            </>
-          )}
-        </p>
-      )}
-    </header>
-  );
+  const count = `${sessions.length} ${sessions.length === 1 ? 'conversation' : 'conversations'}`;
+  const agents = `${agentCount} ${agentCount === 1 ? 'agent' : 'agents'}`;
+  return `${count} with ${agents}${lastActivity ? ` · last active ${relativeTime(lastActivity)}` : ''}`;
 }
 
 function EmptyState() {
   return (
-    <Card variant="filled" className="p-10 sm:p-14 text-center">
-      <div className="w-12 h-12 mx-auto rounded-2xl bg-md-primary-container/40 text-md-on-primary-container flex items-center justify-center mb-5">
-        <Sparkles className="w-5 h-5" />
-      </div>
-      <h2 className="text-title-large text-md-on-surface mb-2">
-        Start a chat to see it here
-      </h2>
-      <p className="text-body-medium text-md-on-surface-variant max-w-sm mx-auto mb-6">
-        Once you&apos;ve had a conversation with any agent, it&apos;ll show up on
-        this page so you can pick up where you left off.
+    <div className={cn(panelClass, 'px-6 py-14 text-center')}>
+      <h2 className="text-title-large text-md-on-surface">No conversations yet</h2>
+      <p className="mx-auto mt-2 max-w-sm text-body-medium text-md-on-surface-variant">
+        Start with the builder or try an example. Chats you have while signed in show up here.
       </p>
-      <Link href="/" className={buttonVariants({ variant: 'filled' })}>
-        Browse agents
-        <ArrowRight />
-      </Link>
-    </Card>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <Link href="/" className={buttonVariants({ variant: 'filled' })}>
+          Build an agent
+        </Link>
+        <Link href="/examples" className={buttonVariants({ variant: 'outlined' })}>
+          Browse examples
+        </Link>
+      </div>
+    </div>
   );
 }
 
@@ -219,20 +160,22 @@ function SessionsList({
   const orderedBands: DateBand[] = ['today', 'yesterday', 'thisWeek', 'thisMonth', 'earlier'];
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       {orderedBands.map((band) => {
         const items = bands[band];
         if (items.length === 0) return null;
         return (
-          <section key={band}>
-            <h2 className="text-label-small text-md-on-surface-variant/70 uppercase tracking-widest mb-3">
+          <section key={band} aria-labelledby={`band-${band}`}>
+            <h2 id={`band-${band}`} className="mb-2 px-1 text-title-small text-md-on-surface-variant">
               {BAND_LABELS[band]}
             </h2>
-            <div className="space-y-2.5">
+            <ul className={cn(panelClass, 'divide-y divide-md-outline/60 overflow-hidden dark:divide-md-outline-variant')}>
               {items.map((s) => (
-                <SessionCard key={s.sessionId} session={s} meta={metaBySlug.get(s.agentSlug) ?? null} />
+                <li key={s.sessionId}>
+                  <SessionRow session={s} meta={metaBySlug.get(s.agentSlug) ?? null} />
+                </li>
               ))}
-            </div>
+            </ul>
           </section>
         );
       })}
@@ -240,7 +183,7 @@ function SessionsList({
   );
 }
 
-function SessionCard({
+function SessionRow({
   session,
   meta,
 }: {
@@ -248,70 +191,28 @@ function SessionCard({
   meta: AgentMetadata | null;
 }) {
   const displayName = meta?.displayName || formatAgentDisplayName(session.agentSlug);
+  const preview = truncate(session.firstMessage);
 
   return (
-    <Card variant="outlined" interactive className="overflow-hidden">
     <Link
       href={`/chat?agent=${encodeURIComponent(session.agentSlug)}&session=${encodeURIComponent(session.sessionId)}`}
-      className="group block focus-visible:outline-none"
+      className="flex gap-4 px-5 py-4 transition-colors hover:bg-md-on-surface/4 focus-visible:bg-md-on-surface/8 focus-visible:outline-none"
     >
-      <div className="p-5 sm:p-6 flex gap-4">
-        {/* Avatar / logo */}
-        <div className="shrink-0">
-          {meta?.logo ? (
-            <div className="w-11 h-11 rounded-[var(--md-shape-md)] bg-md-surface-container border border-md-outline-variant flex items-center justify-center overflow-hidden p-1.5">
-              <img
-                src={meta.logo}
-                alt=""
-                className="object-contain w-full h-full"
-              />
-            </div>
-          ) : (
-            <div
-              className={cn(
-                'w-11 h-11 rounded-[var(--md-shape-md)] flex items-center justify-center text-base font-semibold',
-                colorForSlug(session.agentSlug),
-              )}
-              aria-hidden="true"
-            >
-              {initialFor(session.agentSlug, displayName)}
-            </div>
-          )}
+      <AgentLogo src={meta?.logo} name={displayName} size="sm" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="truncate text-title-small text-md-on-surface">{displayName}</span>
+          <span className="shrink-0 text-label-medium tabular-nums text-md-on-surface-variant">
+            {relativeTime(session.lastActivityAt)}
+          </span>
         </div>
-
-        {/* Body */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-3 mb-1.5">
-            <div className="min-w-0 flex items-center gap-2">
-              <h3 className="text-title-small text-md-on-surface tracking-tight truncate">
-                {displayName}
-              </h3>
-              {meta?.category && (
-                <Chip variant="category" className="shrink-0">{meta.category}</Chip>
-              )}
-            </div>
-            <span className="shrink-0 text-label-small text-md-on-surface-variant/70 tabular-nums">
-              {relativeTime(session.lastActivityAt)}
-            </span>
-          </div>
-
-          <p className="text-body-medium text-md-on-surface-variant leading-relaxed line-clamp-2">
-            {truncate(session.firstMessage) || (
-              <span className="italic text-md-on-surface-variant/60">No text content</span>
-            )}
-          </p>
-
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-label-small text-md-on-surface-variant/70">
-              {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
-            </span>
-            <span className="inline-flex items-center gap-1 text-label-small text-md-on-surface-variant/0 group-hover:text-md-primary group-focus-visible:text-md-primary group-focus-within:text-md-primary transition-colors">
-              Resume <ArrowRight className="w-3 h-3" />
-            </span>
-          </div>
-        </div>
+        <p className="mt-0.5 line-clamp-1 text-body-medium text-md-on-surface-variant">
+          {preview || 'No text'}
+        </p>
+        <p className="mt-1 text-label-medium text-md-on-surface-variant">
+          {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
+        </p>
       </div>
     </Link>
-    </Card>
   );
 }

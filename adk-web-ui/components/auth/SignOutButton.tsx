@@ -22,7 +22,7 @@ export default function SignOutButton() {
   return (
     <Button variant="text" size="sm" onClick={handleSignOut} disabled={isLoading}>
       <LogOut />
-      {isLoading ? 'Signing out...' : 'Sign Out'}
+      {isLoading ? 'Signing out…' : 'Sign out'}
     </Button>
   );
 }

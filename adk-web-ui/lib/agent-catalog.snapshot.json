@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-16",
+  "generatedAt": "2026-10-03",
   "agents": [
     {
       "name": "adk_agent_builder",
@@ -50,7 +50,7 @@
       ],
       "author": "Albert Folch",
       "category": "Code",
-      "logo": "https://www.google.com/favicon.ico"
+      "logo": "/adk-logo.png"
     },
     {
       "name": "data_analyst_agent",

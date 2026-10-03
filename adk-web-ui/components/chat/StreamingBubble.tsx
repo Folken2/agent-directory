@@ -3,12 +3,11 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Artifact, SubAgentStep } from '@/lib/types';
-import { MarkdownRenderer } from './markdown';
-import { getDisplayContent } from './MessageBubble';
 import ToolStatusDisplay from '../ToolStatusDisplay';
 import ThinkingBlock from '../ThinkingBlock';
-import InlineArtifact from '../InlineArtifact';
 import SubAgentProgress from './SubAgentProgress';
+import { PayloadList } from './renderers';
+import { messagePayloads } from '@/lib/chat/payloads';
 
 interface StreamingBubbleProps {
   messageId: string;
@@ -29,7 +28,8 @@ export default function StreamingBubble({
   isDarkMode,
   subAgentSteps,
 }: StreamingBubbleProps) {
-  const displayContent = getDisplayContent(streamingContent);
+  const payloads = messagePayloads({ content: streamingContent, artifacts });
+  const displayContent = payloads.some((p) => p.type === 'text');
   const hasSubAgents = !!(subAgentSteps && subAgentSteps.length > 0);
   const showWaiting =
     !displayContent && !hasSubAgents && !(isThinking && streamingThinking);
@@ -70,26 +70,14 @@ export default function StreamingBubble({
           )}
         </AnimatePresence>
 
-        <div className="text-[15px] leading-relaxed text-foreground">
-          {displayContent ? (
-            <div className="relative">
-              <MarkdownRenderer content={displayContent} isStreaming={true} isDarkMode={isDarkMode} />
-              <span className="streaming-cursor" aria-hidden="true" />
-            </div>
-          ) : showWaiting ? (
+        <div className="text-[15px] leading-relaxed text-md-on-surface">
+          {showWaiting && (
             <div className="flex items-center min-h-[1.75rem] py-0.5 gap-0">
               <span className="text-sm stream-shimmer">Thinking</span>
-              <span className="text-sm text-muted-foreground/50 stream-dots" aria-hidden="true" />
-            </div>
-          ) : null}
-
-          {artifacts.length > 0 && (
-            <div className="mt-4 space-y-3">
-              {artifacts.map((artifact) => (
-                <InlineArtifact key={artifact.id} artifact={artifact} />
-              ))}
+              <span className="text-sm text-md-on-surface-variant/50 stream-dots" aria-hidden="true" />
             </div>
           )}
+          {payloads.length > 0 && <PayloadList payloads={payloads} isDarkMode={isDarkMode} isStreaming />}
         </div>
       </div>
     </motion.div>

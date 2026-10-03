@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Paperclip, X, ArrowUp, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { NOT_AFFILIATED_NOTICE } from '@/lib/site';
 
 const MAX_HEIGHT = 220;
 
@@ -23,6 +24,7 @@ interface ComposerProps {
   attachments: File[];
   onAttachFiles: (files: File[]) => void;
   onRemoveAttachment: (index: number) => void;
+  /** Display name of the selected agent; null disables the composer. */
   agentName: string | null;
   busy: boolean; // any of: isLoading, isStreaming, isInitializing
   initialPrompt?: string | null;
@@ -92,14 +94,14 @@ export default function Composer({
 
   return (
     <div className="px-4 pb-4 pt-2">
-      <div className="pointer-events-none absolute inset-x-0 -top-4 h-6 bg-linear-to-t from-background to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 -top-4 h-6 bg-linear-to-t from-md-surface-container-low to-transparent" />
       <div className="mx-auto max-w-3xl">
         <div
           className={cn(
-            'group rounded-3xl border bg-card shadow-sm transition-all duration-200',
+            'group rounded-[var(--md-shape-xl)] border bg-md-surface shadow-sm transition-all duration-200',
             focused
-              ? 'border-ring/70 shadow-md ring-2 ring-ring/25'
-              : 'border-border/70 hover:border-border',
+              ? 'border-md-primary/70 shadow-md ring-2 ring-md-primary/25'
+              : 'border-md-outline/70 hover:border-md-outline',
             disabled && 'opacity-95',
           )}
         >
@@ -108,13 +110,13 @@ export default function Composer({
               {attachments.map((file, index) => (
                 <div
                   key={`${file.name}-${index}`}
-                  className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full text-xs font-medium"
+                  className="flex items-center gap-2 px-3 py-1.5 bg-md-surface-container rounded-full text-xs font-medium"
                 >
-                  <Paperclip className="w-3 h-3 text-muted-foreground" />
+                  <Paperclip className="w-3 h-3 text-md-on-surface-variant" />
                   <span className="truncate max-w-[180px]">{file.name}</span>
                   <button
                     onClick={() => onRemoveAttachment(index)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-md-on-surface-variant hover:text-md-on-surface transition-colors"
                     aria-label={`Remove ${file.name}`}
                   >
                     <X className="w-3 h-3" />
@@ -143,7 +145,7 @@ export default function Composer({
             placeholder={agentName ? `Message ${agentName}…` : 'Select an agent first'}
             disabled={disabled}
             rows={1}
-            className="block w-full resize-none bg-transparent border-0 px-5 pt-4 pb-1 text-sm leading-6 placeholder:text-muted-foreground/80 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
+            className="block w-full resize-none bg-transparent border-0 px-5 pt-4 pb-1 text-sm leading-6 placeholder:text-md-on-surface-variant/80 focus:outline-none focus:ring-0 disabled:cursor-not-allowed"
             style={{ minHeight: '52px', maxHeight: `${MAX_HEIGHT}px` }}
           />
 
@@ -159,7 +161,7 @@ export default function Composer({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={disabled}
-                className="inline-flex items-center justify-center h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/70 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
+                className="inline-flex items-center justify-center h-9 w-9 rounded-full text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container/70 transition-colors disabled:opacity-50 disabled:hover:bg-transparent"
                 title="Attach files"
                 aria-label="Attach files"
               >
@@ -179,7 +181,7 @@ export default function Composer({
               {busy && onStop ? (
                 <button
                   onClick={onStop}
-                  className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-foreground text-background hover:opacity-90 shadow-sm active:scale-95 transition-all duration-150"
+                  className="inline-flex items-center justify-center h-9 w-9 rounded-full bg-md-on-surface text-md-surface-container-low hover:opacity-90 shadow-sm active:scale-95 transition-all duration-150"
                   title="Stop generating"
                   aria-label="Stop generating"
                 >
@@ -192,8 +194,8 @@ export default function Composer({
                   className={cn(
                     'inline-flex items-center justify-center h-9 w-9 rounded-full transition-all duration-150',
                     canSend
-                      ? 'bg-primary text-primary-foreground hover:opacity-90 shadow-sm active:scale-95'
-                      : 'bg-muted text-muted-foreground cursor-not-allowed',
+                      ? 'bg-md-primary text-md-on-primary hover:opacity-90 shadow-sm active:scale-95'
+                      : 'bg-md-surface-container text-md-on-surface-variant cursor-not-allowed',
                   )}
                   title="Send message"
                   aria-label="Send message"
@@ -205,8 +207,11 @@ export default function Composer({
           </div>
         </div>
 
-        <p className="text-center text-xs text-muted-foreground/70 mt-3">
+        <p className="text-center text-xs text-md-on-surface-variant mt-3">
           AI can make mistakes. Please verify important information.
+        </p>
+        <p className="mx-auto mt-1 max-w-2xl text-center text-[11px] leading-snug text-md-on-surface-variant/80">
+          {NOT_AFFILIATED_NOTICE}
         </p>
       </div>
     </div>

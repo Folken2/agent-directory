@@ -16,7 +16,8 @@ describe('parseTimelineRange', () => {
     assert.equal(parseTimelineRange('nope'), '30');
   });
 
-  it('accepts 90 and all', () => {
+  it('accepts 7, 90 and all', () => {
+    assert.equal(parseTimelineRange('7'), '7');
     assert.equal(parseTimelineRange('90'), '90');
     assert.equal(parseTimelineRange('all'), 'all');
   });
@@ -24,6 +25,7 @@ describe('parseTimelineRange', () => {
 
 describe('timelineRangeDays', () => {
   it('maps fixed windows and all', () => {
+    assert.equal(timelineRangeDays('7'), 7);
     assert.equal(timelineRangeDays('30'), 30);
     assert.equal(timelineRangeDays('90'), 90);
     assert.equal(timelineRangeDays('all'), null);

@@ -35,10 +35,7 @@ export function usePageviewStats(range: TimelineRange = '30'): {
           setLoaded(true);
         }
       } catch {
-        if (!cancelled) {
-          setStats(null);
-          setLoaded(true);
-        }
+        if (!cancelled) setLoaded(true);
       }
     };
 

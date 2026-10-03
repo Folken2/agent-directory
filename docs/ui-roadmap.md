@@ -14,13 +14,13 @@ Merged to `main`:
 | #36 | Backend `agents/uv.lock` committed + `uv sync --frozen`; google-adk pinned 1.32.0, `mcp<2`; builder's `mcpdoc` pinned |
 | #37 | M3 primitives in `components/ui/` (Button, Chip, Card, Dialog, Sheet, DropdownMenu, Tooltip, Input, Snackbar), pill top bar + Account menu, migrated agent/sessions/settings/about/privacy/signin/error pages |
 
-Remaining sub-projects: **2** and **3** can run in parallel; **4** needs 3.
+On branch `claude/determined-heisenberg-pr5xqk` (not yet merged): sub-projects **2**, **3** and **4** below are implemented. Blueprint saves need `BLUEPRINT_WEBHOOK_URL` / `BLUEPRINT_WEBHOOK_SECRET` / `BLUEPRINT_BOOKING_URL` set on the frontend (see `adk-web-ui/env.example`); the table is created by migration `0014_blueprint_submissions` and also bootstraps itself on first save.
 
 ## Ground rules (all sub-projects)
 
 - **Public repo.** Keep code, comments, commits and PR text neutral and technical. Never commit `docs/superpowers/**`, `docs/runbooks/**`, `.superpowers/**`.
 - **Not affiliated with Google.** The site may say "built with Google's Agent Development Kit"; it must never present itself or its agents as Google's. Keep `NOT_AFFILIATED_NOTICE` (`lib/site.ts`) in the footer and on About.
-- **Styling.** Use `md-*` tokens (`bg-md-surface`, `text-md-on-surface-variant`, …) and `components/ui/*`. Shapes: buttons/top bar `rounded-full`; chips 8px; inputs 12px; cards 16px; dialogs/composer 28px (`--md-shape-*`). Do not add new uses of the deprecated aliases (`bg-primary`, `text-muted-foreground`, `border-border`, …); `npm run lint:tokens` fails CI on new ones. When a file is migrated, run `node --import tsx scripts/check-token-aliases.ts --write-allowlist` (it may only shrink). Remove the alias block from `app/globals.css` once the allowlist is empty (end of sub-project 3).
+- **Styling.** Use `md-*` tokens (`bg-md-surface`, `text-md-on-surface-variant`, …) and `components/ui/*`. Shapes: buttons/top bar `rounded-full`; chips 8px; inputs 12px; cards 16px; dialogs/composer 28px (`--md-shape-*`). Do not add new uses of the deprecated aliases (`bg-primary`, `text-muted-foreground`, `border-border`, …); `npm run lint:tokens` fails CI on new ones. The alias block is gone from `app/globals.css` and the allowlist is empty, so any alias use now fails `lint:tokens`.
 - **Theme.** `.dark` on `<html>` is the source of truth (`lib/theme.ts`, `components/theme/*`); read it with `useDarkMode()` (`lib/hooks/useDarkMode.ts`).
 - **Gate (CI):** from `adk-web-ui/`: `npx eslint . && npm run lint:tokens && npx tsc --noEmit && npm run test:unit && npm run build` (build needs `DATABASE_URL=postgres://ci:ci@localhost:5432/ci AUTH_SECRET=ci SKIP_ENV_VALIDATION=true`). E2E: `npx playwright test` (set `E2E_BASE_URL` to your own dev server port; never assume 3000 is free).
 - **Tests.** Unit tests are `lib/**/*.test.ts` with `node:test`. UI behavior is covered with Playwright in `e2e/`. Write the failing test first.

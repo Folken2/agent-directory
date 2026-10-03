@@ -4,6 +4,14 @@ import { useRef, type KeyboardEvent } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ThemePref } from '@/lib/theme';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useTheme } from './ThemeProvider';
 
 const OPTIONS: Array<{ value: ThemePref; label: string; Icon: typeof Sun }> = [
@@ -12,7 +20,7 @@ const OPTIONS: Array<{ value: ThemePref; label: string; Icon: typeof Sun }> = [
   { value: 'system', label: 'System', Icon: Monitor },
 ];
 
-export function ThemeToggle({ className }: { className?: string }) {
+export function ThemeToggle({ className, showLabels = false }: { className?: string; showLabels?: boolean }) {
   const { pref, setPref } = useTheme();
   const refs = useRef<Array<HTMLButtonElement | null>>([]);
 
@@ -66,7 +74,8 @@ export function ThemeToggle({ className }: { className?: string }) {
           onClick={() => setPref(value)}
           onKeyDown={(e) => onKeyDown(e, i)}
           className={cn(
-            'inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors',
+            'inline-flex h-8 items-center justify-center gap-1.5 rounded-full transition-colors',
+            showLabels ? 'px-3 text-label-large' : 'w-8',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary',
             pref === value
               ? 'bg-md-primary-container text-md-on-primary-container'
@@ -74,8 +83,36 @@ export function ThemeToggle({ className }: { className?: string }) {
           )}
         >
           <Icon className="h-4 w-4" aria-hidden />
+          {showLabels ? label : null}
         </button>
       ))}
     </div>
+  );
+}
+
+/** Compact theme picker for the top bar: one icon button that opens a menu. */
+export function ThemeMenu({ className }: { className?: string }) {
+  const { pref, setPref } = useTheme();
+  const current = OPTIONS.find((o) => o.value === pref) ?? OPTIONS[2];
+  const CurrentIcon = current.Icon;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="text" size="icon" className={className} aria-label={`Theme: ${current.label}`}>
+          <CurrentIcon aria-hidden />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="min-w-[160px]">
+        <DropdownMenuRadioGroup value={pref} onValueChange={(v) => setPref(v as ThemePref)}>
+          {OPTIONS.map(({ value, label, Icon }) => (
+            <DropdownMenuRadioItem key={value} value={value}>
+              <Icon aria-hidden />
+              {label}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

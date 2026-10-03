@@ -22,7 +22,8 @@ type RawPrompt = { agentSlug: string; text: string };
 
 type Props = {
   range: TimelineRange;
-  onRangeChange: (range: TimelineRange) => void;
+  /** Omit when the page already has a range control. */
+  onRangeChange?: (range: TimelineRange) => void;
   agents: AgentUsageRow[];
   users: SignedInUserRow[];
   pages: PageUsageRow[];
@@ -301,6 +302,7 @@ export default function OpsExplorer({
             Filterable tables for keep / kill / add decisions
           </p>
         </div>
+        {onRangeChange ? (
         <div className="flex flex-wrap gap-1">
           {TIMELINE_RANGES.map((r) => (
             <button
@@ -317,6 +319,7 @@ export default function OpsExplorer({
             </button>
           ))}
         </div>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-1 border-b border-md-outline/30 pb-2">

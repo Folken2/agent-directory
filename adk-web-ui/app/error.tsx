@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
 import { Button, buttonVariants } from '@/components/ui/button';
+import { Page, PageHeader } from '@/components/layout/Page';
 
 export default function Error({
   error,
@@ -18,19 +19,24 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-headline-small text-md-on-surface">Something went wrong</h1>
-      <p className="text-body-large text-md-on-surface-variant">
-        This page hit an unexpected error. You can try again or go back home.
-      </p>
-      <div className="flex gap-3">
-        <Button variant="outlined" onClick={reset}>
+    <Page>
+      <PageHeader
+        title="Something went wrong"
+        description="This page hit an unexpected error. Trying again usually works; if it doesn't, start over from the builder."
+      />
+      <div className="flex flex-wrap gap-3">
+        <Button variant="filled" onClick={reset}>
           Try again
         </Button>
-        <Link href="/" className={buttonVariants({ variant: 'filled' })}>
-          Home
+        <Link href="/" className={buttonVariants({ variant: 'outlined' })}>
+          Go to the builder
         </Link>
       </div>
-    </div>
+      {error.digest ? (
+        <p className="mt-8 text-body-small text-md-on-surface-variant">
+          Reference: <code className="font-mono">{error.digest}</code>
+        </p>
+      ) : null}
+    </Page>
   );
 }

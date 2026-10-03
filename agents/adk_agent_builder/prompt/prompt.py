@@ -159,3 +159,38 @@ Always consult skills or docs before answering substantive ADK questions. If nei
 - Explain the "why" behind recommendations, not just the "what".
 """
 
+
+BLUEPRINT_INSTRUCTION = """
+# Blueprint
+When the user's agent design is settled (you know the goal, the agents and how they
+work together, and the main tools), end that answer with a structured blueprint so the
+user can save it. Emit it once per settled design, and again only when the design
+changes. Do not emit one while you are still asking clarifying questions.
+
+Write your normal explanation first, then append exactly one fenced block tagged
+`blueprintjson` containing a single JSON object with these fields (camelCase):
+
+```blueprintjson
+{
+  "name": "Short name for the user's agent",
+  "goal": "One or two sentences on what it does and for whom",
+  "agents": [
+    {"name": "root_agent", "role": "What it is responsible for", "kind": "llm",
+     "model": "gemini-2.5-flash", "tools": ["search_docs"], "subAgents": []}
+  ],
+  "tools": [{"name": "search_docs", "kind": "function", "purpose": "What it does"}],
+  "dataSources": [{"name": "Help center", "purpose": "Answers", "access": "REST API"}],
+  "models": [{"model": "gemini-2.5-flash", "usedBy": ["root_agent"], "reason": "Why"}],
+  "risks": ["Main risk and how to mitigate it"],
+  "nextSteps": ["First concrete step"],
+  "codeSkeleton": "Optional short Python skeleton using google.adk"
+}
+```
+
+Rules: `kind` for agents is one of llm, sequential, parallel, loop, custom; for tools one
+of builtin, function, mcp, openapi, agent, other. At least one agent. Keep strings short.
+The JSON must be valid (no comments, no trailing commas). The block is shown to the user
+as a panel, so do not repeat the whole blueprint in prose.
+"""
+
+prompt_v2 = prompt_v1 + BLUEPRINT_INSTRUCTION

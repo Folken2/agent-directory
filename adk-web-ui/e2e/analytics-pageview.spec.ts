@@ -56,10 +56,40 @@ test.describe('Visitor analytics ingest', () => {
     expect(typeof body.stats.total).toBe('number');
   });
 
-  test('hides visit pill when there are no real visits', async ({ page }) => {
+  const statsWith = (visits: number) => ({
+    ok: true,
+    stats: { total: visits, humans: visits, visits, bots: 0, timeline: [], topCountries: [], byBot: [], topAgents: [] },
+  });
+
+  test('hides the footer visit count when there are no real visits', async ({ page }) => {
+    await page.route('**/api/analytics/stats*', (r) => r.fulfill({ json: statsWith(0) }));
     await page.goto('/');
-    await page.waitForLoadState('domcontentloaded');
-    // With placeholder / empty DB the badge must not show demo numbers.
+    await page.waitForLoadState('networkidle');
     await expect(page.getByRole('link', { name: /visits$/i })).toHaveCount(0);
+  });
+
+  test('footer shows all-time visits linking to the dashboard', async ({ page }) => {
+    await page.route('**/api/analytics/stats*', (r) => r.fulfill({ json: statsWith(3456) }));
+    await page.goto('/');
+    const link = page.getByRole('contentinfo').getByRole('link', { name: '3.5k visits' });
+    await expect(link).toHaveAttribute('href', '/analytics');
+  });
+});
+
+test.describe('Ops endpoints are private', () => {
+  for (const path of [
+    '/api/analytics/ops/insights?range=30',
+    '/api/analytics/ops/conversation?app=adk_agent_builder&session=s-1',
+  ]) {
+    test(`${path.split('?')[0]} is 404 when signed out`, async ({ request }) => {
+      const res = await request.get(path);
+      expect(res.status()).toBe(404);
+      expect(res.headers()['cache-control'] ?? '').not.toContain('public');
+    });
+  }
+
+  test('/analytics/ops is 404 when signed out', async ({ request }) => {
+    const res = await request.get('/analytics/ops');
+    expect(res.status()).toBe(404);
   });
 });

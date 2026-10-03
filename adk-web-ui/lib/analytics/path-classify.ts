@@ -37,11 +37,10 @@ export const KNOWN_STATIC_ROUTES: readonly string[] = [
   '/analytics/ops',
   '/auth/signin',
   '/chat',
+  '/examples',
   '/me/sessions',
   '/privacy',
   '/settings',
-  '/settings/connections',
-  '/settings/keys',
 ] as const;
 
 /**
@@ -53,6 +52,8 @@ export const RETIRED_STATIC_ROUTES: readonly string[] = [
   '/learn',
   '/contribute',
   '/contribute/submit',
+  '/settings/connections',
+  '/settings/keys',
 ] as const;
 
 /** Dynamic route patterns, anchored. Only `/agents/[name]` today. */

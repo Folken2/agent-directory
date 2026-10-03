@@ -1,6 +1,7 @@
 // TypeScript types for ADK Web UI
 import type { ConversationId, MessageId } from './ids';
 import type { GuideDocument } from './guide/types';
+import type { Blueprint } from './blueprint/types';
 
 export interface UseCase {
   title: string;
@@ -72,6 +73,7 @@ export interface Message {
   subAgentSteps?: SubAgentStep[];
   mapsCaptures?: MapsCapture[];
   guideDocument?: GuideDocument;
+  blueprint?: Blueprint;
   isError?: boolean;
 }
 
@@ -173,6 +175,7 @@ export type StreamChunk =
   | { type: 'toolResponse'; toolResponse: ToolResponse; author?: string }
   | { type: 'mapsCapture'; mapsCapture: MapsCapture; author?: string }
   | { type: 'guideDocument'; guideDocument: GuideDocument; author?: string }
+  | { type: 'blueprint'; blueprint: Blueprint; author?: string }
   | { type: 'error'; error: string; code?: string }
   | { type: 'done' };
 

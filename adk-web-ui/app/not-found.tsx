@@ -1,16 +1,37 @@
 import Link from 'next/link';
-import { buttonVariants } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
+import AgentGrid from '@/components/AgentGrid';
+import BuilderHero from '@/components/home/BuilderHero';
+import { Page, PageHeader, Section } from '@/components/layout/Page';
+import { loadExampleAgents } from '@/lib/agent-catalog';
 
 export default function NotFound() {
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-headline-small text-md-on-surface">Page not found</h1>
-      <p className="text-body-large text-md-on-surface-variant">
-        That page doesn&apos;t exist. Browse the agents instead.
-      </p>
-      <Link href="/" className={buttonVariants({ variant: 'filled' })}>
-        Browse agents
-      </Link>
-    </div>
+    <Page>
+      <PageHeader
+        title="Page not found"
+        description="Error 404. The link may be broken, or the page may have moved. You can pick up from here instead."
+      />
+
+      <div className="max-w-2xl">
+        <BuilderHero compact label="Describe the agent you were looking for" placeholder="Describe the agent you were looking for…" />
+      </div>
+
+      <Section
+        title="Or start from an example"
+        className="mt-16"
+        action={
+          <Link
+            href="/examples"
+            className="inline-flex items-center gap-1 rounded-full text-label-large text-md-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
+          >
+            Browse all examples
+            <ArrowRight className="size-4" aria-hidden />
+          </Link>
+        }
+      >
+        <AgentGrid agents={loadExampleAgents()} limit={4} showControls={false} />
+      </Section>
+    </Page>
   );
 }

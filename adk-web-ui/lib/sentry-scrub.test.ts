@@ -102,3 +102,14 @@ describe('scrubSpan', () => {
     assert.equal(out.data['http.method'], 'POST');
   });
 });
+
+describe('blueprint save scrubbing', () => {
+  it('redacts blueprint limiter keys and email addresses', () => {
+    const out = redactUrl(`limit bp:a:${TOKEN} bp:u:user-1 for Someone.Name+tag@example.co.uk`);
+    assert.ok(!out.includes(TOKEN));
+    assert.ok(!out.includes('user-1'));
+    assert.ok(!out.includes('example.co.uk'));
+    assert.match(out, /bp:\[redacted\]/);
+    assert.match(out, /\[email\]/);
+  });
+});

@@ -1,68 +1,62 @@
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
+import { ChevronRight } from 'lucide-react';
 import { requireSettingsUser } from '@/lib/settings-auth';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import SignOutButton from '@/components/auth/SignOutButton';
+import { cn } from '@/lib/utils';
+import { panelClass } from '@/components/ui/card';
+import { Page, PageHeader } from '@/components/layout/Page';
 
 export const metadata = {
-  title: 'Settings',
+  title: 'Settings | ADK Agent Directory',
   robots: { index: false, follow: false },
 };
 
-const linkClass = 'block px-4 py-3.5 transition-colors hover:bg-md-on-surface/8';
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-16 flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-3">
+      <span className="text-body-large text-md-on-surface">{label}</span>
+      {children}
+    </div>
+  );
+}
 
-export default async function SettingsOverviewPage() {
+export default async function SettingsPage() {
   const session = await requireSettingsUser('/settings');
   const name = session.user?.name?.trim() || null;
   const email = session.user?.email?.trim() || null;
 
   return (
-    <div className="space-y-6">
-      <header className="space-y-1">
-        <h1 className="text-headline-small text-md-on-surface">Settings</h1>
-        <p className="text-sm text-md-on-surface-variant">
-          Account preferences for Agent Directory. Some unlocks are listed here before they ship.
-        </p>
-      </header>
+    <Page>
+      <PageHeader title="Settings" description="Your account and how the site looks." />
 
-      <Card variant="outlined" className="space-y-1 p-4">
-        <h2 className="text-sm font-medium text-md-on-surface">Account</h2>
-        {name ? <p className="text-sm text-md-on-surface">{name}</p> : null}
-        {email ? (
-          <p className="text-sm text-md-on-surface-variant">{email}</p>
-        ) : (
-          <p className="text-sm text-md-on-surface-variant">Signed in with Google</p>
-        )}
-      </Card>
+      <div className={cn(panelClass, 'max-w-3xl divide-y divide-md-outline/60 overflow-hidden dark:divide-md-outline-variant')}>
+        <Row label="Account">
+          <span className="min-w-0 text-right">
+            {name ? <span className="block text-body-medium text-md-on-surface">{name}</span> : null}
+            <span className="block truncate text-body-medium text-md-on-surface-variant">
+              {email ?? 'Signed in with Google'}
+            </span>
+          </span>
+        </Row>
+        <Row label="Theme">
+          <ThemeToggle showLabels />
+        </Row>
+        <Link
+          href="/me/sessions"
+          className="flex min-h-16 items-center justify-between gap-6 px-5 py-3 transition-colors hover:bg-md-on-surface/4 focus-visible:bg-md-on-surface/8 focus-visible:outline-none"
+        >
+          <span>
+            <span className="block text-body-large text-md-on-surface">Chat history</span>
+            <span className="block text-body-medium text-md-on-surface-variant">Conversations saved to this account</span>
+          </span>
+          <ChevronRight className="size-5 shrink-0 text-md-on-surface-variant" aria-hidden />
+        </Link>
+      </div>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium text-md-on-surface">Coming later</h2>
-        <p className="text-sm text-md-on-surface-variant">
-          Signed-in accounts will be able to bring your own API keys and connect Gmail or other MCPs
-          for richer agent runs. Those controls are not available yet — the pages below are honest
-          placeholders.
-        </p>
-        <Card variant="outlined" className="overflow-hidden">
-          <ul className="divide-y divide-md-outline-variant">
-            <li>
-              <Link href="/settings/keys" className={linkClass}>
-                <p className="text-sm font-medium text-md-on-surface">API keys (BYOK)</p>
-                <p className="mt-0.5 text-xs text-md-on-surface-variant">Not available yet</p>
-              </Link>
-            </li>
-            <li>
-              <Link href="/settings/connections" className={linkClass}>
-                <p className="text-sm font-medium text-md-on-surface">Connections</p>
-                <p className="mt-0.5 text-xs text-md-on-surface-variant">Gmail and MCPs — not available yet</p>
-              </Link>
-            </li>
-            <li>
-              <Link href="/me/sessions" className={linkClass}>
-                <p className="text-sm font-medium text-md-on-surface">Your sessions</p>
-                <p className="mt-0.5 text-xs text-md-on-surface-variant">Saved chat history on this account</p>
-              </Link>
-            </li>
-          </ul>
-        </Card>
-      </section>
-    </div>
+      <div className="mt-6">
+        <SignOutButton />
+      </div>
+    </Page>
   );
 }

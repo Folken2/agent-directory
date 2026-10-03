@@ -31,11 +31,11 @@ describe('isKnownRoute', () => {
   it('accepts static routes', () => {
     assert.equal(isKnownRoute('/'), true);
     assert.equal(isKnownRoute('/analytics/ops'), true);
-    assert.equal(isKnownRoute('/settings/keys'), true);
+    assert.equal(isKnownRoute('/settings'), true);
   });
 
   it('keeps retired (now redirecting) routes classified as pages', () => {
-    for (const p of ['/trending', '/learn', '/contribute', '/contribute/submit']) {
+    for (const p of ['/trending', '/learn', '/contribute', '/contribute/submit', '/settings/keys']) {
       assert.equal(classifyPath(p), 'page', p);
     }
   });

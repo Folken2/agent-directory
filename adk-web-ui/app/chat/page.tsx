@@ -1,20 +1,36 @@
 'use client';
 
-import { useEffect, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
 import ChatHistory from '@/components/ChatHistory';
+import AgentSwitcher from '@/components/chat/AgentSwitcher';
 import { useAppStore } from '@/lib/store';
 import { toConversationId, replayedMessageId } from '@/lib/ids';
 import { Agent, ChatConversation, Message } from '@/lib/types';
 import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MAX_BUILDER_PROMPT_LENGTH, resolveChatAgentName } from '@/lib/builder';
+import { loadConversation, saveConversation } from '@/lib/chat/local-history';
+import ChatSkeleton from '@/components/chat/ChatSkeleton';
 
 function ChatContent() {
-  const { error, setError, agents, setAgents, setSelectedAgent, setCurrentConversation, selectedAgent } = useAppStore();
+  const {
+    error,
+    setError,
+    agents,
+    setAgents,
+    setSelectedAgent,
+    setCurrentConversation,
+    selectedAgent,
+    currentConversation,
+  } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
+  // Set once the requested agent is selected and a fresh conversation is in
+  // place, so an auto-sent prompt can't race the conversation reset.
+  const [autoSendPrompt, setAutoSendPrompt] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const resumedSessionRef = useRef<string | null>(null);
   const resolvedAgentRef = useRef<string | null>(null);
@@ -43,12 +59,14 @@ function ChatContent() {
     // not the store.
     useAppStore.getState().loadPreferences();
 
-    const agentName = searchParams.get('agent');
+    // No ?agent= means the builder: it is the site's default conversation.
+    const agentName = resolveChatAgentName(searchParams.get('agent'));
     const sessionParam = searchParams.get('session');
-    const promptParam = searchParams.get('prompt');
-    setInitialPrompt(promptParam || null);
+    const promptParam = searchParams.get('prompt')?.slice(0, MAX_BUILDER_PROMPT_LENGTH) || null;
+    // ?send=1 sends the prompt on arrival instead of prefilling the composer.
+    const autoSend = searchParams.get('send') === '1' && !!promptParam && !sessionParam;
+    setInitialPrompt(autoSend ? null : promptParam);
 
-    if (!agentName) return;
     // Important: the global agents array isn't reliably populated (AgentGrid
     // uses local state and nothing else populates it), so we can't gate on
     // agents.length here. Resolve the agent from whichever source is fastest
@@ -126,18 +144,36 @@ function ChatContent() {
           setCurrentConversation(null);
         }
       } else if (!sessionParam) {
-        // Fresh chat for this agent
-        setCurrentConversation(null);
+        // Fresh visit: restore this agent's locally saved chat, unless a
+        // prompt is about to start a new one.
+        setCurrentConversation(autoSend ? null : loadConversation(agent.name));
+        if (autoSend) setAutoSendPrompt(promptParam);
       }
     })();
   }, [searchParams, agents, selectedAgent, setAgents, setSelectedAgent, setCurrentConversation]);
 
+  // Keep the current chat across refreshes. Resumed server sessions are
+  // already persisted, and an emptied conversation (new chat) clears the slot.
+  useEffect(() => {
+    if (!currentConversation || currentConversation.resumedFrom) return;
+    saveConversation(currentConversation);
+  }, [currentConversation]);
+
+  const handleAutoSent = useCallback(() => {
+    setAutoSendPrompt(null);
+    // Drop prompt/send from the URL so a refresh doesn't send it again.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('prompt');
+    url.searchParams.delete('send');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search);
+  }, []);
+
   return (
-    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden bg-background text-foreground">
+    <div className="flex h-dvh overflow-hidden bg-md-surface-container-low text-md-on-surface">
       {/* Sidebar — snap toggle (no width transition) avoids reflowing the message list every frame */}
       <div
         className={cn(
-          'overflow-hidden border-r border-border/40 lg:block hidden',
+          'overflow-hidden border-r border-md-outline/40 lg:block hidden',
           sidebarOpen ? 'w-60' : 'w-0',
         )}
       >
@@ -150,23 +186,23 @@ function ChatContent() {
       {sidebarOpen && (
         <div className="lg:hidden fixed inset-0 z-40">
           <div
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-md-surface-container-low/80 backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
-          <div className="absolute left-0 top-0 bottom-0 w-72 bg-background border-r border-border/40 shadow-xl">
+          <div className="absolute left-0 top-0 bottom-0 w-72 bg-md-surface-container-low border-r border-md-outline/40 shadow-xl">
             <ChatHistory />
           </div>
         </div>
       )}
 
-      <div className="flex-1 flex flex-col overflow-hidden bg-background">
+      <div className="flex-1 flex flex-col overflow-hidden bg-md-surface-container-low">
         {/* Header — agent identity is the title; collapse + back are tertiary */}
-        <header className="border-b border-border/40 px-4 sm:px-5 h-16 flex items-center z-10 shrink-0">
+        <header className="border-b border-md-outline/40 px-4 sm:px-5 h-16 flex items-center z-10 shrink-0">
           <div className="flex items-center justify-between w-full gap-3">
             <div className="flex items-center gap-1 min-w-0">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                className="p-2 hover:bg-md-surface-container rounded-lg transition-colors text-md-on-surface-variant hover:text-md-on-surface"
                 aria-label={sidebarOpen ? 'Hide history' : 'Show history'}
                 title={sidebarOpen ? 'Hide history' : 'Show history'}
               >
@@ -175,30 +211,12 @@ function ChatContent() {
                 <PanelLeft className="w-5 h-5 hidden lg:block" />
               </button>
 
-              {selectedAgent ? (
-                <Link
-                  href={`/agents/${encodeURIComponent(selectedAgent.name)}`}
-                  className="flex flex-col items-start text-left ml-2 min-w-0 hover:opacity-90 transition-opacity"
-                >
-                  <span className="text-[15px] font-semibold tracking-tight text-foreground leading-tight truncate max-w-[60vw] sm:max-w-md">
-                    {selectedAgent.displayName || selectedAgent.name}
-                  </span>
-                </Link>
-              ) : (
-                <div className="ml-2 flex flex-col">
-                  <span className="text-[15px] font-semibold tracking-tight text-foreground leading-tight">
-                    Chat
-                  </span>
-                  <span className="text-xs text-muted-foreground mt-0.5">
-                    Select an agent to begin
-                  </span>
-                </div>
-              )}
+              <AgentSwitcher agent={selectedAgent} />
             </div>
 
             <Link
               href={selectedAgent ? `/agents/${encodeURIComponent(selectedAgent.name)}` : '/'}
-              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span className="hidden sm:inline">Back</span>
@@ -208,15 +226,15 @@ function ChatContent() {
 
         {/* Error Banner */}
         {error && (
-          <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3">
+          <div className="bg-md-error/10 border-b border-md-error/20 px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-destructive" />
-                <span className="text-sm font-medium text-destructive">{error}</span>
+                <AlertCircle className="w-5 h-5 text-md-error" />
+                <span className="text-sm font-medium text-md-error">{error}</span>
               </div>
               <button
                 onClick={() => setError(null)}
-                className="text-destructive hover:text-destructive/80 transition-colors"
+                className="text-md-error hover:text-md-error/80 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -227,8 +245,12 @@ function ChatContent() {
         {/* Main Content Area */}
         <div className="flex-1 flex overflow-hidden relative">
           {/* Chat Area */}
-          <div className="flex-1 flex flex-col overflow-hidden bg-background">
-            <ChatInterface initialPrompt={initialPrompt || undefined} />
+          <div className="flex-1 flex flex-col overflow-hidden bg-md-surface-container-low">
+            <ChatInterface
+              initialPrompt={initialPrompt || undefined}
+              autoSendPrompt={autoSendPrompt}
+              onAutoSent={handleAutoSent}
+            />
           </div>
         </div>
       </div>
@@ -239,11 +261,7 @@ function ChatContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-[calc(100dvh-4rem)] items-center justify-center bg-background">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    }>
+    <Suspense fallback={<ChatSkeleton />}>
       <ChatContent />
     </Suspense>
   );

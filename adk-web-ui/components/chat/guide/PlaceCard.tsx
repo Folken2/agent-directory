@@ -23,8 +23,8 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
       className={cn(
         'w-full rounded-lg border px-2.5 py-2 transition-colors',
         selected
-          ? 'border-foreground/35 bg-muted/50'
-          : 'border-border/70 active:bg-muted/40',
+          ? 'border-md-on-surface/35 bg-md-surface-container/50'
+          : 'border-md-outline/70 active:bg-md-surface-container/40',
       )}
     >
       <button
@@ -36,11 +36,11 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="font-medium text-[15px] leading-snug text-foreground">
+              <span className="font-medium text-[15px] leading-snug text-md-on-surface">
                 {place.name}
               </span>
               {place.category && (
-                <span className="rounded-full bg-muted px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                <span className="rounded-full bg-md-surface-container px-1.5 py-px text-[10px] font-medium uppercase tracking-wide text-md-on-surface-variant">
                   {place.category}
                 </span>
               )}
@@ -50,7 +50,7 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
             <div
               className={cn(
                 'shrink-0 rounded-md px-1.5 py-0.5 text-xs font-medium tabular-nums',
-                selected ? 'bg-muted text-foreground' : 'bg-muted text-foreground/80',
+                selected ? 'bg-md-surface-container text-md-on-surface' : 'bg-md-surface-container text-md-on-surface/80',
               )}
             >
               <span className="text-amber-500" aria-hidden>
@@ -61,12 +61,12 @@ export function PlaceCard({ place, selected, onSelect }: Props) {
           )}
         </div>
         {place.summary && (
-          <p className="mt-1 text-sm leading-snug text-foreground/80 line-clamp-2">
+          <p className="mt-1 text-sm leading-snug text-md-on-surface/80 line-clamp-2">
             {place.summary}
           </p>
         )}
         {meta && (
-          <p className="mt-1 text-[11px] leading-snug text-muted-foreground line-clamp-2">
+          <p className="mt-1 text-[11px] leading-snug text-md-on-surface-variant line-clamp-2">
             {meta}
           </p>
         )}

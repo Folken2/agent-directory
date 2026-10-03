@@ -13,7 +13,8 @@ test.describe('Theme', () => {
     const ctx = await browser.newContext({ colorScheme: 'dark' });
     const page = await ctx.newPage();
     await page.goto('/about');
-    await page.getByRole('radiogroup', { name: 'Theme' }).first().getByRole('radio', { name: 'Light' }).click();
+    await page.getByRole('button', { name: /^Theme:/ }).click();
+    await page.getByRole('menuitemradio', { name: 'Light' }).click();
     await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
     await page.reload();
     await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);

@@ -3,7 +3,8 @@ import type { Breadcrumb, Event } from '@sentry/nextjs';
 /**
  * Pure scrubbers for Sentry payloads. Nothing here may ship chat content,
  * cookies, auth headers or the anonymous session token (which appears in
- * backend URLs as /users/a_<token>/ and in limiter keys as run:a:<token>).
+ * backend URLs as /users/a_<token>/ and in limiter keys as run:a:<token> or
+ * bp:a:<token>), nor email addresses from blueprint saves.
  */
 
 const SENSITIVE_HEADERS = new Set(['cookie', 'authorization']);
@@ -12,7 +13,8 @@ const URL_ATTRIBUTES = ['url', 'url.full', 'http.url', 'http.target', 'url.path'
 export function redactUrl(value: string): string {
   return value
     .replace(/\/users\/[^/?#\s]+/g, '/users/[redacted]')
-    .replace(/run:(?:a:[0-9a-f]+|ip:[0-9a-f]+|u:[^\s]+)/g, 'run:[redacted]');
+    .replace(/(run|bp):(?:a:[0-9a-f]+|ip:[0-9a-f]+|u:[^\s]+)/g, '$1:[redacted]')
+    .replace(/[^\s@/?#&=]+@[^\s@/?#&=]+\.[A-Za-z]{2,}/g, '[email]');
 }
 
 function redactValue<T>(value: T): T {

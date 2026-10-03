@@ -3,7 +3,8 @@
  * we have to "what are people trying to do here".
  *
  * Source is the ADK-owned `events` table (`author='user'`, text in
- * `content->parts[].text`), which holds 8 months of history. No new tracking was
+ * `content->parts[].text`, read through `adk-events` so both ADK storage
+ * layouts work), which holds 8 months of history. No new tracking was
  * added for this; see the design doc.
  *
  * Deliberately dumb: frequency counting over unigrams and bigrams. No model, no
@@ -25,8 +26,8 @@ import { sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { unwrapExecuteRows } from '@/lib/drizzle/unwrap-rows';
 import snapshotJson from '@/lib/agent-catalog.snapshot.json';
-import { isAnalyticsDbAvailable } from './db-available';
-import { timelineRangeDays, type TimelineRange } from './timeline-range';
+import { adkEventsRelation, detectAdkEventsSchema, rangeStart } from './adk-events';
+import type { TimelineRange } from './timeline-range';
 
 /** Prompts longer than this are truncated before tokenizing — pasted code and
  * logs would otherwise dominate the counts. */
@@ -296,40 +297,33 @@ export function rankPromptThemes(
 // Database access
 // ---------------------------------------------------------------------------
 
-function sinceClause(range: TimelineRange) {
-  const days = timelineRangeDays(range);
-  if (days === null) return sql``;
-  const d = new Date();
-  d.setUTCHours(0, 0, 0, 0);
-  d.setUTCDate(d.getUTCDate() - (days - 1));
-  return sql`AND timestamp >= (${d.toISOString()})::timestamptz AT TIME ZONE 'UTC'`;
-}
-
 /**
  * Text-bearing user prompts. Function-call and artifact-only events yield no
- * text after extraction and are dropped.
+ * text after extraction and are dropped. Works with either ADK storage layout.
  */
 export async function fetchPromptRecords(
   range: TimelineRange,
   agentSlug?: string
 ): Promise<PromptRecord[]> {
-  if (!isAnalyticsDbAvailable()) return [];
+  const schema = await detectAdkEventsSchema();
+  if (!schema) return [];
+  const start = rangeStart(range);
 
   const rows = unwrapExecuteRows<{ app_name: string; text: string | null }>(
     await db.execute(sql`
       SELECT
-        app_name,
+        e.app_name,
         (
           SELECT string_agg(p->>'text', ' ')
-          FROM jsonb_array_elements(content->'parts') p
+          FROM jsonb_array_elements(CASE WHEN jsonb_typeof(e.content->'parts') = 'array' THEN e.content->'parts' ELSE '[]'::jsonb END) p
           WHERE p ? 'text' AND length(p->>'text') > 0
         ) AS text
-      FROM events
-      WHERE author = 'user'
-        AND content IS NOT NULL
-        ${sinceClause(range)}
-        ${agentSlug ? sql`AND app_name = ${agentSlug}` : sql``}
-      ORDER BY timestamp DESC
+      FROM ${adkEventsRelation(schema)} AS e
+      WHERE e.author = 'user'
+        AND e.content IS NOT NULL
+        ${start ? sql`AND e.ts >= (${start.toISOString()})::timestamptz AT TIME ZONE 'UTC'` : sql``}
+        ${agentSlug ? sql`AND e.app_name = ${agentSlug}` : sql``}
+      ORDER BY e.ts DESC
       LIMIT ${MAX_PROMPT_ROWS}
     `)
   );

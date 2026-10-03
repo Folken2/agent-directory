@@ -1,7 +1,7 @@
 {
   "name": "adk_agent_builder",
   "displayName": "ADK Agent Builder",
-  "logo": "https://www.google.com/favicon.ico",
+  "logo": "/adk-logo.png",
   "category": "Code",
   "description": "Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in a curated library of ADK skills shipped with the agent.",
   "tools": ["SkillToolset"],

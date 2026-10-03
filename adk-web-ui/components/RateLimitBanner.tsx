@@ -1,8 +1,12 @@
 'use client';
 
-import { AlertCircle, X, LogIn } from 'lucide-react';
+import { Clock, X } from 'lucide-react';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { buttonVariants } from '@/components/ui/button';
+import { panelClass } from '@/components/ui/card';
 
 interface RateLimitBannerProps {
   count: number;
@@ -11,63 +15,51 @@ interface RateLimitBannerProps {
   onDismiss?: () => void;
 }
 
-export default function RateLimitBanner({ count, limit, userType, onDismiss }: RateLimitBannerProps) {
+// Default of RATE_LIMIT_USER_DAILY (lib/limits/limiter.ts).
+const SIGNED_IN_DAILY_LIMIT = 20;
+
+export default function RateLimitBanner({ limit, userType, onDismiss }: RateLimitBannerProps) {
   const isAnonymous = userType === 'anonymous';
-  const authenticatedLimit = 20; // Should match RATE_LIMITS.authenticated
+  const pathname = usePathname() ?? '/chat';
+  const query = useSearchParams()?.toString();
+  // Come back to this same chat after signing in.
+  const signInHref = `/auth/signin?callbackUrl=${encodeURIComponent(query ? `${pathname}?${query}` : pathname)}`;
 
   return (
     <AnimatePresence>
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: -12 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
+        exit={{ opacity: 0, y: -12 }}
         className="mx-4 mb-4"
       >
-        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 shadow-sm">
-          <div className="flex items-start gap-3">
-            <div className="flex-shrink-0 mt-0.5">
-              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                Daily Limit Reached
-              </h3>
-              <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
-                {isAnonymous ? (
-                  <>
-                    You&apos;ve used all <strong>{limit} free interactions</strong> for today.
-                    Sign in to get <strong>{authenticatedLimit} interactions per day</strong> and unlock extended limits.
-                  </>
-                ) : (
-                  <>
-                    You&apos;ve reached your daily limit of <strong>{limit} interactions</strong>.
-                    Please try again tomorrow.
-                  </>
-                )}
-              </p>
-              {isAnonymous && (
-                <Link
-                  href="/auth/signin"
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 dark:bg-amber-700 dark:hover:bg-amber-600 rounded-lg transition-colors"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Sign In for Extended Limits
-                </Link>
-              )}
-            </div>
-            {onDismiss && (
-              <button
-                onClick={onDismiss}
-                className="flex-shrink-0 p-1 text-amber-600 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-lg transition-colors"
-                aria-label="Dismiss banner"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
+        <div role="status" className={cn(panelClass, 'flex items-start gap-3 p-4 shadow-sm')}>
+          <Clock className="mt-0.5 size-5 shrink-0 text-md-primary" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-title-small text-md-on-surface">You&apos;ve reached today&apos;s limit</p>
+            <p className="mt-1 text-body-medium text-md-on-surface-variant">
+              {isAnonymous
+                ? `You've used all ${limit} free messages for today. Sign in for ${SIGNED_IN_DAILY_LIMIT} a day, and your chats are saved.`
+                : `You've used all ${limit} messages for today. The limit resets at midnight UTC.`}
+            </p>
+            {isAnonymous ? (
+              <Link href={signInHref} className={cn(buttonVariants({ variant: 'filled', size: 'sm' }), 'mt-3')}>
+                Sign in
+              </Link>
+            ) : null}
           </div>
+          {onDismiss ? (
+            <button
+              type="button"
+              onClick={onDismiss}
+              className="shrink-0 rounded-full p-1.5 text-md-on-surface-variant transition-colors hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
+              aria-label="Dismiss"
+            >
+              <X className="size-4" />
+            </button>
+          ) : null}
         </div>
       </motion.div>
     </AnimatePresence>
   );
 }
-

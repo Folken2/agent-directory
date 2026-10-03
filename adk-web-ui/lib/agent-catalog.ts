@@ -12,6 +12,7 @@
 import { readdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { formatAgentDisplayName } from './agent-utils';
+import { exampleAgents } from './builder';
 import { loadAgentMetadata, type AgentMetadata } from './agent-metadata';
 import type { Agent, AgentsListSource } from './types';
 import snapshotJson from './agent-catalog.snapshot.json';
@@ -168,6 +169,17 @@ export function loadCatalogFromSnapshot(): CatalogAgent[] {
   });
 }
 
+const AGENT_NAME_RE = /^[a-z0-9][a-z0-9_-]*$/i;
+
+/**
+ * One agent from the offline catalog (disk, then snapshot), for server-rendered
+ * pages. Returns null for unknown or malformed names.
+ */
+export function getCatalogAgent(name: string): CatalogAgent | null {
+  if (!AGENT_NAME_RE.test(name)) return null;
+  return loadOfflineCatalog().find((agent) => agent.name === name) ?? null;
+}
+
 /**
  * Pick the best non-live agent list for cold starts / ADK outages.
  */
@@ -191,4 +203,9 @@ export function asPublicAgents(agents: CatalogAgent[]): Agent[] {
     useCases: agent.useCases ?? [],
     samplePrompts: agent.samplePrompts ?? [],
   }));
+}
+
+/** The example agents (everything but the builder) for server-rendered lists. */
+export function loadExampleAgents(): Agent[] {
+  return exampleAgents(asPublicAgents(loadOfflineCatalog()));
 }

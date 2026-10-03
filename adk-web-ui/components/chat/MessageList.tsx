@@ -3,7 +3,8 @@
 import React, { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
-import { Agent, Artifact, Message, SubAgentStep } from '@/lib/types';
+import { Agent, Message } from '@/lib/types';
+import type { StreamingView } from '@/lib/hooks/useStreamingChat';
 import MessageBubble from './MessageBubble';
 import StreamingBubble from './StreamingBubble';
 import EmptyState from './EmptyState';
@@ -15,14 +16,7 @@ interface MessageListProps {
   copiedMessageId: string | null;
   onCopy: (text: string, id: string) => void;
   onPromptClick: (prompt: string) => void;
-  isStreaming: boolean;
-  isInitializing: boolean;
-  isThinking: boolean;
-  streamingContent: string;
-  streamingThinking: string;
-  currentAssistantMessageId: string | null;
-  currentMessageArtifacts: Artifact[];
-  streamingSubAgentSteps: SubAgentStep[];
+  streaming: StreamingView;
 }
 
 export default function MessageList({
@@ -32,15 +26,18 @@ export default function MessageList({
   copiedMessageId,
   onCopy,
   onPromptClick,
-  isStreaming,
-  isInitializing,
-  isThinking,
-  streamingContent,
-  streamingThinking,
-  currentAssistantMessageId,
-  currentMessageArtifacts,
-  streamingSubAgentSteps,
+  streaming,
 }: MessageListProps) {
+  const {
+    isStreaming,
+    isInitializing,
+    isThinking,
+    content: streamingContent,
+    thinking: streamingThinking,
+    messageId: currentAssistantMessageId,
+    artifacts: currentMessageArtifacts,
+    subAgentSteps: streamingSubAgentSteps,
+  } = streaming;
   const endRef = useRef<HTMLDivElement>(null);
 
   // Stick to bottom while streaming (including sub-agent step updates).
@@ -99,8 +96,8 @@ export default function MessageList({
             {isInitializing && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-start">
                 <div className="flex items-center space-x-2 p-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Thinking…</span>
+                  <Loader2 className="w-5 h-5 animate-spin text-md-on-surface-variant" />
+                  <span className="text-sm text-md-on-surface-variant">Thinking…</span>
                 </div>
               </motion.div>
             )}

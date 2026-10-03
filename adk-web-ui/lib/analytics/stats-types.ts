@@ -1,7 +1,11 @@
 import type { TimelineRange } from './timeline-range';
 import type { BotAgentStat, BotCompanyStat } from './bot-companies';
+import type { RankedStat } from './dashboard-math';
 
-export type { TimelineRange, BotAgentStat, BotCompanyStat };
+export type { TimelineRange, BotAgentStat, BotCompanyStat, RankedStat };
+
+/** Headline counts for one period. */
+export type PeriodTotals = { visits: number; peopleApprox: number; returning: number; bots: number };
 
 export type TimelineDay = {
   day: string; // YYYY-MM-DD (UTC)
@@ -41,6 +45,14 @@ export type PageviewStats = {
    * persistent `ad_vid` subset (ephemeral one-shot IDs never qualify).
    */
   returning: number;
+  /** Same counts for the preceding window of equal length; null for all-time. */
+  previous?: PeriodTotals | null;
+  /** Human visits by page (normalized path), top first; tail folded into "Other". */
+  topPages?: RankedStat[];
+  /** Human visits by referring site; same-site and missing referrers are "Direct / none". */
+  topSources?: RankedStat[];
+  /** Human visits by device type. */
+  devices?: RankedStat[];
   /** Human visits only, top countries by volume. */
   topCountries: CountryStat[];
   /** Crawlers rolled up to the company that operates them. */

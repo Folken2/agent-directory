@@ -8,7 +8,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
-import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import { ThemeMenu, ThemeToggle } from '@/components/theme/ThemeToggle';
 import UserProfile from '@/components/auth/UserProfile';
 import {
   DropdownMenu,
@@ -21,7 +21,8 @@ import {
 import SignOutButton from '@/components/auth/SignOutButton';
 
 const destinations = [
-  { name: 'Agents', href: '/' },
+  { name: 'Build', href: '/' },
+  { name: 'Examples', href: '/examples' },
   { name: 'About', href: '/about' },
 ];
 
@@ -40,9 +41,9 @@ function NavLink({ href, className, ...props }: React.ComponentProps<typeof Link
         'inline-flex items-center rounded-full px-4 text-sm font-medium transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary',
         active
-          ? 'bg-md-primary-container text-md-on-primary-container'
+          ? 'bg-md-on-surface/8 text-md-on-surface'
           : 'text-md-on-surface-variant hover:bg-md-on-surface/8 hover:text-md-on-surface',
-        className ?? 'h-10'
+        className ?? 'h-9'
       )}
       {...props}
     />
@@ -67,23 +68,29 @@ export default function Navigation() {
 
   if (pathname?.startsWith('/chat')) return null;
 
+  // Return to the current page after signing in.
+  const signInHref =
+    pathname && pathname !== '/' && !pathname.startsWith('/auth')
+      ? `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`
+      : '/auth/signin';
+
   const accountLinks = isAuthenticated
     ? [
-        { name: 'Sessions', href: '/me/sessions' },
+        { name: 'Chat history', href: '/me/sessions' },
         { name: 'Settings', href: '/settings' },
       ]
     : [];
 
   return (
-    <div className="sticky top-0 z-50 bg-md-surface-container-low/80 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-md-surface-container-low/70">
+    <header className="sticky top-0 z-50 bg-md-surface-container-low/85 backdrop-blur supports-[backdrop-filter]:bg-md-surface-container-low/70">
       <nav
         aria-label="Main"
-        className="mx-auto flex h-14 max-w-7xl items-center justify-between rounded-full bg-md-surface-container px-2 pl-4"
+        className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8"
       >
-        <Link href="/" aria-label="Agent Directory home" className="flex items-center gap-2 rounded-full pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary">
-          <Image src="/adk_logo.png" alt="" width={28} height={28} className="h-7 w-7" priority />
-          <span className="hidden text-base font-medium text-md-on-surface sm:inline">
-            Agent <span className="text-md-primary">Directory</span>
+        <Link href="/" aria-label="Agent Directory home" className="-ml-1 flex items-center gap-2.5 rounded-full p-1 pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary">
+          <Image src="/adk-logo.png" alt="" width={28} height={28} className="h-7 w-7" priority />
+          <span className="text-[17px] font-medium tracking-tight text-md-on-surface">
+            Agent Directory
           </span>
         </Link>
 
@@ -91,11 +98,11 @@ export default function Navigation() {
           {destinations.map((d) => (
             <NavLink key={d.href} href={d.href}>{d.name}</NavLink>
           ))}
-          <ThemeToggle className="ml-2" />
+          <ThemeMenu className="ml-2" />
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="text" size="icon" className="ml-2" aria-label="Account">
+                <Button variant="text" size="icon" className="ml-1" aria-label="Account">
                   <Avatar name={session?.user?.name} image={session?.user?.image} />
                 </Button>
               </DropdownMenuTrigger>
@@ -118,8 +125,8 @@ export default function Navigation() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <Link href="/auth/signin" className={cn(buttonVariants({ variant: 'filled', size: 'sm' }), 'ml-2')}>
+          ) : pathname?.startsWith('/auth') ? null : (
+            <Link href={signInHref} className={cn(buttonVariants({ variant: 'filled', size: 'sm' }), 'ml-1 h-9 px-4')}>
               Sign in
             </Link>
           )}
@@ -149,7 +156,7 @@ export default function Navigation() {
                   </div>
                 ) : (
                   <SheetClose asChild>
-                    <Link href="/auth/signin" className={cn(buttonVariants({ variant: 'filled' }), 'w-full')}>
+                    <Link href={signInHref} className={cn(buttonVariants({ variant: 'filled' }), 'w-full')}>
                       <LogIn /> Sign in
                     </Link>
                   </SheetClose>
@@ -159,6 +166,6 @@ export default function Navigation() {
           </SheetContent>
         </Sheet>
       </nav>
-    </div>
+    </header>
   );
 }
