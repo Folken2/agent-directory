@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { adkClient } from '@/lib/adk-client';
 import { Agent } from '@/lib/types';
@@ -9,7 +9,7 @@ import { useAppStore } from '@/lib/store';
 import {
   ArrowLeft,
   Star,
-  Play,
+  MessageSquare,
   Wrench,
   Tag,
   Sparkles,
@@ -22,13 +22,15 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getCategoryColors } from '@/lib/category-colors';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
+import { notify } from '@/components/ui/snackbar';
 
 const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
 
 export default function AgentDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const agentName = params?.name as string;
   const [agent, setAgent] = useState<Agent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -68,8 +70,12 @@ export default function AgentDetailPage() {
         // User cancelled
       }
     } else {
-      await navigator.clipboard.writeText(url);
-      alert('Link copied to clipboard!');
+      try {
+        await navigator.clipboard.writeText(url);
+        notify('Link copied');
+      } catch {
+        notify('Could not copy the link');
+      }
     }
   };
 
@@ -77,22 +83,15 @@ export default function AgentDetailPage() {
     if (agent) {
       setSelectedAgent(agent);
       setCurrentConversation(null);
-      router.push(`/chat?agent=${encodeURIComponent(agent.name)}`);
     }
   };
 
-  const handleTryPrompt = (prompt: string) => {
-    if (agent) {
-      setSelectedAgent(agent);
-      setCurrentConversation(null);
-      router.push(`/chat?agent=${encodeURIComponent(agent.name)}&prompt=${encodeURIComponent(prompt)}`);
-    }
-  };
+  const handleTryPrompt = handleStartChat;
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-md-primary"></div>
       </div>
     );
   }
@@ -101,10 +100,10 @@ export default function AgentDetailPage() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Agent Not Found</h1>
+          <h1 className="text-2xl font-bold text-md-on-surface mb-4">Agent Not Found</h1>
           <Link
             href="/"
-            className="text-primary hover:underline inline-flex items-center gap-2"
+            className="text-md-primary hover:underline inline-flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Agents
@@ -115,7 +114,6 @@ export default function AgentDetailPage() {
   }
 
   const isStarred = isAgentStarred(agent.name);
-  const categoryColors = getCategoryColors(agent.category);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low">
@@ -123,7 +121,7 @@ export default function AgentDetailPage() {
         {/* Back Button */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-md-on-surface-variant hover:text-md-on-surface mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Agents
@@ -147,20 +145,15 @@ export default function AgentDetailPage() {
                   </div>
                 )}
                 <div>
-                  <h1 className="text-4xl font-bold text-foreground tracking-tight">
+                  <h1 className="text-4xl font-bold text-md-on-surface tracking-tight">
                     {agent.displayName || agent.name}
                   </h1>
                   <div className="flex items-center gap-3 mt-1.5">
                     {agent.category && (
-                      <span className={cn(
-                        "inline-flex px-2.5 py-0.5 rounded-md text-xs font-semibold border",
-                        categoryColors.bg, categoryColors.text, categoryColors.border
-                      )}>
-                        {agent.category}
-                      </span>
+                      <Chip variant="category">{agent.category}</Chip>
                     )}
                     {agent.author && (
-                      <span className="text-sm text-muted-foreground flex items-center gap-1">
+                      <span className="text-sm text-md-on-surface-variant flex items-center gap-1">
                         <User className="w-3.5 h-3.5" />
                         {agent.author}
                       </span>
@@ -168,7 +161,7 @@ export default function AgentDetailPage() {
                   </div>
                 </div>
               </div>
-              <p className="text-lg text-muted-foreground leading-relaxed mt-4">
+              <p className="text-lg text-md-on-surface-variant leading-relaxed mt-4">
                 {agent.description}
               </p>
             </div>
@@ -176,95 +169,78 @@ export default function AgentDetailPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 mt-6">
-            <button
+            <Link
+              href={`/chat?agent=${encodeURIComponent(agent.name)}`}
               onClick={handleStartChat}
-              className="px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-medium transition-all shadow-sm hover:shadow flex items-center gap-2"
+              className={buttonVariants({ variant: 'filled' })}
             >
-              <Play className="w-4 h-4 fill-current" />
-              Start Chat
-            </button>
+              <MessageSquare />
+              Start chat
+            </Link>
             {COMMUNITY_WRITES && (
-              <button
+              <Button
+                variant={isStarred ? 'filled' : 'tonal'}
                 onClick={() => toggleStarAgent(agent.name)}
-                className={cn(
-                  "px-4 py-3 rounded-xl font-medium border flex items-center gap-2 transition-all",
-                  isStarred
-                    ? "bg-md-tertiary-container/30 border-md-tertiary/40 text-md-on-tertiary-container"
-                    : "bg-md-surface border-md-outline hover:bg-muted text-foreground"
-                )}
                 aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
               >
-                <Star
-                  className={cn(
-                    "w-4 h-4",
-                    isStarred ? "fill-md-tertiary text-md-tertiary" : "text-muted-foreground"
-                  )}
-                />
+                <Star className={cn(isStarred && 'fill-current')} />
                 {isStarred ? 'Starred' : 'Star'}
-                {agent.starsCount !== undefined && (
-                  <span className="text-sm text-muted-foreground ml-1">({agent.starsCount})</span>
-                )}
-              </button>
+                {agent.starsCount !== undefined && <span className="text-sm">({agent.starsCount})</span>}
+              </Button>
             )}
-            <button
-              onClick={handleShare}
-              className="px-4 py-3 rounded-xl font-medium border border-md-outline bg-md-surface hover:bg-muted text-foreground flex items-center gap-2 transition-all"
-              aria-label="Share agent"
-            >
-              <Share2 className="w-4 h-4 text-muted-foreground" />
+            <Button variant="outlined" onClick={handleShare} aria-label="Share agent">
+              <Share2 />
               Share
-            </button>
+            </Button>
           </div>
         </section>
 
         {/* ZONE 2: STORY */}
         {agent.useCases && agent.useCases.length > 0 && (
-          <section className="mb-12 bg-md-surface-container-low/50 border border-md-outline-variant/40 rounded-2xl p-8">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-6">
+          <Card variant="filled" className="mb-12 p-6 sm:p-8">
+            <h2 className="text-sm font-semibold text-md-on-surface-variant uppercase tracking-wider mb-6">
               What this agent excels at
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {agent.useCases.map((useCase, idx) => (
-                <div
-                  key={idx}
-                  className="bg-md-surface rounded-xl border border-md-outline-variant/50 p-5 hover:shadow-elevation-2 transition-all"
-                >
-                  <h3 className="text-base font-semibold text-foreground mb-1.5">
+                <Card key={idx} variant="outlined" interactive className="p-5">
+                  <h3 className="text-base font-semibold text-md-on-surface mb-1.5">
                     {useCase.title}
                   </h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-md-on-surface-variant leading-relaxed">
                     {useCase.description}
                   </p>
-                </div>
+                </Card>
               ))}
             </div>
-          </section>
+          </Card>
         )}
 
         {/* ZONE 3: ACTION */}
         {agent.samplePrompts && agent.samplePrompts.length > 0 && (
           <section className="mb-12">
             <div className="flex items-center gap-2 mb-6">
-              <Sparkles className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              <Sparkles className="w-4 h-4 text-md-primary" />
+              <h2 className="text-sm font-semibold text-md-on-surface-variant uppercase tracking-wider">
                 Try it out
               </h2>
             </div>
             <div className="grid gap-3">
               {agent.samplePrompts.map((prompt, idx) => (
-                <button
+                <Link
                   key={idx}
-                  onClick={() => handleTryPrompt(prompt)}
-                  className="group/prompt flex items-center gap-4 text-left px-5 py-4 rounded-xl border border-md-outline-variant/60 hover:border-md-primary/40 hover:shadow-elevation-2 bg-md-surface transition-all"
+                  href={`/chat?agent=${encodeURIComponent(agent.name)}&prompt=${encodeURIComponent(prompt)}`}
+                  onClick={handleTryPrompt}
+                  className="group/prompt flex items-center gap-4 rounded-[var(--md-shape-lg)] border border-md-outline bg-md-surface px-5 py-4 text-left transition-shadow hover:shadow-elevation-2"
                 >
-                  <span className="shrink-0 text-primary">
+                  <span className="shrink-0 text-md-primary">
                     <Sparkles className="w-4 h-4" />
                   </span>
-                  <span className="text-sm text-foreground leading-relaxed flex-1">
+                  <span className="text-sm text-md-on-surface leading-relaxed flex-1">
                     {prompt}
                   </span>
-                  <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover/prompt:opacity-100 transition-opacity shrink-0" />
-                </button>
+                  <ArrowRight className="w-4 h-4 text-md-on-surface-variant opacity-0 group-hover/prompt:opacity-100 transition-opacity shrink-0" />
+                </Link>
               ))}
             </div>
           </section>
@@ -272,7 +248,7 @@ export default function AgentDetailPage() {
 
         {/* ZONE 4: METADATA FOOTER */}
         <section className="border-t border-md-outline-variant/40 pt-8 pb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-muted-foreground">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm text-md-on-surface-variant">
             {/* Tools */}
             {agent.tools && agent.tools.length > 0 && (
               <div>
@@ -282,12 +258,9 @@ export default function AgentDetailPage() {
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {agent.tools.map((tool) => (
-                    <span
-                      key={tool}
-                      className="px-2 py-0.5 text-xs font-mono bg-muted rounded border border-border/50"
-                    >
+                    <Chip key={tool} variant="assist" className="font-mono">
                       {tool}
-                    </span>
+                    </Chip>
                   ))}
                 </div>
               </div>
@@ -316,7 +289,7 @@ export default function AgentDetailPage() {
                       href={agent.githubUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+                      className="inline-flex items-center gap-1.5 hover:text-md-on-surface transition-colors"
                     >
                       <Github className="w-3.5 h-3.5" />
                       GitHub
@@ -328,7 +301,7 @@ export default function AgentDetailPage() {
                       href={agent.documentation}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+                      className="inline-flex items-center gap-1.5 hover:text-md-on-surface transition-colors"
                     >
                       <FileText className="w-3.5 h-3.5" />
                       Docs
