@@ -35,12 +35,12 @@ export default function RateLimitBanner({ count, limit, userType, onDismiss }: R
               <p className="text-sm text-amber-800 dark:text-amber-200 mb-3">
                 {isAnonymous ? (
                   <>
-                    You've used all <strong>{limit} free interactions</strong> for today. 
+                    You&apos;ve used all <strong>{limit} free interactions</strong> for today.
                     Sign in to get <strong>{authenticatedLimit} interactions per day</strong> and unlock extended limits.
                   </>
                 ) : (
                   <>
-                    You've reached your daily limit of <strong>{limit} interactions</strong>. 
+                    You&apos;ve reached your daily limit of <strong>{limit} interactions</strong>.
                     Please try again tomorrow.
                   </>
                 )}
