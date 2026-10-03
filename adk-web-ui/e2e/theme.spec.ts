@@ -20,18 +20,24 @@ test.describe('Theme', () => {
     await ctx.close();
   });
 
-  test('no flash: class is set before hydration', async ({ browser }) => {
+  test('no flash: class comes from the inline head script, not hydration', async ({ browser }) => {
     const ctx = await browser.newContext({ colorScheme: 'dark' });
     const page = await ctx.newPage();
-    await page.addInitScript(() => {
-      (window as unknown as { __firstPaintDark?: boolean }).__firstPaintDark = undefined;
-      document.addEventListener('DOMContentLoaded', () => {
-        (window as unknown as { __firstPaintDark?: boolean }).__firstPaintDark =
-          document.documentElement.classList.contains('dark');
-      });
-    });
+    // With the app bundles blocked, nothing can hydrate; only the inline
+    // head script can set the class.
+    await page.route('**/_next/static/**/*.js', (r) => r.abort());
     await page.goto('/about');
-    expect(await page.evaluate(() => (window as unknown as { __firstPaintDark?: boolean }).__firstPaintDark)).toBe(true);
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+    await ctx.close();
+  });
+
+  test('follows OS scheme changes while preference is system', async ({ browser }) => {
+    const ctx = await browser.newContext({ colorScheme: 'dark' });
+    const page = await ctx.newPage();
+    await page.goto('/about');
+    await expect(page.locator('html')).toHaveClass(/\bdark\b/);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(page.locator('html')).not.toHaveClass(/\bdark\b/);
     await ctx.close();
   });
 });
