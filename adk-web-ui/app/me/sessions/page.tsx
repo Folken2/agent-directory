@@ -5,6 +5,9 @@ import { listSessionsForUser, type ChatSessionSummary } from '@/lib/sessions';
 import { loadAgentMetadata, type AgentMetadata } from '@/lib/agent-metadata';
 import { formatAgentDisplayName } from '@/lib/agent-utils';
 import { buttonVariants } from '@/components/ui/button';
+import { panelClass } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import { Page, PageHeader } from '@/components/layout/Page';
 import AgentLogo from '@/components/agent/AgentLogo';
 
 export const dynamic = 'force-dynamic';
@@ -76,12 +79,9 @@ export default async function MySessionsPage() {
 
   if (!process.env.DATABASE_URL) {
     return (
-      <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
-        <h1 className="text-headline-large tracking-tight text-md-on-surface">Chat history</h1>
-        <p className="mt-3 text-body-large text-md-on-surface-variant">
-          Chat history isn&apos;t available right now.
-        </p>
-      </div>
+      <Page>
+        <PageHeader title="Chat history" description="Chat history isn't available right now." />
+      </Page>
     );
   }
 
@@ -96,15 +96,16 @@ export default async function MySessionsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-20 pt-10 sm:px-6 sm:pt-14">
-      <PageHeader sessions={sessions} agentCount={uniqueSlugs.length} />
-
-      {sessions.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <SessionsList sessions={sessions} metaBySlug={metaBySlug} />
-      )}
-    </div>
+    <Page>
+      <PageHeader title="Chat history" description={historySummary(sessions, uniqueSlugs.length)} />
+      <div className="max-w-3xl">
+        {sessions.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <SessionsList sessions={sessions} metaBySlug={metaBySlug} />
+        )}
+      </div>
+    </Page>
   );
 }
 
@@ -112,39 +113,29 @@ export default async function MySessionsPage() {
 // Pieces
 // ---------------------------------------------------------------------------
 
-function PageHeader({
-  sessions,
-  agentCount,
-}: {
-  sessions: ChatSessionSummary[];
-  agentCount: number;
-}) {
+function historySummary(sessions: ChatSessionSummary[], agentCount: number): string {
+  if (sessions.length === 0) return 'Conversations you have while signed in.';
   const lastActivity = sessions[0]?.lastActivityAt;
-
-  return (
-    <header className="mb-8">
-      <h1 className="text-headline-large tracking-tight text-md-on-surface">Chat history</h1>
-      {sessions.length > 0 ? (
-        <p className="mt-2 text-body-large text-md-on-surface-variant">
-          {sessions.length} {sessions.length === 1 ? 'conversation' : 'conversations'} with {agentCount}{' '}
-          {agentCount === 1 ? 'agent' : 'agents'}
-          {lastActivity ? ` · last active ${relativeTime(lastActivity)}` : null}
-        </p>
-      ) : null}
-    </header>
-  );
+  const count = `${sessions.length} ${sessions.length === 1 ? 'conversation' : 'conversations'}`;
+  const agents = `${agentCount} ${agentCount === 1 ? 'agent' : 'agents'}`;
+  return `${count} with ${agents}${lastActivity ? ` · last active ${relativeTime(lastActivity)}` : ''}`;
 }
 
 function EmptyState() {
   return (
-    <div className="rounded-[var(--md-shape-lg)] border border-md-outline/70 bg-md-surface px-6 py-14 text-center">
+    <div className={cn(panelClass, 'px-6 py-14 text-center')}>
       <h2 className="text-title-large text-md-on-surface">No conversations yet</h2>
       <p className="mx-auto mt-2 max-w-sm text-body-medium text-md-on-surface-variant">
-        Chats you have while signed in show up here, so you can pick up where you left off.
+        Start with the builder or try an example. Chats you have while signed in show up here.
       </p>
-      <Link href="/" className={`${buttonVariants({ variant: 'filled' })} mt-6`}>
-        Build an agent
-      </Link>
+      <div className="mt-6 flex flex-wrap justify-center gap-3">
+        <Link href="/" className={buttonVariants({ variant: 'filled' })}>
+          Build an agent
+        </Link>
+        <Link href="/examples" className={buttonVariants({ variant: 'outlined' })}>
+          Browse examples
+        </Link>
+      </div>
     </div>
   );
 }
@@ -178,7 +169,7 @@ function SessionsList({
             <h2 id={`band-${band}`} className="mb-2 px-1 text-title-small text-md-on-surface-variant">
               {BAND_LABELS[band]}
             </h2>
-            <ul className="divide-y divide-md-outline/60 overflow-hidden rounded-[var(--md-shape-lg)] border border-md-outline/70 bg-md-surface">
+            <ul className={cn(panelClass, 'divide-y divide-md-outline/60 overflow-hidden dark:divide-md-outline-variant')}>
               {items.map((s) => (
                 <li key={s.sessionId}>
                   <SessionRow session={s} meta={metaBySlug.get(s.agentSlug) ?? null} />

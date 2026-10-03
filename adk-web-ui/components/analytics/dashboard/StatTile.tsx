@@ -1,5 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { panelClass } from '@/components/ui/card';
 import { deltaPct } from '@/lib/analytics/dashboard-math';
 import { formatCompact } from './format';
 
@@ -53,7 +54,7 @@ export default function StatTile({
         : 'text-chart-bad-text';
 
   return (
-    <div className={cn('flex min-w-0 flex-col gap-2 rounded-[var(--md-shape-lg)] bg-md-surface p-4 sm:p-5 dark:bg-md-surface-container', className)}>
+    <div className={cn(panelClass, 'flex min-w-0 flex-col gap-2 p-4 sm:p-5', className)}>
       <p className="truncate text-label-large text-md-on-surface-variant">
         {label}
         {hint ? <span className="text-label-medium text-md-on-surface-variant/80"> · {hint}</span> : null}

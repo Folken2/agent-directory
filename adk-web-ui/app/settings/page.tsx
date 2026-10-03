@@ -3,6 +3,9 @@ import { ChevronRight } from 'lucide-react';
 import { requireSettingsUser } from '@/lib/settings-auth';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import SignOutButton from '@/components/auth/SignOutButton';
+import { cn } from '@/lib/utils';
+import { panelClass } from '@/components/ui/card';
+import { Page, PageHeader } from '@/components/layout/Page';
 
 export const metadata = {
   title: 'Settings | ADK Agent Directory',
@@ -24,10 +27,10 @@ export default async function SettingsPage() {
   const email = session.user?.email?.trim() || null;
 
   return (
-    <>
-      <h1 className="text-headline-large tracking-tight text-md-on-surface">Settings</h1>
+    <Page>
+      <PageHeader title="Settings" description="Your account and how the site looks." />
 
-      <div className="mt-8 divide-y divide-md-outline/60 overflow-hidden rounded-[var(--md-shape-lg)] border border-md-outline/70 bg-md-surface">
+      <div className={cn(panelClass, 'max-w-3xl divide-y divide-md-outline/60 overflow-hidden dark:divide-md-outline-variant')}>
         <Row label="Account">
           <span className="min-w-0 text-right">
             {name ? <span className="block text-body-medium text-md-on-surface">{name}</span> : null}
@@ -54,6 +57,6 @@ export default async function SettingsPage() {
       <div className="mt-6">
         <SignOutButton />
       </div>
-    </>
+    </Page>
   );
 }

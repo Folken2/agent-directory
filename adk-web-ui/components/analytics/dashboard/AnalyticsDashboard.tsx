@@ -6,6 +6,9 @@ import { getCatalogAgent } from '@/lib/agent-catalog-client';
 import { TIMELINE_RANGE_LABELS, type TimelineRange } from '@/lib/analytics/timeline-range';
 import { usePageviewStats } from '@/lib/analytics/use-pageview-stats';
 import { cn } from '@/lib/utils';
+import { panelClass } from '@/components/ui/card';
+import { PageHeader } from '@/components/layout/Page';
+import DashboardSkeleton from './DashboardSkeleton';
 import AnalyticsAgentCard from '@/components/analytics/AnalyticsAgentCard';
 import BrandMark from '@/components/analytics/BrandMark';
 import RangeTabs from './RangeTabs';
@@ -27,7 +30,7 @@ function pageName(path: string, fallback: string): string {
 
 function Panel({ title, subtitle, children, className }: { title: string; subtitle?: string; children: ReactNode; className?: string }) {
   return (
-    <section className={cn('rounded-[var(--md-shape-lg)] bg-md-surface p-5 sm:p-6 dark:bg-md-surface-container', className)} aria-label={title}>
+    <section className={cn(panelClass, 'p-5 sm:p-6', className)} aria-label={title}>
       <h2 className="text-title-medium text-md-on-surface">{title}</h2>
       {subtitle ? <p className="mt-0.5 text-body-small text-md-on-surface-variant">{subtitle}</p> : null}
       <div className="mt-5">{children}</div>
@@ -43,33 +46,27 @@ export default function AnalyticsDashboard() {
   const prev = stats?.previous ?? null;
 
   const header = (
-    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="text-display-small tracking-tight text-md-on-surface">Analytics</h1>
-        <p className="mt-2 text-body-large text-md-on-surface-variant">
-          Who reads the directory: people and crawlers · {TIMELINE_RANGE_LABELS[range].toLowerCase()} · UTC
-        </p>
-      </div>
-      <RangeTabs value={range} onChange={setRange} />
-    </div>
+    <PageHeader
+      title="Analytics"
+      description={`Who reads the directory: people and crawlers · ${TIMELINE_RANGE_LABELS[range].toLowerCase()} · UTC`}
+      actions={<RangeTabs value={range} onChange={setRange} />}
+    />
   );
 
   if (!stats) {
     return (
       <>
         {header}
-        <div className="rounded-[var(--md-shape-lg)] bg-md-surface px-8 py-16 text-center dark:bg-md-surface-container">
-          {loaded ? (
-            <>
-              <p className="mb-2 text-title-medium text-md-on-surface">No visits yet</p>
-              <p className="mx-auto max-w-sm text-body-medium text-md-on-surface-variant">
-                Counts appear here once the database is connected and the directory starts receiving traffic.
-              </p>
-            </>
-          ) : (
-            <p className="text-body-medium text-md-on-surface-variant">Loading…</p>
-          )}
-        </div>
+        {loaded ? (
+          <div className={cn(panelClass, 'px-8 py-16 text-center')}>
+            <p className="mb-2 text-title-medium text-md-on-surface">No visits yet</p>
+            <p className="mx-auto max-w-sm text-body-medium text-md-on-surface-variant">
+              Counts appear here once the database is connected and the directory starts receiving traffic.
+            </p>
+          </div>
+        ) : (
+          <DashboardSkeleton />
+        )}
       </>
     );
   }

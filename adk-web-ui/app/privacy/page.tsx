@@ -36,8 +36,8 @@ export default function PrivacyPage() {
         </p>
       </ProseSection>
 
-      <ProseSection title="Saved blueprints">
-        <p id="blueprints" className="scroll-mt-24">
+      <ProseSection title="Saved blueprints" id="blueprints">
+        <p>
           When you choose to save a blueprint from the agent builder, we store the blueprint, the email address
           you enter, the time you gave consent, and, if you are signed in, your account id. We send the site
           owner a notification with the same details so they can follow up with you about building the agent.
