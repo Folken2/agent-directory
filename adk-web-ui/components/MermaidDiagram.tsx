@@ -225,15 +225,13 @@ export default function MermaidDiagram({ code, id, isStreaming = false }: Mermai
       setError(null);
 
       // Detect dark mode
-      const isDarkMode =
-        document.documentElement.classList.contains('dark') ||
-        window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDarkMode = document.documentElement.classList.contains('dark');
 
       // Initialize mermaid if not already initialized
       mermaid.initialize({
         startOnLoad: false,
         theme: isDarkMode ? 'dark' : 'default',
-        securityLevel: 'loose',
+        securityLevel: 'strict',
         fontFamily: 'inherit',
       });
 
