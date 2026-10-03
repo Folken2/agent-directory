@@ -305,7 +305,7 @@ function SessionCard({
             <span className="text-label-small text-md-on-surface-variant/70">
               {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
             </span>
-            <span className="inline-flex items-center gap-1 text-label-small text-md-on-surface-variant/0 group-hover:text-md-primary transition-colors">
+            <span className="inline-flex items-center gap-1 text-label-small text-md-on-surface-variant/0 group-hover:text-md-primary group-focus-visible:text-md-primary group-focus-within:text-md-primary transition-colors">
               Resume <ArrowRight className="w-3 h-3" />
             </span>
           </div>
