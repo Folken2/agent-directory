@@ -1,0 +1,42 @@
+# Local Postgres for development and testing.
+#
+# The web app talks to Postgres through @neondatabase/serverless over HTTP
+# (drizzle-orm/neon-http), so plain Postgres is not enough: `neon-proxy`
+# exposes Neon's SQL-over-HTTP protocol in front of the local database.
+# Host port 5433 avoids clashing with a locally installed Postgres on 5432.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# Connection string (web app and ADK server):
+#   postgres://postgres:postgres@db.localtest.me:5433/main
+# db.localtest.me resolves to 127.0.0.1; the web app routes it to the proxy
+# (see adk-web-ui/lib/drizzle/neon-local.ts).
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: main
+    ports:
+      - "5433:5432"
+    volumes:
+      - dev-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d main"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  neon-proxy:
+    image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+    environment:
+      PG_CONNECTION_STRING: postgres://postgres:postgres@postgres:5432/main
+    ports:
+      - "4444:4444"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  dev-db-data:
