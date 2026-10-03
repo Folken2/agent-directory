@@ -14,7 +14,7 @@ export default function SettingsNav() {
   const pathname = usePathname();
 
   return (
-    <nav aria-label="Settings sections" className="flex flex-wrap gap-1 border-b border-border/50 pb-3">
+    <nav aria-label="Settings sections" className="flex flex-wrap gap-1 border-b border-md-outline-variant pb-3">
       {sections.map((section) => {
         const active =
           section.href === '/settings'
@@ -25,11 +25,13 @@ export default function SettingsNav() {
           <Link
             key={section.href}
             href={section.href}
+            aria-current={active ? 'page' : undefined}
             className={cn(
-              'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary',
               active
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                ? 'bg-md-primary-container text-md-on-primary-container'
+                : 'text-md-on-surface-variant hover:bg-md-on-surface/8 hover:text-md-on-surface'
             )}
           >
             {section.name}

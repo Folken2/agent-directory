@@ -3,6 +3,7 @@
 import { signOut } from 'next-auth/react';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
 
 export default function SignOutButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -19,14 +20,9 @@ export default function SignOutButton() {
   };
 
   return (
-    <button
-      onClick={handleSignOut}
-      disabled={isLoading}
-      className="inline-flex items-center gap-2 px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-    >
-      <LogOut className="w-4 h-4" />
+    <Button variant="text" size="sm" onClick={handleSignOut} disabled={isLoading}>
+      <LogOut />
       {isLoading ? 'Signing out...' : 'Sign Out'}
-    </button>
+    </Button>
   );
 }
-

@@ -4,7 +4,9 @@ import { auth } from '@/lib/auth';
 import { listSessionsForUser, type ChatSessionSummary } from '@/lib/sessions';
 import { loadAgentMetadata, type AgentMetadata } from '@/lib/agent-metadata';
 import { formatAgentDisplayName } from '@/lib/agent-utils';
-import { getCategoryColors } from '@/lib/category-colors';
+import { Card } from '@/components/ui/card';
+import { Chip } from '@/components/ui/chip';
+import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ArrowRight, MessageSquare, Sparkles } from 'lucide-react';
 
@@ -178,7 +180,7 @@ function PageHeader({
 
 function EmptyState() {
   return (
-    <div className="rounded-2xl border border-md-outline/40 bg-md-surface-container/30 p-10 sm:p-14 text-center">
+    <Card variant="filled" className="p-10 sm:p-14 text-center">
       <div className="w-12 h-12 mx-auto rounded-2xl bg-md-primary-container/40 text-md-on-primary-container flex items-center justify-center mb-5">
         <Sparkles className="w-5 h-5" />
       </div>
@@ -189,14 +191,11 @@ function EmptyState() {
         Once you&apos;ve had a conversation with any agent, it&apos;ll show up on
         this page so you can pick up where you left off.
       </p>
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-label-medium font-medium bg-md-primary text-md-on-primary hover:opacity-90 transition-opacity"
-      >
+      <Link href="/" className={buttonVariants({ variant: 'filled' })}>
         Browse agents
-        <ArrowRight className="w-3.5 h-3.5" />
+        <ArrowRight />
       </Link>
-    </div>
+    </Card>
   );
 }
 
@@ -249,18 +248,18 @@ function SessionCard({
   meta: AgentMetadata | null;
 }) {
   const displayName = meta?.displayName || formatAgentDisplayName(session.agentSlug);
-  const categoryColors = getCategoryColors(meta?.category);
 
   return (
+    <Card variant="outlined" interactive className="overflow-hidden">
     <Link
       href={`/chat?agent=${encodeURIComponent(session.agentSlug)}&session=${encodeURIComponent(session.sessionId)}`}
-      className="group block rounded-2xl border border-md-outline/40 bg-md-surface hover:border-md-primary/40 hover:shadow-elevation-2 transition-all duration-200 hover:-translate-y-0.5 overflow-hidden"
+      className="group block focus-visible:outline-none"
     >
       <div className="p-5 sm:p-6 flex gap-4">
         {/* Avatar / logo */}
         <div className="shrink-0">
           {meta?.logo ? (
-            <div className="w-11 h-11 rounded-xl bg-md-surface-container border border-md-outline-variant/50 flex items-center justify-center overflow-hidden p-1.5">
+            <div className="w-11 h-11 rounded-[var(--md-shape-md)] bg-md-surface-container border border-md-outline-variant flex items-center justify-center overflow-hidden p-1.5">
               <img
                 src={meta.logo}
                 alt=""
@@ -270,7 +269,7 @@ function SessionCard({
           ) : (
             <div
               className={cn(
-                'w-11 h-11 rounded-xl flex items-center justify-center text-base font-semibold',
+                'w-11 h-11 rounded-[var(--md-shape-md)] flex items-center justify-center text-base font-semibold',
                 colorForSlug(session.agentSlug),
               )}
               aria-hidden="true"
@@ -288,16 +287,7 @@ function SessionCard({
                 {displayName}
               </h3>
               {meta?.category && (
-                <span
-                  className={cn(
-                    'shrink-0 inline-flex px-1.5 py-0.5 rounded text-[10px] font-semibold border tracking-wide uppercase',
-                    categoryColors.bg,
-                    categoryColors.text,
-                    categoryColors.border,
-                  )}
-                >
-                  {meta.category}
-                </span>
+                <Chip variant="category" className="shrink-0">{meta.category}</Chip>
               )}
             </div>
             <span className="shrink-0 text-label-small text-md-on-surface-variant/70 tabular-nums">
@@ -322,5 +312,6 @@ function SessionCard({
         </div>
       </div>
     </Link>
+    </Card>
   );
 }

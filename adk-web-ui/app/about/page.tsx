@@ -1,6 +1,8 @@
 'use client';
 
 import { NOT_AFFILIATED_NOTICE } from '@/lib/site';
+import { Card } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
 import { ArrowRight, Github, Code, Zap, Users, BookOpen } from 'lucide-react';
 
 export default function AboutPage() {
@@ -67,22 +69,22 @@ export default function AboutPage() {
             {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <div key={feature.title} className="bg-md-surface elevation-1 hover:elevation-2 rounded-xl p-6 transition-all duration-300">
+                <Card key={feature.title} variant="outlined" interactive className="p-6">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-md-primary-container rounded-lg">
+                    <div className="p-2 bg-md-primary-container rounded-[var(--md-shape-md)]">
                       <Icon className="w-5 h-5 text-md-on-primary-container" />
                     </div>
                     <h3 className="text-title-medium text-md-on-surface">{feature.title}</h3>
                   </div>
                   <p className="text-body-small text-md-on-surface-variant">{feature.description}</p>
-                </div>
+                </Card>
               );
             })}
           </div>
         </div>
 
         {/* How Agents Work */}
-        <div className="mb-12 bg-md-surface-container elevation-1 rounded-2xl p-8">
+        <Card variant="filled" className="mb-12 p-8">
           <h2 className="text-headline-medium text-md-on-surface mb-4">
             How Agents Work
           </h2>
@@ -96,7 +98,7 @@ export default function AboutPage() {
             <li>Artifact handling for generating and managing outputs</li>
             <li>Sub-agent coordination for complex workflows</li>
           </ul>
-        </div>
+        </Card>
 
         {/* Technology Stack */}
         <div className="mb-12">
@@ -104,7 +106,7 @@ export default function AboutPage() {
             Technology Stack
           </h2>
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-md-surface-variant/50 rounded-xl p-6 border border-md-outline">
+            <Card variant="outlined" className="p-6">
               <h3 className="text-title-medium text-md-on-surface mb-3">Backend</h3>
               <ul className="text-body-small text-md-on-surface-variant space-y-1.5">
                 <li>• Google ADK (Agent Development Kit)</li>
@@ -112,8 +114,8 @@ export default function AboutPage() {
                 <li>• FastAPI</li>
                 <li>• PostgreSQL / Neon</li>
               </ul>
-            </div>
-            <div className="bg-md-surface-variant/50 rounded-xl p-6 border border-md-outline">
+            </Card>
+            <Card variant="outlined" className="p-6">
               <h3 className="text-title-medium text-md-on-surface mb-3">Frontend</h3>
               <ul className="text-body-small text-md-on-surface-variant space-y-1.5">
                 <li>• Next.js 16</li>
@@ -122,12 +124,12 @@ export default function AboutPage() {
                 <li>• Tailwind CSS v4</li>
                 <li>• Material Design 3</li>
               </ul>
-            </div>
+            </Card>
           </div>
         </div>
 
         {/* How to Contribute */}
-        <div className="mb-12 bg-md-primary-container/30 rounded-2xl border border-md-primary/20 p-8">
+        <Card variant="filled" className="mb-12 bg-md-primary-container/40 p-8">
           <h2 className="text-headline-medium text-md-on-surface mb-4">
             How to Contribute
           </h2>
@@ -139,12 +141,12 @@ export default function AboutPage() {
             href="https://github.com/Folken2/agent-directory"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-md-primary hover:bg-md-primary/92 text-md-on-primary rounded-full text-label-large transition-all elevation-1 hover:elevation-2"
+            className={buttonVariants({ variant: 'filled' })}
           >
             Contribute on GitHub
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight />
           </a>
-        </div>
+        </Card>
 
         {/* Contact */}
         <div className="text-center">
@@ -158,9 +160,9 @@ export default function AboutPage() {
             href="https://github.com/Folken2/agent-directory"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-md-surface-container hover:bg-md-surface-variant rounded-xl border border-md-outline text-label-large transition-all elevation-1 hover:elevation-2"
+            className={buttonVariants({ variant: 'outlined' })}
           >
-            <Github className="w-5 h-5" />
+            <Github />
             View on GitHub
           </a>
         </div>
