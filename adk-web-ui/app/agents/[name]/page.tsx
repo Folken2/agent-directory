@@ -203,7 +203,7 @@ export default function AgentDetailPage() {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {agent.useCases.map((useCase, idx) => (
-                <Card key={idx} variant="outlined" interactive className="p-5">
+                <Card key={idx} variant="outlined" className="p-5">
                   <h3 className="text-base font-semibold text-md-on-surface mb-1.5">
                     {useCase.title}
                   </h3>

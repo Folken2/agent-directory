@@ -69,7 +69,7 @@ export default function AboutPage() {
             {features.map((feature) => {
               const Icon = feature.icon;
               return (
-                <Card key={feature.title} variant="outlined" interactive className="p-6">
+                <Card key={feature.title} variant="outlined" className="p-6">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-md-primary-container rounded-[var(--md-shape-md)]">
                       <Icon className="w-5 h-5 text-md-on-primary-container" />
