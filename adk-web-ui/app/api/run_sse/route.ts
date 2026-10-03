@@ -145,7 +145,11 @@ export async function POST(request: NextRequest) {
     idleMs: envInt('STREAM_IDLE_TIMEOUT_MS', 90_000),
     maxMs: envInt('STREAM_MAX_DURATION_MS', 600_000),
     abortUpstream: () => upstream.abort(),
-    onEnd: (outcome) => {
+    onEnd: (rawOutcome) => {
+      // A client disconnect aborts the upstream fetch first, so the guard
+      // usually sees that as an upstream error. Record it as the cancel it is.
+      const outcome =
+        rawOutcome === 'upstream_error' && request.signal.aborted ? 'client_cancelled' : rawOutcome;
       if (outcome === 'completed' || outcome === 'client_cancelled') {
         void track('completed', outcome === 'client_cancelled' ? 'client_cancelled' : undefined);
       } else {

@@ -52,10 +52,12 @@ export async function POST(request: NextRequest) {
     });
 
     if (response.ok) {
-      const result = await response.json();
+      // Only the version goes back: the upstream body also carries the
+      // artifact service's storage URI (e.g. a server file path).
+      const result = (await response.json()) as { version?: unknown };
       return NextResponse.json({
         success: true,
-        data: result,
+        data: { version: typeof result.version === 'number' ? result.version : null },
       });
     } else {
       const errorText = await response.text();
