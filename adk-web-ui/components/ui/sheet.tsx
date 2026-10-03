@@ -29,7 +29,7 @@ export function SheetContent({
       >
         <div className="flex items-center justify-between px-3 py-2">
           <D.Title className="text-sm font-medium text-md-on-surface-variant">{title}</D.Title>
-          <D.Close aria-label="Close" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-md-on-surface-variant hover:bg-md-on-surface/8">
+          <D.Close aria-label="Close" className="inline-flex h-10 w-10 items-center justify-center rounded-full text-md-on-surface-variant hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary">
             <X className="h-5 w-5" />
           </D.Close>
         </div>
