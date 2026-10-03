@@ -195,6 +195,8 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-google-sans), Inter, system-ui, sans-serif;
+  --font-mono: var(--font-google-sans-code), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-md-primary: hsl(var(--md-primary));
   --color-md-primary-container: hsl(var(--md-primary-container));
   --color-md-on-primary: hsl(var(--md-on-primary));
@@ -270,7 +272,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-google-sans, var(--font-geist-sans, system-ui, sans-serif));
+    font-family: var(--font-sans);
     font-feature-settings: "ss01", "ss02", "cv01", "cv02";
   }
 
@@ -477,7 +479,7 @@
   background-color: hsl(var(--md-surface-container-high));
   border: 1px solid hsl(var(--md-outline));
   color: hsl(var(--md-on-surface));
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: var(--font-mono);
   word-wrap: break-word;
 }
 
