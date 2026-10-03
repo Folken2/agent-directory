@@ -166,7 +166,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
             attachments={attachments}
             onAttachFiles={handleAttachFiles}
             onRemoveAttachment={handleRemoveAttachment}
-            agentName={selectedAgent?.name ?? null}
+            agentName={selectedAgent ? selectedAgent.displayName || selectedAgent.name : null}
             busy={busy}
             initialPrompt={initialPrompt}
           />

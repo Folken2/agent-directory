@@ -76,6 +76,7 @@ test('/chat with no agent defaults to the builder', async ({ page }) => {
 
   const composer = page.locator('textarea').last();
   await expect(composer).toBeEnabled();
+  await expect(composer).toHaveAttribute('placeholder', 'Message ADK Agent Builder…');
   await composer.fill('Hello builder');
   await composer.press('Enter');
   await expect(page.getByText('Stubbed builder reply.')).toBeVisible({ timeout: 30_000 });

@@ -24,6 +24,7 @@ interface ComposerProps {
   attachments: File[];
   onAttachFiles: (files: File[]) => void;
   onRemoveAttachment: (index: number) => void;
+  /** Display name of the selected agent; null disables the composer. */
   agentName: string | null;
   busy: boolean; // any of: isLoading, isStreaming, isInitializing
   initialPrompt?: string | null;
