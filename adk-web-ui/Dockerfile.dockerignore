@@ -1,0 +1,14 @@
+# adk-web-ui/Dockerfile.dockerignore (BuildKit uses this instead of the root .dockerignore)
+**/node_modules
+**/.next
+**/.venv
+**/__pycache__
+.git
+.claude
+**/.env
+**/.env.*
+!**/env.example
+**/*.log
+**/.DS_Store
+adk-web-ui/test-results
+adk-web-ui/playwright-report

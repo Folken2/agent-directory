@@ -1,5 +1,6 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
 import { identifyBot } from '@/lib/analytics/bots';
+import { extractClientIp } from '@/lib/analytics/client-ip';
 import {
   CONSENT_COOKIE_NAME,
   hasAnalyticsConsent,
@@ -12,6 +13,17 @@ import {
   isValidVisitorId,
   visitorCookieOptions,
 } from '@/lib/analytics/visitor-cookie';
+
+/**
+ * Where the pageview self-fetch goes. Self-hosted standalone builds derive
+ * nextUrl.origin from HOSTNAME:PORT plus the forwarded proto (e.g.
+ * https://0.0.0.0:3000), which is unreachable, so post to loopback instead.
+ */
+function ingestOrigin(request: NextRequest): string {
+  if (process.env.ANALYTICS_INGEST_ORIGIN) return process.env.ANALYTICS_INGEST_ORIGIN;
+  if (!process.env.VERCEL) return `http://127.0.0.1:${process.env.PORT || 3000}`;
+  return request.nextUrl.origin;
+}
 
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname, search } = request.nextUrl;
@@ -46,7 +58,8 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   });
 
   if (track) {
-    const origin = request.nextUrl.origin;
+    const origin = ingestOrigin(request);
+    const clientIp = extractClientIp(request.headers);
     const payload = {
       path: pathname,
       query: search || null,
@@ -69,10 +82,8 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
       headers: {
         'content-type': 'application/json',
         'user-agent': userAgent || 'middleware',
-        'x-forwarded-for':
-          request.headers.get('x-forwarded-for') ||
-          request.headers.get('x-real-ip') ||
-          '',
+        'x-forwarded-for': clientIp || '',
+        'x-real-ip': clientIp || '',
         'x-vercel-ip-country': payload.country || '',
         'x-vercel-ip-country-region': payload.region || '',
         'x-vercel-ip-city': payload.city || '',

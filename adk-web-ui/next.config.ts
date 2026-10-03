@@ -3,6 +3,7 @@ import { join } from "path";
 import { withSentryConfig } from "@sentry/nextjs/config";
 
 const isProd = process.env.NODE_ENV === 'production';
+const GEOIP_DATA = './node_modules/fast-geoip/data/**/*';
 
 const cspDirectives = [
   "default-src 'self'",
@@ -38,20 +39,23 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  // Include monorepo root so Vercel bundles agents/*/metadata.json for API routes
+  output: 'standalone',
+  // Include monorepo root so the standalone bundle carries agents/*/metadata.json.
   outputFileTracingRoot: join(__dirname, '..'),
   // Dynamic fs reads of agents/*/metadata.json are not always traced — pin them.
+  // fast-geoip's ~157 MB data is only needed off Vercel (Vercel sends geo
+  // headers, so the lookup never runs there) and would crowd its function
+  // size limit, so it is pinned off Vercel and excluded on Vercel.
   outputFileTracingIncludes: {
     '/api/agents': ['../agents/**/metadata.json'],
+    ...(process.env.VERCEL ? {} : { '/api/analytics/pageview': [GEOIP_DATA] }),
   },
+  ...(process.env.VERCEL
+    ? { outputFileTracingExcludes: { '/api/analytics/pageview': [GEOIP_DATA] } }
+    : {}),
+  serverExternalPackages: ['fast-geoip'],
   images: {
     remotePatterns: [
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-        port: '8000',
-        pathname: '/**',
-      },
       { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
       { protocol: 'https', hostname: 'www.google.com', pathname: '/**' },
       { protocol: 'https', hostname: 'exa.ai', pathname: '/**' },
