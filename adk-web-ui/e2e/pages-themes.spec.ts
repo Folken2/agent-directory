@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const PAGES = ['/about', '/privacy', '/auth/signin', '/definitely-missing-page'];
+const PAGES = ['/about', '/privacy', '/auth/signin', '/agents/deep_research_agent', '/definitely-missing-page'];
 
 for (const scheme of ['light', 'dark'] as const) {
   test.describe(`${scheme} theme`, () => {
