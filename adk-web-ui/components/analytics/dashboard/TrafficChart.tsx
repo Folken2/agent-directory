@@ -96,11 +96,17 @@ export default function TrafficChart({ timeline }: { timeline: TimelineDay[] }) 
         role="group"
         aria-label={`Daily visits chart, ${formatDay(timeline[0].day)} to ${formatDay(timeline[last].day)}. Use arrow keys to read values.`}
         onKeyDown={(e) => {
-          if (e.key === 'ArrowRight') (e.preventDefault(), setActive((a) => Math.min((a ?? -1) + 1, last)));
-          if (e.key === 'ArrowLeft') (e.preventDefault(), setActive((a) => Math.max((a ?? last + 1) - 1, 0)));
-          if (e.key === 'Home') (e.preventDefault(), setActive(0));
-          if (e.key === 'End') (e.preventDefault(), setActive(last));
-          if (e.key === 'Escape') setActive(null);
+          const next: Record<string, (a: number | null) => number | null> = {
+            ArrowRight: (a) => Math.min((a ?? -1) + 1, last),
+            ArrowLeft: (a) => Math.max((a ?? last + 1) - 1, 0),
+            Home: () => 0,
+            End: () => last,
+            Escape: () => null,
+          };
+          const step = next[e.key];
+          if (!step) return;
+          if (e.key !== 'Escape') e.preventDefault();
+          setActive(step);
         }}
         onBlur={() => setActive(null)}
       >

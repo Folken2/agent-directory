@@ -20,8 +20,10 @@ export default function RangeTabs({ value, onChange }: { value: TimelineRange; o
       aria-label="Date range"
       className="inline-flex rounded-full border border-md-outline-variant bg-md-surface p-1"
       onKeyDown={(e) => {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') (e.preventDefault(), move(1));
-        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') (e.preventDefault(), move(-1));
+        const delta = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+        if (!delta) return;
+        e.preventDefault();
+        move(delta);
       }}
     >
       {TIMELINE_RANGES.map((r, i) => {
