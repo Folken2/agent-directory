@@ -35,19 +35,12 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
   useArtifactsForConversation(currentConversation, selectedAgent);
 
   const {
+    streaming,
     send,
     stop,
     retryLast,
     rateLimitInfo,
     dismissRateLimit,
-    isStreaming,
-    isInitializing,
-    isThinking,
-    streamingContent,
-    streamingThinking,
-    currentAssistantMessageId,
-    currentMessageArtifacts,
-    streamingSubAgentSteps,
     busy,
   } = useStreamingChat();
 
@@ -149,14 +142,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
           copiedMessageId={copiedMessageId}
           onCopy={handleCopyMessage}
           onPromptClick={handlePromptClick}
-          isStreaming={isStreaming}
-          isInitializing={isInitializing}
-          isThinking={isThinking}
-          streamingContent={streamingContent}
-          streamingThinking={streamingThinking}
-          currentAssistantMessageId={currentAssistantMessageId}
-          currentMessageArtifacts={currentMessageArtifacts}
-          streamingSubAgentSteps={streamingSubAgentSteps}
+          streaming={streaming}
         />
 
         {messages.length > 0 && messages[messages.length - 1].isError && !busy && (

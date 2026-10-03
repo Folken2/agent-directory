@@ -30,7 +30,7 @@
  * their updates onto React state and the store.
  */
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
 import { toSessionId, newConversationId, newMessageId } from '@/lib/ids';
@@ -45,7 +45,20 @@ export type { RateLimitInfo };
 
 type InlineDataPart = { text?: string; inline_data?: { mime_type: string; data: string; filename: string } };
 
+/** Live state of the in-flight assistant turn, as the message list renders it. */
+export type StreamingView = {
+  isStreaming: boolean;
+  isInitializing: boolean;
+  isThinking: boolean;
+  content: string;
+  thinking: string;
+  messageId: MessageId | null;
+  artifacts: Artifact[];
+  subAgentSteps: SubAgentStep[];
+};
+
 export type UseStreamingChatResult = {
+  streaming: StreamingView;
   send: (input: { text: string; attachments: File[] }) => Promise<void>;
   stop: () => void;
   retryLast: () => void;
@@ -390,7 +403,22 @@ export function useStreamingChat(): UseStreamingChatResult {
     if (last) void send(last);
   }, [send]);
 
+  const streaming = useMemo<StreamingView>(
+    () => ({
+      isStreaming,
+      isInitializing,
+      isThinking,
+      content: streamingContent,
+      thinking: streamingThinking,
+      messageId: currentAssistantMessageId,
+      artifacts: currentMessageArtifacts,
+      subAgentSteps: streamingSubAgentSteps,
+    }),
+    [isStreaming, isInitializing, isThinking, streamingContent, streamingThinking, currentAssistantMessageId, currentMessageArtifacts, streamingSubAgentSteps],
+  );
+
   return {
+    streaming,
     send,
     stop,
     retryLast,
