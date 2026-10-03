@@ -2,7 +2,7 @@
 
 ## Site Overview
 
-ADK Agent Directory is a platform for discovering and interacting with AI agents built on Google's Agent Development Kit (ADK). The site showcases specialized Google AI agents powered by Gemini 2.5 Flash, allowing users to explore, test, and contribute AI agents.
+ADK Agent Directory is a platform for discovering and interacting with AI agents built on Google's Agent Development Kit (ADK). The site showcases specialized Google AI agents powered by Gemini, allowing users to explore and test AI agents.
 
 **Base URL:** https://agentdirectory.folch.ai
 **Purpose:** Discover, interact with, and contribute AI agents built on Google's Agent Development Kit

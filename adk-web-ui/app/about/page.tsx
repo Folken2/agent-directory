@@ -39,7 +39,7 @@ export default function AboutPage() {
             A directory of intelligent AI agents powered by Google Gemini 3 Flash. Discover, use, and contribute agents for various use cases.
           </p>
           <p className="text-body-medium text-md-on-surface-variant max-w-2xl mx-auto mt-4">
-            This is an independent project, not an official Google product. {NOT_AFFILIATED_NOTICE}
+            {NOT_AFFILIATED_NOTICE}
           </p>
         </div>
 

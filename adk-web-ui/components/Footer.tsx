@@ -32,7 +32,7 @@ export default function Footer() {
                 Privacy
               </Link>
             </div>
-            <p className="text-xs text-md-on-surface-variant">{NOT_AFFILIATED_NOTICE}</p>
+            <p className="text-label-medium text-md-on-surface-variant">{NOT_AFFILIATED_NOTICE}</p>
           </div>
           <div className="flex items-center gap-2">
             <Link
