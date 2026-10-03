@@ -8,9 +8,10 @@ const GEOIP_DATA = './node_modules/fast-geoip/data/**/*';
 const cspDirectives = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isProd ? '' : " 'unsafe-eval'"} https://www.googletagmanager.com https://maps.googleapis.com`,
-  "style-src 'self' 'unsafe-inline'",
+  // fonts.googleapis.com / fonts.gstatic.com: Google Maps JS API UI fonts (the app's own fonts are self-hosted).
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://maps.googleapis.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io",
   "frame-src https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",

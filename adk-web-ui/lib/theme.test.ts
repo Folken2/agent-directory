@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseThemePref, resolveTheme, THEME_INIT_SCRIPT, THEME_STORAGE_KEY } from './theme';
+import { createHash } from 'node:crypto';
+import { parseThemePref, resolveTheme, THEME_INIT_SCRIPT, THEME_INIT_SCRIPT_SHA256, THEME_STORAGE_KEY } from './theme';
 
 test('parseThemePref accepts the three values', () => {
   assert.equal(parseThemePref('light'), 'light');
@@ -38,4 +39,9 @@ test('init script applies stored or system theme', () => {
 
 test('init script survives blocked storage', () => {
   assert.deepEqual(runInitScript(null, true, true), { dark: true, scheme: 'dark' });
+});
+
+test('THEME_INIT_SCRIPT hash matches the pinned CSP hash', () => {
+  const h = 'sha256-' + createHash('sha256').update(THEME_INIT_SCRIPT).digest('base64');
+  assert.equal(h, THEME_INIT_SCRIPT_SHA256);
 });

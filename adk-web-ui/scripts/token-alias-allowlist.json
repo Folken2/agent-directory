@@ -29,7 +29,6 @@
   "components/chat/StreamingBubble.tsx": 2,
   "components/chat/SubAgentProgress.tsx": 38,
   "components/chat/guide/GuideAnswer.tsx": 1,
-  "components/chat/guide/GuideMap.tsx": 1,
   "components/chat/guide/GuideSection.tsx": 2,
   "components/chat/guide/GuideSources.tsx": 3,
   "components/chat/guide/PlaceCard.tsx": 13,

@@ -16,4 +16,10 @@ export function resolveTheme(pref: ThemePref, systemPrefersDark: boolean): Resol
  * Runs in <head> before first paint so the page never flashes the wrong theme.
  * Kept dependency-free and ES5-safe; its exact text determines the CSP hash.
  */
+/**
+ * CSP hash of THEME_INIT_SCRIPT. CSP enforcement must allow it; update this
+ * (and the CSP) whenever the script text changes.
+ */
+export const THEME_INIT_SCRIPT_SHA256 = 'sha256-TLAHG2FM8eF5dz0lP3hbA+yDzX5lBVs+xLl68WAbptE=';
+
 export const THEME_INIT_SCRIPT = `(function(){var p='system';try{var s=localStorage.getItem('${THEME_STORAGE_KEY}');if(s==='light'||s==='dark'||s==='system')p=s;}catch(e){}var d=p==='dark'||(p==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);var r=document.documentElement;if(d){r.classList.add('dark');}else{r.classList.remove('dark');}r.style.colorScheme=d?'dark':'light';})();`;

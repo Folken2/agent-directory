@@ -21,6 +21,7 @@ const googleSans = localFont({
 const googleSansCode = localFont({
   variable: "--font-google-sans-code",
   display: "swap",
+  preload: false,
   src: [{ path: "./fonts/GoogleSansCode-latin.woff2", weight: "300 800", style: "normal" }],
   fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
 });
