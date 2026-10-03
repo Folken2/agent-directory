@@ -14,6 +14,17 @@ import {
   visitorCookieOptions,
 } from '@/lib/analytics/visitor-cookie';
 
+/**
+ * Where the pageview self-fetch goes. Self-hosted standalone builds derive
+ * nextUrl.origin from HOSTNAME:PORT plus the forwarded proto (e.g.
+ * https://0.0.0.0:3000), which is unreachable, so post to loopback instead.
+ */
+function ingestOrigin(request: NextRequest): string {
+  if (process.env.ANALYTICS_INGEST_ORIGIN) return process.env.ANALYTICS_INGEST_ORIGIN;
+  if (!process.env.VERCEL) return `http://127.0.0.1:${process.env.PORT || 3000}`;
+  return request.nextUrl.origin;
+}
+
 export function middleware(request: NextRequest, event: NextFetchEvent) {
   const { pathname, search } = request.nextUrl;
   const userAgent = request.headers.get('user-agent');
@@ -47,7 +58,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
   });
 
   if (track) {
-    const origin = request.nextUrl.origin;
+    const origin = ingestOrigin(request);
     const clientIp = extractClientIp(request.headers);
     const payload = {
       path: pathname,
