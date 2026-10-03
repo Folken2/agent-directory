@@ -22,16 +22,16 @@ export default function UserProfile() {
           className="rounded-full"
         />
       ) : (
-        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <User className="w-4 h-4 text-primary" />
+        <div className="w-8 h-8 rounded-full bg-md-primary-container flex items-center justify-center">
+          <User className="w-4 h-4 text-md-on-primary-container" />
         </div>
       )}
       <div className="flex flex-col">
-        <span className="text-sm font-medium text-foreground">
+        <span className="text-sm font-medium text-md-on-surface">
           {session.user.name || 'User'}
         </span>
         {session.user.email && (
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-md-on-surface-variant">
             {session.user.email}
           </span>
         )}
@@ -39,4 +39,3 @@ export default function UserProfile() {
     </div>
   );
 }
-

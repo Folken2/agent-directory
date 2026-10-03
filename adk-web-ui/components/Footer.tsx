@@ -19,7 +19,7 @@ export default function Footer() {
   const personalUrl = normalizeUrl(process.env.NEXT_PUBLIC_PERSONAL_URL, 'https://example.com');
 
   return (
-    <footer className="border-t border-md-outline bg-md-surface-variant elevation-2">
+    <footer className="border-t border-md-outline-variant bg-md-surface-container">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col gap-2">
@@ -40,7 +40,7 @@ export default function Footer() {
               target="_blank"
               rel="noreferrer"
               prefetch={false}
-              className="inline-flex items-center justify-center p-2.5 text-md-on-surface-variant hover:text-md-primary rounded-lg border border-md-outline hover:border-md-primary transition-all elevation-0 hover:elevation-1"
+              className="inline-flex size-10 items-center justify-center rounded-full text-md-on-surface-variant transition-colors hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
               aria-label="GitHub"
             >
               <Github className="w-4 h-4" />
@@ -50,7 +50,7 @@ export default function Footer() {
               target="_blank"
               rel="noreferrer"
               prefetch={false}
-              className="inline-flex items-center justify-center p-2.5 text-md-on-surface-variant hover:text-md-primary rounded-lg border border-md-outline hover:border-md-primary transition-all elevation-0 hover:elevation-1"
+              className="inline-flex size-10 items-center justify-center rounded-full text-md-on-surface-variant transition-colors hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
               aria-label="LinkedIn"
             >
               <Linkedin className="w-4 h-4" />
@@ -60,7 +60,7 @@ export default function Footer() {
               target="_blank"
               rel="noreferrer"
               prefetch={false}
-              className="inline-flex items-center justify-center p-2.5 text-md-on-surface-variant hover:text-md-primary rounded-lg border border-md-outline hover:border-md-primary transition-all elevation-0 hover:elevation-1"
+              className="inline-flex size-10 items-center justify-center rounded-full text-md-on-surface-variant transition-colors hover:bg-md-on-surface/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
               aria-label="Website"
             >
               <Globe2 className="w-4 h-4" />

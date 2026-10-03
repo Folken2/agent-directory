@@ -26,3 +26,16 @@ test.describe('Home dual-path CTA (anonymous)', () => {
     await expect(page).toHaveURL(/\/auth\/signin/);
   });
 });
+
+test('sort menu is keyboard accessible', async ({ page }) => {
+  await page.goto('/');
+  const trigger = page.getByRole('button', { name: /sort/i });
+  await trigger.focus();
+  await page.keyboard.press('Enter');
+  const menu = page.getByRole('menu');
+  await expect(menu).toBeVisible();
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Escape');
+  await expect(menu).toBeHidden();
+  await expect(trigger).toBeFocused();
+});

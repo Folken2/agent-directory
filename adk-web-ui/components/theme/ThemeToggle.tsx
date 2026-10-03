@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef, type KeyboardEvent } from 'react';
 import { Monitor, Moon, Sun } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ThemePref } from '@/lib/theme';
@@ -13,21 +14,57 @@ const OPTIONS: Array<{ value: ThemePref; label: string; Icon: typeof Sun }> = [
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { pref, setPref } = useTheme();
+  const refs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const move = (index: number) => {
+    const target = (index + OPTIONS.length) % OPTIONS.length;
+    setPref(OPTIONS[target].value);
+    refs.current[target]?.focus();
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    switch (e.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        e.preventDefault();
+        move(index + 1);
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        e.preventDefault();
+        move(index - 1);
+        break;
+      case 'Home':
+        e.preventDefault();
+        move(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        move(OPTIONS.length - 1);
+        break;
+    }
+  };
+
   return (
     <div
       role="radiogroup"
       aria-label="Theme"
       className={cn('inline-flex items-center rounded-full bg-md-surface-container p-0.5', className)}
     >
-      {OPTIONS.map(({ value, label, Icon }) => (
+      {OPTIONS.map(({ value, label, Icon }, i) => (
         <button
           key={value}
+          ref={(el) => {
+            refs.current[i] = el;
+          }}
           type="button"
           role="radio"
           aria-checked={pref === value}
           aria-label={label}
           title={label}
+          tabIndex={pref === value ? 0 : -1}
           onClick={() => setPref(value)}
+          onKeyDown={(e) => onKeyDown(e, i)}
           className={cn(
             'inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary',

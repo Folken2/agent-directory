@@ -1,11 +1,16 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { Agent } from '@/lib/types';
 import { adkClient } from '@/lib/adk-client';
 import { useAppStore } from '@/lib/store';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import AgentCard from './AgentCard';
 import {
   AlertCircle,
@@ -28,7 +33,6 @@ export default function AgentGrid() {
   const [listWarning, setListWarning] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('featured');
-  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
   const starSessionIdRef = useRef<string>('');
 
   const starredAgents = useAppStore((state) => state.starredAgents);
@@ -85,17 +89,6 @@ export default function AgentGrid() {
 
     loadAgents();
   }, [loadStarredAgents]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsSortMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
 
   const getStarSessionId = () => {
     if (starSessionIdRef.current) return starSessionIdRef.current;
@@ -170,11 +163,6 @@ export default function AgentGrid() {
         )
       );
     }
-  };
-
-  const handleSelectSort = (option: SortOption) => {
-    setSortOption(option);
-    setIsSortMenuOpen(false);
   };
 
   const filteredAgents = useMemo(() => {
@@ -296,74 +284,35 @@ export default function AgentGrid() {
         </div>
 
         <div className="flex items-center gap-3 justify-end md:justify-start">
-          <div className="relative">
-            <button
-              type="button"
-              aria-haspopup="listbox"
-              aria-expanded={isSortMenuOpen}
-              onClick={() => setIsSortMenuOpen((open) => !open)}
-              className="group flex h-[44px] items-center gap-2 rounded-xl bg-md-surface border border-md-outline/80 hover:bg-md-surface-container hover:border-md-outline text-md-on-surface px-4 py-2 text-label-large transition-all focus-visible:ring-2 focus-visible:ring-md-primary shadow-sm hover:shadow"
-            >
-              <ArrowUpDown className="w-4 h-4 text-md-on-surface-variant" />
-              <span className="font-medium">{activeSortOption.label}</span>
-              <ChevronDown
-                className={cn(
-                  'w-4 h-4 text-md-on-surface-variant/70 transition-transform duration-200',
-                  isSortMenuOpen && 'rotate-180'
-                )}
-              />
-            </button>
-
-            <AnimatePresence>
-              {isSortMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setIsSortMenuOpen(false)} />
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute right-0 z-20 mt-2 w-64 overflow-hidden rounded-xl border border-md-outline bg-md-surface elevation-3"
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outlined" size="sm" aria-label={`Sort: ${activeSortOption.label}`} className="group">
+                <ArrowUpDown className="w-4 h-4" />
+                <span>{activeSortOption.label}</span>
+                <ChevronDown className="w-4 h-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64">
+              {sortOptions.map((option) => {
+                const Icon = option.icon;
+                const isActive = sortOption === option.value;
+                return (
+                  <DropdownMenuItem
+                    key={option.value}
+                    className="h-auto py-2"
+                    onSelect={() => setSortOption(option.value)}
                   >
-                    <div className="p-2">
-                      {sortOptions.map((option) => {
-                        const Icon = option.icon;
-                        const isActive = sortOption === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            role="option"
-                            aria-selected={isActive}
-                            onClick={() => handleSelectSort(option.value)}
-                            className={cn(
-                              'flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-all',
-                              'hover:bg-md-surface-variant focus-visible:ring-2 focus-visible:ring-md-primary',
-                              isActive && 'bg-md-primary-container'
-                            )}
-                          >
-                            <div
-                              className={cn(
-                                'rounded-lg p-2',
-                                isActive ? 'bg-md-primary text-md-on-primary' : 'bg-md-surface-container text-md-on-surface-variant'
-                              )}
-                            >
-                              <Icon className="w-4 h-4" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="text-label-large text-md-on-surface">{option.label}</div>
-                              <div className="text-label-small text-md-on-surface-variant">{option.description}</div>
-                            </div>
-                            {isActive && <Check className="w-4 h-4 text-md-primary" />}
-                          </button>
-                        );
-                      })}
+                    <Icon />
+                    <div className="flex-1">
+                      <div className="text-label-large text-md-on-surface">{option.label}</div>
+                      <div className="text-label-small text-md-on-surface-variant">{option.description}</div>
                     </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
+                    {isActive ? <Check aria-label="Selected" /> : null}
+                  </DropdownMenuItem>
+                );
+              })}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

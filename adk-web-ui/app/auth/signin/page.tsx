@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 export default function SignInPage() {
   const router = useRouter();
@@ -37,21 +39,21 @@ export default function SignInPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background pt-16 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-md-surface pt-16 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-md-on-surface-variant hover:text-md-on-surface mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Agents
         </Link>
 
-        <div className="bg-card rounded-2xl border border-border p-8 shadow-lg">
+        <Card variant="elevated" className="rounded-[var(--md-shape-xl)] p-8">
           <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-md-primary-container rounded-full mb-4">
               <svg
-                className="w-8 h-8 text-primary"
+                className="w-8 h-8 text-md-on-primary-container"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -74,24 +76,25 @@ export default function SignInPage() {
                 />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
+            <h1 className="text-headline-medium text-md-on-surface mb-2">
               Sign In
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-body-large text-md-on-surface-variant">
               Sign in with your Google account to continue
             </p>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive">
+            <div className="mb-4 rounded-[var(--md-shape-md)] bg-md-error-container p-3 text-sm text-md-on-error-container" role="alert">
               {error}
             </div>
           )}
 
-          <button
+          <Button
+            variant="outlined"
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full px-6 py-3 bg-background hover:bg-muted border border-border rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-foreground"
+            className="h-12 w-full gap-3 text-md-on-surface"
           >
             {isLoading ? (
               <>
@@ -126,12 +129,12 @@ export default function SignInPage() {
                 <span>Continue with Google</span>
               </>
             )}
-          </button>
+          </Button>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
+          <p className="mt-6 text-center text-sm text-md-on-surface-variant">
             By signing in, you agree to our Terms of Service and Privacy Policy
           </p>
-        </div>
+        </Card>
       </div>
     </div>
   );

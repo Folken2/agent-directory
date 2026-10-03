@@ -3,207 +3,162 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
-import { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { Menu, LogIn, LogOut } from 'lucide-react';
+import { useSession, signOut } from 'next-auth/react';
 import { cn } from '@/lib/utils';
-import UserProfile from '@/components/auth/UserProfile';
-import SignOutButton from '@/components/auth/SignOutButton';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/theme/ThemeToggle';
+import UserProfile from '@/components/auth/UserProfile';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import SignOutButton from '@/components/auth/SignOutButton';
 
-const navigation = [
+const destinations = [
   { name: 'Agents', href: '/' },
   { name: 'About', href: '/about' },
 ];
 
-export default function Navigation() {
-  const pathname = usePathname();
-  const { data: session, status } = useSession();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
-  const isAuthenticated = status === 'authenticated' && !!session?.user;
+export function isActiveRoute(pathname: string, href: string) {
+  return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
+}
 
-  // Hide navigation on chat page (must be after all hooks)
-  if (pathname?.startsWith('/chat')) {
-    return null;
-  }
-
-  const isActive = (href: string) => {
-    if (href === '/') {
-      return pathname === '/';
-    }
-    return pathname.startsWith(href);
-  };
-
+function NavLink({ href, className, ...props }: React.ComponentProps<typeof Link>) {
+  const pathname = usePathname() ?? '/';
+  const active = isActiveRoute(pathname, String(href));
   return (
-    <nav className="bg-md-surface elevation-2 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center gap-2">
-            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-              <Image
-                src="/adk_logo.png"
-                alt="ADK Logo"
-                width={32}
-                height={32}
-                className="w-8 h-8"
-                priority
-              />
-              <h1 className="text-lg font-semibold text-md-on-surface tracking-tight hidden sm:block">
-                Agent Directory
-              </h1>
-            </Link>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center gap-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'relative px-4 py-2 text-sm font-medium transition-colors rounded-lg',
-                  isActive(item.href)
-                    ? 'text-md-primary'
-                    : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
-                )}
-                onClick={() => {
-                  if (item.href.startsWith('#')) {
-                    // Handle anchor links
-                    const element = document.querySelector(item.href);
-                    if (element) {
-                      element.scrollIntoView({ behavior: 'smooth' });
-                    }
-                  }
-                }}
-              >
-                {item.name}
-                {isActive(item.href) && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-md-primary rounded-full" />
-                )}
-              </Link>
-            ))}
-
-            {/* Auth Section - Desktop */}
-            <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-md-outline">
-              <ThemeToggle />
-              {isAuthenticated ? (
-                <>
-                  <Link
-                    href="/me/sessions"
-                    className={cn(
-                      'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                      isActive('/me/sessions')
-                        ? 'text-md-primary'
-                        : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
-                    )}
-                  >
-                    Sessions
-                  </Link>
-                  <Link
-                    href="/settings"
-                    className={cn(
-                      'px-3 py-2 text-sm font-medium rounded-lg transition-colors',
-                      isActive('/settings')
-                        ? 'text-md-primary'
-                        : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
-                    )}
-                  >
-                    Settings
-                  </Link>
-                  <UserProfile />
-                  <SignOutButton />
-                </>
-              ) : (
-                <Link
-                  href="/auth/signin"
-                  className="px-4 py-2 text-sm font-medium text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant rounded-lg transition-colors"
-                >
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-lg text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant transition-colors"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? (
-              <X className="w-5 h-5" />
-            ) : (
-              <Menu className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        {mobileMenuOpen && (
-          <div className="md:hidden pb-4 space-y-1">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={cn(
-                  'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                  isActive(item.href)
-                    ? 'bg-md-primary-container text-md-on-primary-container'
-                    : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
-                )}
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  if (item.href.startsWith('#')) {
-                    setTimeout(() => {
-                      const element = document.querySelector(item.href);
-                      if (element) {
-                        element.scrollIntoView({ behavior: 'smooth' });
-                      }
-                    }, 100);
-                  }
-                }}
-              >
-                {item.name}
-              </Link>
-            ))}
-
-            {/* Auth Section - Mobile */}
-            <div className="pt-2 border-t border-md-outline mt-2">
-              <div className="px-4 py-3"><ThemeToggle /></div>
-              {isAuthenticated ? (
-                <div className="px-4 py-3 space-y-2">
-                  <UserProfile />
-                  <Link
-                    href="/me/sessions"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block py-2 text-sm font-medium text-md-on-surface-variant hover:text-md-on-surface"
-                  >
-                    Your sessions
-                  </Link>
-                  <Link
-                    href="/settings"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block py-2 text-sm font-medium text-md-on-surface-variant hover:text-md-on-surface"
-                  >
-                    Settings
-                  </Link>
-                  <SignOutButton />
-                </div>
-              ) : (
-                <Link
-                  href="/auth/signin"
-                  className="block px-4 py-3 rounded-lg text-sm font-medium text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant transition-colors"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </nav>
+    <Link
+      href={href}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'inline-flex items-center rounded-full px-4 text-sm font-medium transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary',
+        active
+          ? 'bg-md-primary-container text-md-on-primary-container'
+          : 'text-md-on-surface-variant hover:bg-md-on-surface/8 hover:text-md-on-surface',
+        className ?? 'h-10'
+      )}
+      {...props}
+    />
   );
 }
 
+function Avatar({ name, image }: { name?: string | null; image?: string | null }) {
+  if (image) {
+    return <Image src={image} alt="" width={32} height={32} className="h-8 w-8 rounded-full" />;
+  }
+  return (
+    <span aria-hidden className="flex h-8 w-8 items-center justify-center rounded-full bg-md-primary-container text-sm font-medium text-md-on-primary-container">
+      {(name || 'U').charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+export default function Navigation() {
+  const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const isAuthenticated = status === 'authenticated' && !!session?.user;
+
+  if (pathname?.startsWith('/chat')) return null;
+
+  const accountLinks = isAuthenticated
+    ? [
+        { name: 'Sessions', href: '/me/sessions' },
+        { name: 'Settings', href: '/settings' },
+      ]
+    : [];
+
+  return (
+    <div className="sticky top-0 z-50 bg-md-surface-container-low/80 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-md-surface-container-low/70">
+      <nav
+        aria-label="Main"
+        className="mx-auto flex h-14 max-w-7xl items-center justify-between rounded-full bg-md-surface-container px-2 pl-4"
+      >
+        <Link href="/" aria-label="Agent Directory home" className="flex items-center gap-2 rounded-full pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary">
+          <Image src="/adk_logo.png" alt="" width={28} height={28} className="h-7 w-7" priority />
+          <span className="hidden text-base font-medium text-md-on-surface sm:inline">
+            Agent <span className="text-md-primary">Directory</span>
+          </span>
+        </Link>
+
+        <div className="hidden items-center gap-1 md:flex">
+          {destinations.map((d) => (
+            <NavLink key={d.href} href={d.href}>{d.name}</NavLink>
+          ))}
+          <ThemeToggle className="ml-2" />
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="text" size="icon" className="ml-2" aria-label="Account">
+                  <Avatar name={session?.user?.name} image={session?.user?.image} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>
+                  <span className="block text-sm font-medium text-md-on-surface">{session?.user?.name || 'User'}</span>
+                  {session?.user?.email && (
+                    <span className="block text-xs font-normal text-md-on-surface-variant">{session.user.email}</span>
+                  )}
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {accountLinks.map((d) => (
+                  <DropdownMenuItem key={d.href} asChild>
+                    <Link href={d.href}>{d.name}</Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => { void signOut({ callbackUrl: '/' }); }}>
+                  <LogOut /> Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/auth/signin" className={cn(buttonVariants({ variant: 'filled', size: 'sm' }), 'ml-2')}>
+              Sign in
+            </Link>
+          )}
+        </div>
+
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="text" size="icon" className="md:hidden" aria-label="Open menu">
+              <Menu />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" title="Menu">
+            <div className="flex flex-col gap-1 px-1">
+              {[...destinations, ...accountLinks].map((d) => (
+                <SheetClose asChild key={d.href}>
+                  <NavLink href={d.href} className="h-12">{d.name}</NavLink>
+                </SheetClose>
+              ))}
+              <div className="mt-3 border-t border-md-outline-variant px-3 pt-3">
+                <ThemeToggle />
+              </div>
+              <div className="mt-3 px-3">
+                {isAuthenticated ? (
+                  <div className="flex flex-col gap-3">
+                    <UserProfile />
+                    <SignOutButton />
+                  </div>
+                ) : (
+                  <SheetClose asChild>
+                    <Link href="/auth/signin" className={cn(buttonVariants({ variant: 'filled' }), 'w-full')}>
+                      <LogIn /> Sign in
+                    </Link>
+                  </SheetClose>
+                )}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </nav>
+    </div>
+  );
+}

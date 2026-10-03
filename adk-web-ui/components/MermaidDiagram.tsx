@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
+import { useDarkMode } from '@/lib/hooks/useDarkMode';
 
 interface MermaidDiagramProps {
   code: string;
@@ -193,6 +194,7 @@ export default function MermaidDiagram({ code, id, isStreaming = false }: Mermai
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRendering, setIsRendering] = useState(true);
+  const isDark = useDarkMode();
   const diagramId = id || `mermaid-${Math.random().toString(36).substr(2, 9)}`;
 
   useEffect(() => {
@@ -224,13 +226,10 @@ export default function MermaidDiagram({ code, id, isStreaming = false }: Mermai
       setIsRendering(true);
       setError(null);
 
-      // Detect dark mode
-      const isDarkMode = document.documentElement.classList.contains('dark');
-
       // Initialize mermaid if not already initialized
       mermaid.initialize({
         startOnLoad: false,
-        theme: isDarkMode ? 'dark' : 'default',
+        theme: isDark ? 'dark' : 'default',
         securityLevel: 'strict',
         fontFamily: 'inherit',
       });
@@ -290,7 +289,7 @@ export default function MermaidDiagram({ code, id, isStreaming = false }: Mermai
     return () => {
       cancelled = true;
     };
-  }, [code, diagramId, isStreaming]);
+  }, [code, diagramId, isStreaming, isDark]);
 
   if (error) {
     return (
