@@ -361,11 +361,11 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
 
   if (artifact.type === 'image') {
     return (
-      <div className="mt-3 rounded-xl overflow-hidden border border-border bg-card shadow-sm">
+      <div className="mt-3 rounded-xl overflow-hidden border border-md-outline bg-md-surface shadow-sm">
         {imageSrc ? (
           <div className="relative">
             {isImageLoading && (
-              <div className="absolute inset-0 animate-pulse bg-muted/70" />
+              <div className="absolute inset-0 animate-pulse bg-md-surface-container/70" />
             )}
             <img
               key={blobUrlKeyRef.current}
@@ -380,7 +380,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
                 target.style.display = 'none';
                 setIsImageLoading(false);
                 const errorDiv = document.createElement('div');
-                errorDiv.className = 'p-4 bg-destructive/10 text-destructive text-sm flex items-center gap-2';
+                errorDiv.className = 'p-4 bg-md-error/10 text-md-error text-sm flex items-center gap-2';
                 errorDiv.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg> Failed to load image';
                 target.parentElement?.appendChild(errorDiv);
               }}
@@ -391,7 +391,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
                   href={imageSrc}
                   target="_blank"
                   rel="noreferrer"
-                  className="px-2 py-1 text-xs rounded-md bg-background/80 border border-border shadow-sm hover:bg-background transition-colors"
+                  className="px-2 py-1 text-xs rounded-md bg-md-surface-container-low/80 border border-md-outline shadow-sm hover:bg-md-surface-container-low transition-colors"
                   title="Open"
                 >
                   Open
@@ -399,7 +399,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
                 <a
                   href={imageSrc}
                   download={artifact.name}
-                  className="px-2 py-1 text-xs rounded-md bg-background/80 border border-border shadow-sm hover:bg-background transition-colors"
+                  className="px-2 py-1 text-xs rounded-md bg-md-surface-container-low/80 border border-md-outline shadow-sm hover:bg-md-surface-container-low transition-colors"
                   title="Download"
                 >
                   Download
@@ -408,17 +408,17 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
             )}
           </div>
         ) : (
-          <div className="p-4 bg-muted/50 text-muted-foreground text-sm flex items-center gap-2">
+          <div className="p-4 bg-md-surface-container/50 text-md-on-surface-variant text-sm flex items-center gap-2">
             <AlertCircle className="w-4 h-4" />
             Image URL is empty or invalid
           </div>
         )}
-        <div className="px-4 py-3 bg-muted/30 border-t border-border flex items-center gap-2 overflow-hidden">
-          <ImageIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-          <span className="text-xs font-medium text-foreground truncate">{artifact.name}</span>
+        <div className="px-4 py-3 bg-md-surface-container/30 border-t border-md-outline flex items-center gap-2 overflow-hidden">
+          <ImageIcon className="w-4 h-4 text-md-on-surface-variant shrink-0" />
+          <span className="text-xs font-medium text-md-on-surface truncate">{artifact.name}</span>
         </div>
         {saveError && (
-          <div className="px-4 pb-3 text-xs text-destructive font-medium">
+          <div className="px-4 pb-3 text-xs text-md-error font-medium">
             {saveError}
           </div>
         )}
@@ -428,25 +428,25 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
 
   // For non-image artifacts, show a file link with controls
   return (
-    <div className="mt-3 p-3 bg-card rounded-xl border border-border shadow-sm group hover:border-primary/20 transition-colors">
+    <div className="mt-3 p-3 bg-md-surface rounded-xl border border-md-outline shadow-sm group hover:border-md-primary/20 transition-colors">
       <div className="flex items-center justify-between gap-3">
         <a
           href={artifact.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 text-sm font-medium text-foreground hover:text-primary transition-colors flex-1 min-w-0"
+          className="flex items-center gap-3 text-sm font-medium text-md-on-surface hover:text-md-primary transition-colors flex-1 min-w-0"
         >
-          <div className="p-2 bg-muted rounded-lg group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+          <div className="p-2 bg-md-surface-container rounded-lg group-hover:bg-md-primary/10 group-hover:text-md-primary transition-colors">
             <FileText className="w-4 h-4" />
           </div>
           <span className="truncate">{artifact.name}</span>
-          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground" />
+          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-md-on-surface-variant" />
         </a>
         <div className="flex items-center gap-1">
           <button
             onClick={handleSaveArtifact}
             disabled={isSaving}
-            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container rounded-md transition-colors disabled:opacity-50"
             title="Save artifact to session"
           >
             <Save className="w-4 h-4" />
@@ -454,7 +454,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
           <button
             onClick={handleDeleteArtifact}
             disabled={isDeleting}
-            className="p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-colors disabled:opacity-50"
+            className="p-1.5 text-md-on-surface-variant hover:text-md-error hover:bg-md-error/10 rounded-md transition-colors disabled:opacity-50"
             title="Delete artifact from session"
           >
             <Trash2 className="w-4 h-4" />
@@ -462,7 +462,7 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
         </div>
       </div>
       {saveError && (
-        <div className="mt-2 text-xs text-destructive font-medium">
+        <div className="mt-2 text-xs text-md-error font-medium">
           {saveError}
         </div>
       )}

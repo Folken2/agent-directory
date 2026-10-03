@@ -91,7 +91,7 @@ export default function ChatHistory() {
 
   const renderEmpty = (
     <div className="px-2 py-10 text-center">
-      <MessageSquare className="w-7 h-7 mx-auto mb-3 text-muted-foreground/40" />
+      <MessageSquare className="w-7 h-7 mx-auto mb-3 text-md-on-surface-variant/40" />
       <p className="text-[13px] font-medium text-md-on-surface-variant">No past chats yet</p>
       <p className="text-label-small text-md-on-surface-variant/60 uppercase tracking-widest mt-2">
         Start a new chat to begin
@@ -100,16 +100,16 @@ export default function ChatHistory() {
   );
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      <div className="h-16 px-3 flex items-center border-b border-border/40 shrink-0">
+    <div className="h-full flex flex-col bg-md-surface-container-low">
+      <div className="h-16 px-3 flex items-center border-b border-md-outline/40 shrink-0">
         <button
           onClick={handleNewChat}
           disabled={!selectedAgent}
           className={cn(
             'w-full px-3 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-medium',
             !selectedAgent
-              ? 'text-muted-foreground/60 cursor-not-allowed'
-              : 'text-foreground hover:bg-muted',
+              ? 'text-md-on-surface-variant/60 cursor-not-allowed'
+              : 'text-md-on-surface hover:bg-md-surface-container',
           )}
         >
           <Plus className="w-4 h-4" />
@@ -143,8 +143,8 @@ export default function ChatHistory() {
                       className={cn(
                         'group w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2',
                         isActive
-                          ? 'bg-muted text-foreground'
-                          : 'hover:bg-muted/60 text-muted-foreground hover:text-foreground',
+                          ? 'bg-md-surface-container text-md-on-surface'
+                          : 'hover:bg-md-surface-container/60 text-md-on-surface-variant hover:text-md-on-surface',
                       )}
                     >
                       <span className="flex-1 text-[13px] leading-snug truncate">
@@ -154,8 +154,8 @@ export default function ChatHistory() {
                         className={cn(
                           'shrink-0 text-[10px] tabular-nums transition-opacity',
                           isActive
-                            ? 'text-muted-foreground'
-                            : 'text-muted-foreground/60 opacity-0 group-hover:opacity-100',
+                            ? 'text-md-on-surface-variant'
+                            : 'text-md-on-surface-variant/60 opacity-0 group-hover:opacity-100',
                         )}
                       >
                         {formatRelative(new Date(s.lastActivityAt))}
@@ -169,7 +169,7 @@ export default function ChatHistory() {
         ) : !showActiveAnon ? (
           <>
             {renderEmpty}
-            <p className="px-3 mt-4 text-[11px] text-muted-foreground/70 text-center">
+            <p className="px-3 mt-4 text-[11px] text-md-on-surface-variant/70 text-center">
               Sign in to keep your chat history across sessions.
             </p>
           </>
@@ -182,12 +182,12 @@ export default function ChatHistory() {
               {currentConversation && (
                 <button
                   onClick={() => setCurrentConversation(currentConversation)}
-                  className="group w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2 bg-muted text-foreground"
+                  className="group w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2 bg-md-surface-container text-md-on-surface"
                 >
                   <span className="flex-1 text-[13px] leading-snug truncate">
                     {currentConversation.title || 'Untitled'}
                   </span>
-                  <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                  <span className="shrink-0 text-[10px] tabular-nums text-md-on-surface-variant">
                     {formatRelative(currentConversation.updatedAt)}
                   </span>
                 </button>

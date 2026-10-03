@@ -75,8 +75,8 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
     if (codeString) {
       if (isStreaming) {
         return (
-          <div className="my-4 p-4 rounded-lg border border-border bg-card text-card-foreground">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="my-4 p-4 rounded-lg border border-md-outline bg-md-surface text-md-on-surface">
+            <div className="flex items-center gap-2 text-sm text-md-on-surface-variant">
               <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
               <span>Generating diagram&hellip;</span>
             </div>
@@ -102,15 +102,15 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
 
   return (
     <div className="relative group my-4">
-      <div className="relative rounded-lg overflow-hidden border border-border/50 bg-[hsl(var(--md-surface-container-high))]">
+      <div className="relative rounded-lg overflow-hidden border border-md-outline/50 bg-[hsl(var(--md-surface-container-high))]">
         {showHeader && (
-          <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-muted/30">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80">
+          <div className="flex items-center justify-between px-3 py-1.5 border-b border-md-outline/40 bg-md-surface-container/30">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-md-on-surface-variant/80">
               {language ?? 'plain text'}
             </span>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors px-1.5 py-0.5 rounded opacity-60 group-hover:opacity-100"
+              className="inline-flex items-center gap-1 text-[11px] text-md-on-surface-variant hover:text-md-on-surface transition-colors px-1.5 py-0.5 rounded opacity-60 group-hover:opacity-100"
               title="Copy code"
               aria-label="Copy code"
             >

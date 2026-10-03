@@ -62,8 +62,8 @@ function NestedTool({ tool }: { tool: SubAgentTool }) {
         onClick={() => hasDetails && setOpen((v) => !v)}
         className={cn(
           'flex w-full items-center gap-2 py-0.5 text-left text-[11px]',
-          hasDetails && 'hover:text-foreground cursor-pointer',
-          tool.status === 'error' ? 'text-destructive/80' : 'text-muted-foreground',
+          hasDetails && 'hover:text-md-on-surface cursor-pointer',
+          tool.status === 'error' ? 'text-md-error/80' : 'text-md-on-surface-variant',
         )}
       >
         {isLive ? (
@@ -77,8 +77,8 @@ function NestedTool({ tool }: { tool: SubAgentTool }) {
           {isLive ? (
             <>
               <span className="stream-shimmer">Running</span>{' '}
-              <span className="text-foreground/85">{titleCase(tool.name)}</span>
-              {preview && <span className="text-muted-foreground/65"> · {preview}</span>}
+              <span className="text-md-on-surface/85">{titleCase(tool.name)}</span>
+              {preview && <span className="text-md-on-surface-variant/65"> · {preview}</span>}
             </>
           ) : (
             titleCase(tool.name)
@@ -96,19 +96,19 @@ function NestedTool({ tool }: { tool: SubAgentTool }) {
           >
             <div className="ml-5 mb-1 space-y-1">
               {tool.args && Object.keys(tool.args).length > 0 && (
-                <pre className="text-[10px] font-mono max-h-24 overflow-auto rounded bg-muted/30 border border-border/20 px-2 py-1.5 whitespace-pre-wrap text-muted-foreground">
+                <pre className="text-[10px] font-mono max-h-24 overflow-auto rounded bg-md-surface-container/30 border border-md-outline/20 px-2 py-1.5 whitespace-pre-wrap text-md-on-surface-variant">
                   {JSON.stringify(tool.args, null, 2)}
                 </pre>
               )}
               {tool.response !== undefined && (
-                <pre className="text-[10px] font-mono max-h-24 overflow-auto rounded bg-muted/30 border border-border/20 px-2 py-1.5 whitespace-pre-wrap text-muted-foreground">
+                <pre className="text-[10px] font-mono max-h-24 overflow-auto rounded bg-md-surface-container/30 border border-md-outline/20 px-2 py-1.5 whitespace-pre-wrap text-md-on-surface-variant">
                   {typeof tool.response === 'string'
                     ? tool.response
                     : JSON.stringify(tool.response, null, 2)}
                 </pre>
               )}
               {tool.error && (
-                <div className="text-[10px] text-destructive/90 px-0.5">{tool.error}</div>
+                <div className="text-[10px] text-md-error/90 px-0.5">{tool.error}</div>
               )}
             </div>
           </motion.div>
@@ -138,7 +138,7 @@ function NestedToolsHierarchy({ tools }: { tools: SubAgentTool[] }) {
           <button
             type="button"
             onClick={() => setHistoryOpen((v) => !v)}
-            className="flex w-full items-center gap-2 py-0.5 text-left text-[11px] text-muted-foreground/75 hover:text-foreground"
+            className="flex w-full items-center gap-2 py-0.5 text-left text-[11px] text-md-on-surface-variant/75 hover:text-md-on-surface"
           >
             <Check className="h-3 w-3 shrink-0 opacity-70" />
             <span className="flex-1">Ran {completed.length} tools</span>
@@ -157,7 +157,7 @@ function NestedToolsHierarchy({ tools }: { tools: SubAgentTool[] }) {
                 transition={{ duration: 0.12 }}
                 className="overflow-hidden"
               >
-                <div className="ml-1 pl-3 border-l border-border/25 space-y-0.5">
+                <div className="ml-1 pl-3 border-l border-md-outline/25 space-y-0.5">
                   {completed.map((tool) => (
                     <NestedTool key={tool.id} tool={tool} />
                   ))}
@@ -179,7 +179,7 @@ function NestedThinking({ content, streaming }: { content: string; streaming: bo
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 py-1 px-1 rounded text-left text-[11px] text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+        className="flex w-full items-center gap-2 py-1 px-1 rounded text-left text-[11px] text-md-on-surface-variant hover:bg-md-surface-container/40 hover:text-md-on-surface"
       >
         <Brain className={cn('h-3 w-3 shrink-0', streaming && 'animate-pulse')} />
         <span className="flex-1">{streaming && !open ? 'Thinking…' : 'Thought process'}</span>
@@ -194,7 +194,7 @@ function NestedThinking({ content, streaming }: { content: string; streaming: bo
             transition={{ duration: 0.15 }}
             className="overflow-hidden"
           >
-            <div className="ml-5 mb-1 max-h-40 overflow-y-auto rounded-md border border-border/20 bg-muted/30 px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground whitespace-pre-wrap">
+            <div className="ml-5 mb-1 max-h-40 overflow-y-auto rounded-md border border-md-outline/20 bg-md-surface-container/30 px-2.5 py-2 text-[11px] leading-relaxed text-md-on-surface-variant whitespace-pre-wrap">
               {content}
             </div>
           </motion.div>
@@ -258,38 +258,38 @@ function StepRow({
         onClick={() => setExpanded((v) => !v)}
         className={cn(
           'flex w-full items-center gap-2 py-1.5 px-1 rounded text-left transition-colors',
-          'hover:bg-muted/40',
-          running && streamingNow ? 'text-foreground/80' : 'text-muted-foreground',
+          'hover:bg-md-surface-container/40',
+          running && streamingNow ? 'text-md-on-surface/80' : 'text-md-on-surface-variant',
         )}
       >
         <span className="flex h-3.5 w-3.5 items-center justify-center shrink-0">
           {running ? (
             <Loader2
               className={cn(
-                'h-3 w-3 text-muted-foreground',
+                'h-3 w-3 text-md-on-surface-variant',
                 streamingNow && 'animate-spin',
               )}
             />
           ) : (
-            <Check className="h-3 w-3 text-muted-foreground/70" />
+            <Check className="h-3 w-3 text-md-on-surface-variant/70" />
           )}
         </span>
         <span className="flex-1 min-w-0 truncate font-medium">
           {label}
           {showRunIndex && (
-            <span className="ml-1.5 text-muted-foreground/60 font-normal">· run {step.runIndex}</span>
+            <span className="ml-1.5 text-md-on-surface-variant/60 font-normal">· run {step.runIndex}</span>
           )}
           {activityHint && !expanded && (
-            <span className="ml-1.5 text-muted-foreground/50 font-normal">· {activityHint}</span>
+            <span className="ml-1.5 text-md-on-surface-variant/50 font-normal">· {activityHint}</span>
           )}
         </span>
-        <span className="text-[10px] text-muted-foreground/70 shrink-0">
+        <span className="text-[10px] text-md-on-surface-variant/70 shrink-0">
           {running ? 'Working' : 'Done'}
         </span>
         {expanded ? (
-          <ChevronDown className="h-3 w-3 text-muted-foreground shrink-0" />
+          <ChevronDown className="h-3 w-3 text-md-on-surface-variant shrink-0" />
         ) : (
-          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+          <ChevronRight className="h-3 w-3 text-md-on-surface-variant shrink-0" />
         )}
       </button>
 
@@ -302,7 +302,7 @@ function StepRow({
             transition={{ duration: 0.18 }}
             className="overflow-hidden"
           >
-            <div className="ml-2 pl-3 border-l border-border/30 space-y-0.5 pb-2 opacity-90">
+            <div className="ml-2 pl-3 border-l border-md-outline/30 space-y-0.5 pb-2 opacity-90">
               {step.thinking && (
                 <NestedThinking content={step.thinking} streaming={running && streamingNow} />
               )}
@@ -314,7 +314,7 @@ function StepRow({
               {step.content ? (
                 <div
                   ref={contentBoxRef}
-                  className="mt-1 max-h-44 overflow-y-auto rounded-md border border-border/20 bg-muted/25 px-2.5 py-2"
+                  className="mt-1 max-h-44 overflow-y-auto rounded-md border border-md-outline/20 bg-md-surface-container/25 px-2.5 py-2"
                 >
                   <MarkdownRenderer
                     content={step.content}
@@ -324,7 +324,7 @@ function StepRow({
                   />
                 </div>
               ) : !hasBody && running ? (
-                <p className="py-1 px-1 text-[11px] text-muted-foreground/70">Starting…</p>
+                <p className="py-1 px-1 text-[11px] text-md-on-surface-variant/70">Starting…</p>
               ) : null}
               <div ref={stepEndRef} />
             </div>
@@ -355,9 +355,9 @@ export default function SubAgentProgress({
     : `${steps.length} agent step${steps.length === 1 ? '' : 's'}`;
 
   return (
-    <div className="rounded-lg bg-muted/15 border border-border/20 px-2.5 py-2">
+    <div className="rounded-lg bg-md-surface-container/15 border border-md-outline/20 px-2.5 py-2">
       <div className="flex items-center gap-2 mb-1.5 px-0.5">
-        <span className="text-[11px] text-muted-foreground/75">{summary}</span>
+        <span className="text-[11px] text-md-on-surface-variant/75">{summary}</span>
         {isStreaming && activeIdx >= 0 && (
           <span className="text-[11px] stream-shimmer">live</span>
         )}

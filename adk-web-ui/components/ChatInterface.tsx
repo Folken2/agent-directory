@@ -95,11 +95,11 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
         agentSlug={selectedAgent?.name}
         sessionKey={currentConversation?.id ?? null}
       />
-      <div className="flex flex-col h-full min-h-0 bg-background relative">
+      <div className="flex flex-col h-full min-h-0 bg-md-surface-container-low relative">
         <div className="px-4 pt-3 flex items-center justify-end gap-3">
           <button
             onClick={() => setInfoOpen((open) => !open)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label-medium text-md-on-surface-variant hover:text-foreground hover:bg-muted transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-label-medium text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container transition-colors"
             aria-label={infoOpen ? 'Hide agent info' : 'Show agent info'}
           >
             <Info className="w-3.5 h-3.5" />
@@ -120,7 +120,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
 
         {currentConversation?.resumedFrom && (
           <div className="px-4 pt-2">
-            <div className="flex items-start gap-2 rounded-md border border-border/50 bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
+            <div className="flex items-start gap-2 rounded-md border border-md-outline/50 bg-md-surface-container/40 px-3 py-2 text-[12px] text-md-on-surface-variant">
               <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
               <div>
                 Resumed from{' '}
@@ -150,14 +150,14 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
             <button
               type="button"
               onClick={retryLast}
-              className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted"
+              className="rounded-md border border-md-outline px-3 py-1.5 text-sm hover:bg-md-surface-container"
             >
               Retry
             </button>
           </div>
         )}
 
-        <div className="bg-background/90 backdrop-blur-lg sticky bottom-0 z-10 relative">
+        <div className="bg-md-surface-container-low/90 backdrop-blur-lg sticky bottom-0 z-10 relative">
           <Composer
             value={input}
             onChange={setInput}
@@ -175,7 +175,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
 
       <div
         className={cn(
-          'border-l border-border/40 overflow-y-auto bg-background',
+          'border-l border-md-outline/40 overflow-y-auto bg-md-surface-container-low',
           infoOpen ? 'block' : 'hidden',
         )}
       >
@@ -185,7 +185,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
               <p className="text-label-small text-md-on-surface-variant/70 uppercase tracking-widest">
                 About
               </p>
-              <p className="mt-2 text-[13px] text-foreground/90 leading-relaxed">
+              <p className="mt-2 text-[13px] text-md-on-surface/90 leading-relaxed">
                 {selectedAgent.description || 'No description available'}
               </p>
             </section>
@@ -199,7 +199,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
                   {selectedAgent.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="px-2 py-0.5 text-[11px] font-medium text-muted-foreground bg-muted/60 rounded"
+                      className="px-2 py-0.5 text-[11px] font-medium text-md-on-surface-variant bg-md-surface-container/60 rounded"
                     >
                       {tag}
                     </span>
@@ -217,7 +217,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
                   {selectedAgent.tools.map((tool) => (
                     <li
                       key={tool}
-                      className="text-[12px] font-mono text-muted-foreground"
+                      className="text-[12px] font-mono text-md-on-surface-variant"
                     >
                       {tool}
                     </li>
@@ -235,7 +235,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
                   {selectedAgent.useCases.map((useCase, idx) => (
                     <li
                       key={idx}
-                      className="text-[13px] text-foreground/85 leading-relaxed"
+                      className="text-[13px] text-md-on-surface/85 leading-relaxed"
                     >
                       {useCase.description}
                     </li>
@@ -253,7 +253,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
                   href={selectedAgent.githubUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground transition-colors"
+                  className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-md-on-surface-variant hover:text-md-on-surface transition-colors"
                 >
                   <svg
                     className="w-3.5 h-3.5"
@@ -269,7 +269,7 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
             )}
           </div>
         ) : (
-          <div className="px-5 py-6 text-sm text-muted-foreground">
+          <div className="px-5 py-6 text-sm text-md-on-surface-variant">
             Select an agent to view details.
           </div>
         )}

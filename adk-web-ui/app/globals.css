@@ -111,26 +111,6 @@
   --shadow-elevation-4: 0 6px 10px 4px rgb(60 64 67 / 0.15), 0 2px 3px 0 rgb(60 64 67 / 0.30);
   --shadow-elevation-5: 0 8px 12px 6px rgb(60 64 67 / 0.15), 0 4px 4px 0 rgb(60 64 67 / 0.30);
 
-  /* DEPRECATED aliases — use md-* tokens (guarded by npm run lint:tokens) */
-  --background: var(--md-surface-container-low);
-  --foreground: var(--md-on-surface);
-  --card: var(--md-surface);
-  --card-foreground: var(--md-on-surface);
-  --popover: var(--md-surface);
-  --popover-foreground: var(--md-on-surface);
-  --primary: var(--md-primary);
-  --primary-foreground: var(--md-on-primary);
-  --secondary: var(--md-secondary);
-  --secondary-foreground: var(--md-on-secondary);
-  --muted: var(--md-surface-container);
-  --muted-foreground: var(--md-on-surface-variant);
-  --accent: var(--md-primary-container);
-  --accent-foreground: var(--md-on-primary-container);
-  --destructive: var(--md-error);
-  --destructive-foreground: var(--md-on-error);
-  --border: var(--md-outline);
-  --input: var(--md-outline);
-  --ring: var(--md-primary);
 }
 
 .dark {
@@ -182,26 +162,6 @@
   --shadow-elevation-4: 0 6px 10px 4px rgb(0 0 0 / 0.3), 0 2px 3px 0 rgb(0 0 0 / 0.5);
   --shadow-elevation-5: 0 8px 12px 6px rgb(0 0 0 / 0.3), 0 4px 4px 0 rgb(0 0 0 / 0.5);
 
-  /* DEPRECATED aliases — use md-* tokens (guarded by npm run lint:tokens) */
-  --background: var(--md-surface-container-low);
-  --foreground: var(--md-on-surface);
-  --card: var(--md-surface-container);
-  --card-foreground: var(--md-on-surface);
-  --popover: var(--md-surface-container);
-  --popover-foreground: var(--md-on-surface);
-  --primary: var(--md-primary);
-  --primary-foreground: var(--md-on-primary);
-  --secondary: var(--md-secondary);
-  --secondary-foreground: var(--md-on-secondary);
-  --muted: var(--md-surface-container-high);
-  --muted-foreground: var(--md-on-surface-variant);
-  --accent: var(--md-primary-container);
-  --accent-foreground: var(--md-on-primary-container);
-  --destructive: var(--md-error);
-  --destructive-foreground: var(--md-on-error);
-  --border: var(--md-outline);
-  --input: var(--md-outline);
-  --ring: var(--md-primary);
 }
 
 @theme inline {
@@ -242,25 +202,6 @@
   --color-md-outline: hsl(var(--md-outline));
   --color-md-outline-variant: hsl(var(--md-outline-variant));
 
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
 
   --radius-sm: var(--radius-small);
   --radius-md: var(--radius-medium);
@@ -278,11 +219,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-md-outline;
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply bg-md-surface-container-low text-md-on-surface antialiased;
     font-family: var(--font-sans);
   }
 
@@ -406,7 +347,7 @@
 }
 
 .markdown-content p {
-  @apply mb-4 text-foreground;
+  @apply mb-4 text-md-on-surface;
   line-height: 1.7;
 }
 
@@ -416,32 +357,32 @@
 
 /* Headings */
 .markdown-content h1 {
-  @apply text-3xl font-semibold mt-6 mb-4 text-foreground tracking-tight;
+  @apply text-3xl font-semibold mt-6 mb-4 text-md-on-surface tracking-tight;
   line-height: 1.3;
 }
 
 .markdown-content h2 {
-  @apply text-2xl font-semibold mt-6 mb-3 text-foreground tracking-tight;
+  @apply text-2xl font-semibold mt-6 mb-3 text-md-on-surface tracking-tight;
   line-height: 1.3;
 }
 
 .markdown-content h3 {
-  @apply text-xl font-semibold mt-5 mb-2 text-foreground tracking-tight;
+  @apply text-xl font-semibold mt-5 mb-2 text-md-on-surface tracking-tight;
   line-height: 1.4;
 }
 
 .markdown-content h4 {
-  @apply text-lg font-semibold mt-4 mb-2 text-foreground tracking-normal;
+  @apply text-lg font-semibold mt-4 mb-2 text-md-on-surface tracking-normal;
   line-height: 1.4;
 }
 
 .markdown-content h5 {
-  @apply text-base font-semibold mt-4 mb-2 text-foreground tracking-normal;
+  @apply text-base font-semibold mt-4 mb-2 text-md-on-surface tracking-normal;
   line-height: 1.5;
 }
 
 .markdown-content h6 {
-  @apply text-sm font-semibold mt-3 mb-2 text-foreground tracking-normal;
+  @apply text-sm font-semibold mt-3 mb-2 text-md-on-surface tracking-normal;
   line-height: 1.5;
 }
 
@@ -457,7 +398,7 @@
 /* Lists */
 .markdown-content ul,
 .markdown-content ol {
-  @apply mb-4 ml-6 text-foreground;
+  @apply mb-4 ml-6 text-md-on-surface;
   line-height: 1.7;
 }
 
@@ -501,12 +442,12 @@
 
 /* Links */
 .markdown-content a {
-  @apply text-primary underline underline-offset-2;
+  @apply text-md-primary underline underline-offset-2;
   transition: color 0.2s ease;
 }
 
 .markdown-content a:hover {
-  @apply text-primary;
+  @apply text-md-primary;
   opacity: 0.8;
 }
 
@@ -584,7 +525,7 @@
 
 /* Strong and emphasis */
 .markdown-content strong {
-  @apply font-semibold text-foreground;
+  @apply font-semibold text-md-on-surface;
 }
 
 .markdown-content em {
@@ -611,14 +552,14 @@
  * alone, which paints full foreground / large headings like the main answer.
  */
 .markdown-content-subagent {
-  @apply text-[12px] font-normal tracking-normal text-muted-foreground;
+  @apply text-[12px] font-normal tracking-normal text-md-on-surface-variant;
   word-wrap: break-word;
   overflow-wrap: break-word;
   line-height: 1.45;
 }
 
 .markdown-content-subagent p {
-  @apply mb-2 text-muted-foreground;
+  @apply mb-2 text-md-on-surface-variant;
   line-height: 1.45;
 }
 
@@ -632,13 +573,13 @@
 .markdown-content-subagent h4,
 .markdown-content-subagent h5,
 .markdown-content-subagent h6 {
-  @apply text-[12px] font-medium mt-2 mb-1 text-muted-foreground tracking-normal;
+  @apply text-[12px] font-medium mt-2 mb-1 text-md-on-surface-variant tracking-normal;
   line-height: 1.35;
 }
 
 .markdown-content-subagent ul,
 .markdown-content-subagent ol {
-  @apply mb-2 pl-4 text-muted-foreground;
+  @apply mb-2 pl-4 text-md-on-surface-variant;
 }
 
 .markdown-content-subagent li {
@@ -646,7 +587,7 @@
 }
 
 .markdown-content-subagent .inline-code {
-  @apply text-[11px] text-muted-foreground;
+  @apply text-[11px] text-md-on-surface-variant;
   background-color: hsl(var(--md-surface-container) / 0.6);
   border: 1px solid hsl(var(--md-outline) / 0.35);
   border-radius: 0.25rem;
@@ -654,19 +595,19 @@
 }
 
 .markdown-content-subagent a {
-  @apply text-muted-foreground underline underline-offset-2;
+  @apply text-md-on-surface-variant underline underline-offset-2;
 }
 
 .markdown-content-subagent a:hover {
-  @apply text-foreground/70;
+  @apply text-md-on-surface/70;
 }
 
 .markdown-content-subagent blockquote {
-  @apply border-l-2 border-border/50 pl-3 my-2 text-muted-foreground/80;
+  @apply border-l-2 border-md-outline/50 pl-3 my-2 text-md-on-surface-variant/80;
 }
 
 .markdown-content-subagent strong {
-  @apply font-medium text-muted-foreground;
+  @apply font-medium text-md-on-surface-variant;
 }
 
 .markdown-content-subagent table {
@@ -675,7 +616,7 @@
 
 .markdown-content-subagent th,
 .markdown-content-subagent td {
-  @apply text-muted-foreground border-border/40;
+  @apply text-md-on-surface-variant border-md-outline/40;
 }
 
 /* Hide footer on chat page */
@@ -709,7 +650,7 @@ body.chat-page main {
   margin-left: 3px;
   vertical-align: text-bottom;
   border-radius: 1px;
-  background-color: hsl(var(--foreground) / 0.85);
+  background-color: hsl(var(--md-on-surface) / 0.85);
   animation: streaming-cursor-pulse 1.1s ease-in-out infinite;
 }
 
@@ -727,9 +668,9 @@ body.chat-page main {
 .stream-shimmer {
   background: linear-gradient(
     90deg,
-    hsl(var(--muted-foreground) / 0.35) 0%,
-    hsl(var(--foreground) / 0.55) 45%,
-    hsl(var(--muted-foreground) / 0.35) 100%
+    hsl(var(--md-on-surface-variant) / 0.35) 0%,
+    hsl(var(--md-on-surface) / 0.55) 45%,
+    hsl(var(--md-on-surface-variant) / 0.35) 100%
   );
   background-size: 200% 100%;
   -webkit-background-clip: text;

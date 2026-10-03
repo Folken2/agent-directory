@@ -40,7 +40,7 @@ export function GuideAnswer({ document: guide, mapSlot }: Props) {
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      <p className="text-[15px] leading-snug text-foreground">{guide.lead}</p>
+      <p className="text-[15px] leading-snug text-md-on-surface">{guide.lead}</p>
       {mapSlot?.({
         places: guide.places,
         selectedPlaceId,

@@ -38,7 +38,7 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
         className="flex w-full justify-end"
         title={timestamp?.toLocaleString()}
       >
-        <div className="max-w-[min(85%,36rem)] rounded-2xl bg-muted/40 px-3.5 py-2 text-[15px] leading-relaxed text-foreground/90 text-left">
+        <div className="max-w-[min(85%,36rem)] rounded-2xl bg-md-surface-container/40 px-3.5 py-2 text-[15px] leading-relaxed text-md-on-surface/90 text-left">
           <MarkdownRenderer
             content={text}
             isStreaming={false}
@@ -77,10 +77,10 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
             <PayloadList payloads={payloads} isDarkMode={isDarkMode} />
 
             {(displayContent || artifacts.length > 1) && (
-              <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
+              <div className="mt-2 flex items-center gap-1 text-xs text-md-on-surface-variant opacity-0 group-hover/msg:opacity-100 transition-opacity duration-150">
                 {displayContent && (
                   <button
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted/70 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-md-surface-container/70 transition-colors"
                     onClick={() => onCopy(displayContent, message.id)}
                     aria-label={isCopied ? 'Copied' : 'Copy message'}
                   >
@@ -90,7 +90,7 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
                 )}
                 {artifacts.length > 1 && (
                   <button
-                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-muted/70 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-md-surface-container/70 transition-colors"
                     onClick={() => {
                       artifacts.forEach((a) => {
                         const link = document.createElement('a');
@@ -104,7 +104,7 @@ function MessageBubbleImpl({ message, isDarkMode, copiedMessageId, onCopy }: Mes
                   </button>
                 )}
                 {timestamp && (
-                  <span className="ml-auto text-muted-foreground/70">{timestamp.toLocaleTimeString()}</span>
+                  <span className="ml-auto text-md-on-surface-variant/70">{timestamp.toLocaleTimeString()}</span>
                 )}
               </div>
             )}
