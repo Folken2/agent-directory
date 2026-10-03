@@ -58,7 +58,6 @@ The `adk-web-ui/` directory contains the **Next.js frontend** that powers [agent
 **Key features:**
 - Agent discovery and chat interface with SSE streaming
 - Google OAuth authentication
-- Community trending posts with likes
 - Rate limiting for anonymous and authenticated users
 - Mermaid diagram rendering, artifact display, and more
 
@@ -180,7 +179,7 @@ agent_name/
 - `prompt/` - Agent instructions and prompts
 - `tools/` - Custom tools and integrations
 
-For detailed contribution instructions, including metadata templates and submission guidelines, see the [Contribution Guide](https://agentdirectory.folch.ai/contribute).
+For detailed contribution instructions, including metadata templates and submission guidelines, see the requirements below.
 
 ### Contribution Requirements
 
@@ -194,7 +193,7 @@ When contributing:
 - **[Live Agent Directory](https://agentdirectory.folch.ai)** - Test all agents in this repository
 - [Google ADK Documentation](https://google.github.io/adk-docs/)
 - [ADK Python Repository](https://github.com/google/adk-python)
-- [Contribution Guide](https://agentdirectory.folch.ai/contribute) - Learn how to submit your agent
+- [Contributing](#contributing) - Learn how to submit your agent
 
 ## License
 

@@ -35,11 +35,10 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents",
-  description: "Discover and interact with AI agents built on Google's Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash. Independent project, not affiliated with Google.",
+  title: "ADK Agent Directory | AI agents built with Google's Agent Development Kit",
+  description: "Discover and interact with AI agents built on Google's Agent Development Kit (ADK). Explore specialized AI agents powered by Gemini 3 Flash. Independent project, not affiliated with Google.",
   keywords: [
     "Google AI",
-    "Google agents AI",
     "Google ADK",
     "Google Agent Development Kit",
     "Gemini",
@@ -64,8 +63,8 @@ export const metadata: Metadata = {
     locale: 'en_US',
     url: '/',
     siteName: 'ADK Agent Directory',
-    title: 'ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents',
-    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash. Independent project, not affiliated with Google.',
+    title: 'ADK Agent Directory | AI agents built with Google\'s Agent Development Kit',
+    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized AI agents powered by Gemini 3 Flash. Independent project, not affiliated with Google.',
     images: [
       {
         url: '/adk_logo.png',
@@ -77,7 +76,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'ADK Agent Directory | Google AI Agent Development Kit | Gemini Agents',
+    title: 'ADK Agent Directory | AI agents built with Google\'s Agent Development Kit',
     description: 'Discover AI agents built with Google\'s Agent Development Kit (ADK) and Gemini. Independent project, not affiliated with Google.',
     images: ['/adk_logo.png'],
   },
@@ -114,9 +113,8 @@ export default function RootLayout({
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: 'ADK Agent Directory',
-    alternateName: 'ADK Agent Directory',
     url: baseUrl,
-    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized Google AI agents powered by Gemini 3 Flash. Independent project, not affiliated with Google.',
+    description: 'Discover and interact with AI agents built on Google\'s Agent Development Kit (ADK). Explore specialized AI agents powered by Gemini 3 Flash. Independent project, not affiliated with Google.',
     publisher: { '@type': 'Person', name: 'Albert Folch' },
     about: {
       '@type': 'Thing',
@@ -126,7 +124,6 @@ export default function RootLayout({
     },
     keywords: [
       'Google AI',
-      'Google agents AI',
       'Google ADK',
       'Google Agent Development Kit',
       'Gemini',
