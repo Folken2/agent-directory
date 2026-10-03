@@ -52,6 +52,9 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: 'mermaid.js.org', pathname: '/**' },
       { protocol: 'https', hostname: 'tavily.com', pathname: '/**' },
       { protocol: 'https', hostname: 'xquik.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'yt3.ggpht.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'yt3.googleusercontent.com', pathname: '/**' },
     ],
   },
   async headers() {
