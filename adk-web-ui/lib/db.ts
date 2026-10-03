@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import './drizzle/neon-local';
 
 // Re-export agent stats functions from Drizzle-based implementation
 export {

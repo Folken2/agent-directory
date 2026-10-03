@@ -1,0 +1,13 @@
+# ggshield / GitGuardian configuration.
+version: 2
+secret:
+  # The local Docker database (docker-compose.dev.yml) uses a throwaway
+  # password and only listens on 127.0.0.1. These strings are not credentials
+  # for any deployed system.
+  ignored-matches:
+    - name: local dev database URL (docker-compose.dev.yml)
+      match: postgres://postgres:postgres@db.localtest.me:5433/main
+    - name: local dev database URL for the ADK server
+      match: postgresql://postgres:postgres@db.localtest.me:5433/main
+    - name: local dev database URL inside the compose network
+      match: postgres://postgres:postgres@postgres:5432/main
