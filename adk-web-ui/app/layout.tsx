@@ -8,6 +8,8 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import CookieConsentBanner from "@/components/analytics/CookieConsentBanner";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import { Snackbar } from "@/components/ui/snackbar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
@@ -145,17 +147,20 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
         <ThemeProvider>
-          <SessionProvider>
-            <Navigation />
-            <main className="flex-1">
-              {children}
-            </main>
-            <Footer />
-            <Suspense fallback={null}>
-              <PageViewTracker />
-            </Suspense>
-            <CookieConsentBanner />
-          </SessionProvider>
+          <TooltipProvider>
+            <SessionProvider>
+              <Navigation />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+              <Suspense fallback={null}>
+                <PageViewTracker />
+              </Suspense>
+              <CookieConsentBanner />
+            </SessionProvider>
+          </TooltipProvider>
+          <Snackbar />
         </ThemeProvider>
         <GoogleAnalytics />
       </body>
