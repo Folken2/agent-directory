@@ -35,6 +35,19 @@ type Body = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Check per-IP daily rate limit before parsing request.
+    const clientIp = extractClientIp(request.headers);
+    const ipHash = hashIp(clientIp);
+    if (ipHash) {
+      const ipLimit = envInt('PAGEVIEW_IP_DAILY_LIMIT', 3000);
+      const quota = await reserveBuckets([{ key: `pv:ip:${ipHash}`, limit: ipLimit }], {
+        store: dbCounterStore,
+      });
+      if (!quota.ok) {
+        return NextResponse.json({ ok: true, recorded: false, reason: quota.reason });
+      }
+    }
+
     let body: Body;
     try {
       body = (await request.json()) as Body;
@@ -45,30 +58,6 @@ export async function POST(request: NextRequest) {
     const path = (body.path || '/').split('?')[0];
     if (!shouldTrackPath(path)) {
       return NextResponse.json({ ok: true, recorded: false, reason: 'skipped_path' });
-    }
-
-    // Check per-IP daily rate limit
-    const clientIp = extractClientIp(request.headers);
-    const ipHash = hashIp(clientIp);
-    if (ipHash) {
-      const ipLimit = envInt('PAGEVIEW_IP_DAILY_LIMIT', 10000);
-      const ipBucketResult = await reserveBuckets([{ key: `pageview:ip:${ipHash}`, limit: ipLimit }], {
-        store: dbCounterStore,
-      });
-      if (!ipBucketResult.ok) {
-        if (ipBucketResult.reason === 'limit') {
-          return NextResponse.json(
-            { ok: false, error: 'rate_limit_exceeded', limit: ipBucketResult.limit },
-            { status: 429 }
-          );
-        } else {
-          // Unavailable: fail closed
-          return NextResponse.json(
-            { ok: false, error: 'rate_limit_unavailable' },
-            { status: 503 }
-          );
-        }
-      }
     }
 
     const source = body.source === 'server' ? 'server' : 'client';
