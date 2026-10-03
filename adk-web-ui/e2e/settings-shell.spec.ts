@@ -68,3 +68,18 @@ test.describe('Settings shell', () => {
     );
   });
 });
+
+test.describe('Signed-out redirects are real HTTP redirects', () => {
+  for (const [path, callback] of [
+    ['/settings', '/settings'],
+    ['/me/sessions', '/me/sessions'],
+  ] as const) {
+    test(`${path} answers 307 to sign-in`, async ({ request }) => {
+      const res = await request.get(path, { maxRedirects: 0 });
+      expect(res.status()).toBe(307);
+      const location = new URL(res.headers()['location'], 'http://x');
+      expect(location.pathname).toBe('/auth/signin');
+      expect(location.searchParams.get('callbackUrl')).toBe(callback);
+    });
+  }
+});
