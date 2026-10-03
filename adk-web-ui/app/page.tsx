@@ -59,8 +59,7 @@ export default function Home() {
 
           {!signedIn && (
             <p className="text-sm text-md-on-surface-variant/75 max-w-xl mx-auto mb-10 leading-relaxed">
-              Sign in to unlock bring your own keys (BYOK), connect Gmail and other MCPs
-              for better agent experiences, plus higher limits and saved chat history.
+              Sign in for higher daily limits and saved chat history.
               Agents stay free to try without an account.
             </p>
           )}

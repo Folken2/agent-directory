@@ -1,5 +1,6 @@
 'use client';
 
+import { NOT_AFFILIATED_NOTICE } from '@/lib/site';
 import { ArrowRight, Github, Code, Zap, Users, BookOpen } from 'lucide-react';
 
 export default function AboutPage() {
@@ -36,6 +37,9 @@ export default function AboutPage() {
           </h1>
           <p className="text-body-large text-md-on-surface-variant max-w-2xl mx-auto">
             A directory of intelligent AI agents powered by Google Gemini 3 Flash. Discover, use, and contribute agents for various use cases.
+          </p>
+          <p className="text-body-medium text-md-on-surface-variant max-w-2xl mx-auto mt-4">
+            This is an independent project, not an official Google product. {NOT_AFFILIATED_NOTICE}
           </p>
         </div>
 

@@ -6,9 +6,9 @@ test.describe('Home dual-path CTA (anonymous)', () => {
 
     await expect(page.getByRole('button', { name: /try free agents/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /sign in for more/i })).toBeVisible();
-    await expect(page.getByText(/bring your own/i)).toBeVisible();
-    await expect(page.getByText(/gmail/i)).toBeVisible();
-    await expect(page.getByText(/mcp/i)).toBeVisible();
+    await expect(page.getByText(/bring your own/i)).toHaveCount(0);
+    await expect(page.getByText(/saved chat history/i)).toBeVisible();
+    await expect(page.getByText(/not an official google product/i)).toBeVisible();
 
     // Repo link must not look like a primary CTA competitor — still present
     await expect(page.getByRole('link', { name: /view repository/i })).toBeVisible();
