@@ -1,0 +1,40 @@
+name: web-ci
+
+on:
+  pull_request:
+    paths:
+      - 'adk-web-ui/**'
+      - 'agents/**/metadata.json'
+      - '.github/workflows/web-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'adk-web-ui/**'
+
+concurrency:
+  group: web-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: adk-web-ui
+    env:
+      DATABASE_URL: postgres://ci:ci@localhost:5432/ci
+      AUTH_SECRET: ci-secret
+      SKIP_ENV_VALIDATION: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: adk-web-ui/package-lock.json
+      - run: npm ci
+      - run: npx eslint .
+      - run: npx tsc --noEmit
+      - run: npm run test:unit
+      - run: npm run build

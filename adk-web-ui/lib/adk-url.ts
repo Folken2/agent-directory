@@ -12,7 +12,6 @@ export class InvalidAdkSegmentError extends Error {
 
 const APP_NAME_RE = /^[a-z][a-z0-9_]{0,63}$/;
 const ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
-// eslint-disable-next-line no-control-regex
 const FORBIDDEN_ARTIFACT_CHARS = /[/\\\u0000-\u001f\u007f]/;
 
 const isDotSegment = (v: string) => v === '.' || v === '..';

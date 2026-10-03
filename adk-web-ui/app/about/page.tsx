@@ -46,11 +46,11 @@ export default function AboutPage() {
             What is ADK Agent Directory?
           </h2>
           <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-4">
-            ADK Agent Directory is a curated directory of AI agents built with Google's Agent Development Kit (ADK).
+            ADK Agent Directory is a curated directory of AI agents built with Google&apos;s Agent Development Kit (ADK).
             Each agent is designed to solve specific problems using specialized tools and capabilities.
           </p>
           <p className="text-body-medium text-md-on-surface-variant leading-relaxed">
-            Whether you're looking for an agent to help with web search, image generation, document processing,
+            Whether you&apos;re looking for an agent to help with web search, image generation, document processing,
             or any other task, ADK Agent Directory makes it easy to discover and use the right agent for your needs.
           </p>
         </div>
@@ -84,7 +84,7 @@ export default function AboutPage() {
             How Agents Work
           </h2>
           <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-4">
-            Agents in ADK Agent Directory are built using Google's Agent Development Kit (ADK), which provides:
+            Agents in ADK Agent Directory are built using Google&apos;s Agent Development Kit (ADK), which provides:
           </p>
           <ul className="space-y-2 text-body-medium text-md-on-surface-variant list-disc list-inside">
             <li>Integration with Google Gemini 3 Flash for natural language understanding</li>
