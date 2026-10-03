@@ -8,6 +8,8 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import CookieConsentBanner from "@/components/analytics/CookieConsentBanner";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 // Google Sans is not available via next/font/google, so we use Inter as the closest alternative
 // Inter is Google's recommended open-source alternative with similar characteristics
@@ -153,7 +155,10 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body
         className={`${inter.variable} ${robotoMono.variable} antialiased h-full flex flex-col`}
       >
@@ -161,17 +166,19 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <SessionProvider>
-          <Navigation />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <Suspense fallback={null}>
-            <PageViewTracker />
-          </Suspense>
-          <CookieConsentBanner />
-        </SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>
+            <Navigation />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+            <Suspense fallback={null}>
+              <PageViewTracker />
+            </Suspense>
+            <CookieConsentBanner />
+          </SessionProvider>
+        </ThemeProvider>
         <GoogleAnalytics />
       </body>
     </html>
