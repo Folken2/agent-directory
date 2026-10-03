@@ -38,7 +38,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
-  // Include monorepo root so Vercel bundles agents/*/metadata.json for API routes
+  output: 'standalone',
+  // Include monorepo root so the standalone bundle carries agents/*/metadata.json.
   outputFileTracingRoot: join(__dirname, '..'),
   // Dynamic fs reads of agents/*/metadata.json are not always traced — pin them.
   outputFileTracingIncludes: {
