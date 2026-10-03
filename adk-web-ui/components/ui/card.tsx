@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 const cardVariants = cva('rounded-[var(--md-shape-lg)] text-md-on-surface', {
   variants: {
     variant: {
-      elevated: 'bg-md-surface-container-low shadow-elevation-1',
+      elevated: 'bg-md-surface-container-low dark:bg-md-surface-container shadow-elevation-1',
       filled: 'bg-md-surface-container-highest',
       outlined: 'bg-md-surface border border-md-outline',
     },
