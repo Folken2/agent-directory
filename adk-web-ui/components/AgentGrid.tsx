@@ -7,7 +7,6 @@ import { adkClient } from '@/lib/adk-client';
 import { useAppStore } from '@/lib/store';
 import { cn } from '@/lib/utils';
 import AgentCard from './AgentCard';
-import { FilterState } from './AdvancedFilters';
 import {
   AlertCircle,
   Search,
@@ -30,7 +29,6 @@ export default function AgentGrid() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState<SortOption>('featured');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
-  const [filters, setFilters] = useState<FilterState>({ useCases: [], tags: [], tools: [] });
   const starSessionIdRef = useRef<string>('');
 
   const starredAgents = useAppStore((state) => state.starredAgents);
@@ -206,26 +204,8 @@ export default function AgentGrid() {
       });
     }
 
-    if (filters.useCases.length > 0) {
-      filtered = filtered.filter((agent) =>
-        agent.useCases && agent.useCases.some((uc) => filters.useCases.includes(uc.description))
-      );
-    }
-
-    if (filters.tags.length > 0) {
-      filtered = filtered.filter((agent) =>
-        agent.tags && agent.tags.some((tag) => filters.tags.includes(tag))
-      );
-    }
-
-    if (filters.tools.length > 0) {
-      filtered = filtered.filter((agent) =>
-        agent.tools && agent.tools.some((tool) => filters.tools.includes(tool))
-      );
-    }
-
     return filtered;
-  }, [agents, searchTerm, filters]);
+  }, [agents, searchTerm]);
 
   const sortedAgents = useMemo(() => {
     const sorter = [...filteredAgents];

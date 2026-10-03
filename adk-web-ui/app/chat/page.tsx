@@ -50,7 +50,7 @@ function ChatContent() {
 
     if (!agentName) return;
     // Important: the global agents array isn't reliably populated (AgentGrid
-    // uses local state, AgentSelector isn't mounted), so we can't gate on
+    // uses local state and nothing else populates it), so we can't gate on
     // agents.length here. Resolve the agent from whichever source is fastest
     // and fall back to fetching the directory if needed.
     if (resolvedAgentRef.current === agentName) return;

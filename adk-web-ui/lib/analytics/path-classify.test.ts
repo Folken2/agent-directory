@@ -34,6 +34,12 @@ describe('isKnownRoute', () => {
     assert.equal(isKnownRoute('/settings/keys'), true);
   });
 
+  it('keeps retired (now redirecting) routes classified as pages', () => {
+    for (const p of ['/trending', '/learn', '/contribute', '/contribute/submit']) {
+      assert.equal(classifyPath(p), 'page', p);
+    }
+  });
+
   it('accepts agent detail slugs', () => {
     assert.equal(isKnownRoute('/agents/adk_agent_builder'), true);
     assert.equal(isKnownRoute('/agents/simple_agent_web_search_EXA'), true);

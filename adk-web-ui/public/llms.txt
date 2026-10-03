@@ -2,19 +2,18 @@
 
 ## Site Overview
 
-ADK Agent Directory is a platform for discovering and interacting with AI agents built on Google's Agent Development Kit (ADK). The site showcases specialized Google AI agents powered by Gemini 2.5 Flash, allowing users to explore, test, and contribute AI agents.
+ADK Agent Directory is a platform for discovering and interacting with AI agents built on Google's Agent Development Kit (ADK). The site showcases specialized AI agents powered by Gemini, allowing users to explore and test AI agents.
 
 **Base URL:** https://agentdirectory.folch.ai
-**Purpose:** Discover, interact with, and contribute AI agents built on Google's Agent Development Kit
+**Purpose:** Discover and interact with AI agents built on Google's Agent Development Kit
+
+**Independent project:** this site is an independent project, not an official Google product and not affiliated with or endorsed by Google.
 
 ## Key Pages
 
 ### Public Pages
 - `/` - Homepage with agent directory and featured agents
 - `/about` - About page with information about the ADK Agent Directory
-- `/learn` - Learning resources and documentation
-- `/contribute` - Information on how to contribute agents
-- `/trending` - Trending and popular agents
 - `/chat` - Interactive chat interface for agents
 - `/agents/[name]` - Individual agent detail pages (dynamic)
 
@@ -44,10 +43,6 @@ ADK Agent Directory is a platform for discovering and interacting with AI agents
 ### Authentication
 - `GET /api/auth/*` - NextAuth.js authentication endpoints
 
-### Additional APIs
-- `GET /api/posts` - Blog posts or announcements
-- `GET /api/youtube` - YouTube integration endpoints
-
 ## Agent Information
 
 Agents are AI assistants built using Google's Agent Development Kit (ADK). Each agent:
@@ -70,8 +65,7 @@ Agents are AI assistants built using Google's Agent Development Kit (ADK). Each 
 ### Discovering Agents
 1. Visit `/` to see all available agents
 2. Browse by category using tags
-3. View trending agents at `/trending`
-4. Search and filter agents
+3. Search and filter agents
 
 ### Interacting with Agents
 1. Navigate to `/agents/{agent-name}` to view agent details
@@ -79,16 +73,11 @@ Agents are AI assistants built using Google's Agent Development Kit (ADK). Each 
 3. Use sample prompts or create your own
 4. View agent-generated artifacts
 
-### Contributing Agents
-1. Visit `/contribute` for contribution guidelines
-2. Follow ADK agent development standards
-3. Submit agents via the contribution flow
-
 ## Technical Details
 
 - **Framework**: Next.js 16 (App Router)
 - **AI Platform**: Google Agent Development Kit (ADK)
-- **LLM**: Gemini 2.5 Flash
+- **LLM**: Gemini 3 Flash
 - **Authentication**: NextAuth.js with Google OAuth
 - **Database**: Drizzle ORM (PostgreSQL/Neon)
 - **Deployment**: Vercel
@@ -99,11 +88,9 @@ Agents are AI assistants built using Google's Agent Development Kit (ADK). Each 
 - **Robots**: `/robots.txt` - Standard robots.txt configuration
 - **Structured Data**: JSON-LD schema.org markup included in pages
 
-## Contact & Contribution
+## Contact
 
-- **Contribution**: Visit `/contribute` for guidelines
 - **GitHub**: Check individual agent pages for GitHub links
-- **Documentation**: See `/learn` for learning resources
 
 ## Notes for LLMs
 

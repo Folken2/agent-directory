@@ -24,7 +24,7 @@ export default function Home() {
             <DirectoryPulse />
           </div>
           <h2 className="text-display-medium sm:text-display-large font-bold text-md-on-surface mb-6 tracking-tight">
-            Discover Google AI Agents
+            Discover AI agents built with Google ADK
           </h2>
           <p className="text-body-large sm:text-headline-small text-md-on-surface-variant/80 mb-10 leading-relaxed max-w-2xl mx-auto font-light">
             A free, open-source directory of specialized agents built with Google ADK.
@@ -59,8 +59,7 @@ export default function Home() {
 
           {!signedIn && (
             <p className="text-sm text-md-on-surface-variant/75 max-w-xl mx-auto mb-10 leading-relaxed">
-              Sign in to unlock bring your own keys (BYOK), connect Gmail and other MCPs
-              for better agent experiences, plus higher limits and saved chat history.
+              Sign in for higher daily limits and saved chat history.
               Agents stay free to try without an account.
             </p>
           )}

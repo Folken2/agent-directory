@@ -18,7 +18,7 @@ export default function SignInPage() {
     try {
       // Use automatic redirect for OAuth - more reliable
       await signIn('google', {
-        callbackUrl: '/trending',
+        callbackUrl: '/',
       });
       // Note: signIn will redirect automatically, so code below won't execute
     } catch (error: any) {

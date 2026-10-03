@@ -550,6 +550,8 @@
 /* Mermaid diagrams */
 .mermaid-diagram {
   @apply my-4;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .mermaid-diagram svg {
@@ -560,12 +562,6 @@
 .mermaid-diagram .nodeLabel,
 .mermaid-diagram .edgeLabel {
   font-family: inherit;
-}
-
-/* Ensure mermaid diagrams are responsive */
-.mermaid-diagram {
-  overflow-x: auto;
-  overflow-y: hidden;
 }
 
 /* Strong and emphasis */

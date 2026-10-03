@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ChevronDown } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { Menu, X } from 'lucide-react';
+import { useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import UserProfile from '@/components/auth/UserProfile';
@@ -12,40 +12,15 @@ import SignOutButton from '@/components/auth/SignOutButton';
 
 const navigation = [
   { name: 'Agents', href: '/' },
-  { name: 'Trending', href: '/trending' },
-  { name: 'Contribute', href: '/contribute' },
   { name: 'About', href: '/about' },
-];
-
-const moreMenuItems = [
-  { name: 'Learn', href: '/learn', description: 'Tutorials, docs, and resources' },
 ];
 
 export default function Navigation() {
   const pathname = usePathname();
   const { data: session, status } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
-  const moreMenuRef = useRef<HTMLDivElement>(null);
   
   const isAuthenticated = status === 'authenticated' && !!session?.user;
-
-  // Close more menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
-        setMoreMenuOpen(false);
-      }
-    };
-
-    if (moreMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [moreMenuOpen]);
 
   // Hide navigation on chat page (must be after all hooks)
   if (pathname?.startsWith('/chat')) {
@@ -58,8 +33,6 @@ export default function Navigation() {
     }
     return pathname.startsWith(href);
   };
-
-  const isMoreMenuActive = moreMenuItems.some((item) => isActive(item.href));
 
   return (
     <nav className="bg-md-surface elevation-2 sticky top-0 z-50">
@@ -109,51 +82,6 @@ export default function Navigation() {
                 )}
               </Link>
             ))}
-
-            {/* More Dropdown */}
-            <div className="relative" ref={moreMenuRef}>
-              <button
-                onClick={() => setMoreMenuOpen(!moreMenuOpen)}
-                className={cn(
-                  'relative px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-1',
-                  isMoreMenuActive
-                    ? 'text-md-primary'
-                    : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
-                )}
-              >
-                More
-                <ChevronDown
-                  className={cn(
-                    'w-4 h-4 transition-transform',
-                    moreMenuOpen && 'rotate-180'
-                  )}
-                />
-                {isMoreMenuActive && (
-                  <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-0.5 bg-md-primary rounded-full" />
-                )}
-              </button>
-
-              {moreMenuOpen && (
-                <div className="absolute right-0 mt-1 z-50">
-                  <ul className="bg-md-surface rounded-lg border border-md-outline elevation-3 shadow-lg overflow-hidden py-1 min-w-[200px]">
-                    {moreMenuItems.map((item) => (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          onClick={() => setMoreMenuOpen(false)}
-                          className={cn(
-                            'block px-4 py-2 text-sm text-md-on-surface hover:text-md-primary hover:bg-md-surface-variant transition-colors',
-                            isActive(item.href) && 'text-md-primary'
-                          )}
-                        >
-                          {item.name}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
 
             {/* Auth Section - Desktop */}
             <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-md-outline">
@@ -237,31 +165,6 @@ export default function Navigation() {
                 {item.name}
               </Link>
             ))}
-
-            {/* More Menu Items in Mobile */}
-            <div className="pt-2 border-t border-md-outline mt-2">
-              <div className="px-4 py-2 text-xs font-semibold text-md-on-surface-variant uppercase tracking-wider">
-                More
-              </div>
-              {moreMenuItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'block px-4 py-3 rounded-lg text-sm font-medium transition-colors',
-                    isActive(item.href)
-                      ? 'bg-md-primary-container text-md-on-primary-container'
-                      : 'text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-variant'
-                  )}
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <div>{item.name}</div>
-                  <div className="text-xs text-md-on-surface-variant mt-0.5">
-                    {item.description}
-                  </div>
-                </Link>
-              ))}
-            </div>
 
             {/* Auth Section - Mobile */}
             <div className="pt-2 border-t border-md-outline mt-2">

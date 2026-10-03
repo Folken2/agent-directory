@@ -3,10 +3,31 @@
 import React, { useMemo, useState } from 'react';
 import ReactMarkdown, { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Prism } from 'react-syntax-highlighter';
+import dynamic from 'next/dynamic';
+import { PrismLight } from 'react-syntax-highlighter';
+import python from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+import typescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import tsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
+import javascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import jsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
+import json from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import bash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import yaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import sql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
+import markdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import diff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
+import toml from 'react-syntax-highlighter/dist/esm/languages/prism/toml';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Copy, Check } from 'lucide-react';
-import MermaidDiagram from '../MermaidDiagram';
+import { normalizeLanguage } from '@/lib/code-languages';
+
+const LANGS = { python, typescript, tsx, javascript, jsx, json, bash, yaml, sql, markdown, diff, toml };
+for (const [name, def] of Object.entries(LANGS)) PrismLight.registerLanguage(name, def);
+
+const MermaidDiagram = dynamic(() => import('../MermaidDiagram'), {
+  ssr: false,
+  loading: () => <div className="h-32 rounded-2xl bg-md-surface-container animate-pulse" />,
+});
 
 function extractCodeString(children: any): string {
   if (typeof children === 'string') return children;
@@ -68,7 +89,7 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
 
   const codeString = extractCodeString(children).trim();
   const match = codeClassName.match(/language-(\w+)/);
-  const language = match ? match[1] : 'text';
+  const language = normalizeLanguage(match?.[1]);
 
   const handleCopy = () => {
     if (!codeString) return;
@@ -85,7 +106,7 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
         {showHeader && (
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/40 bg-muted/30">
             <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground/80">
-              {language === 'text' ? 'plain text' : language}
+              {language ?? 'plain text'}
             </span>
             <button
               onClick={handleCopy}
@@ -107,8 +128,8 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
             </button>
           </div>
         )}
-        <Prism
-          language={language}
+        <PrismLight
+          language={language ?? 'text'}
           style={isDarkMode ? oneDark : oneLight}
           customStyle={{ margin: 0, padding: '1rem', fontSize: '0.875rem', lineHeight: '1.6', background: 'transparent' }}
           PreTag="div"
@@ -116,7 +137,7 @@ function CodeBlock({ children, isStreaming, isDarkMode }: { children: any; isStr
           codeTagProps={{ style: { background: 'transparent' } }}
         >
           {codeString}
-        </Prism>
+        </PrismLight>
       </div>
     </div>
   );

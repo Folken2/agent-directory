@@ -37,15 +37,22 @@ export const KNOWN_STATIC_ROUTES: readonly string[] = [
   '/analytics/ops',
   '/auth/signin',
   '/chat',
-  '/contribute',
-  '/contribute/submit',
-  '/learn',
   '/me/sessions',
   '/privacy',
   '/settings',
   '/settings/connections',
   '/settings/keys',
+] as const;
+
+/**
+ * Pages that no longer exist as content but have page_views history. They
+ * redirect now, so historical hits stay classified as real pages, not `missing`.
+ */
+export const RETIRED_STATIC_ROUTES: readonly string[] = [
   '/trending',
+  '/learn',
+  '/contribute',
+  '/contribute/submit',
 ] as const;
 
 /** Dynamic route patterns, anchored. Only `/agents/[name]` today. */
@@ -216,6 +223,7 @@ export function normalizePath(rawPath: string): string {
 export function isKnownRoute(rawPath: string): boolean {
   const path = normalizePath(rawPath);
   if (KNOWN_STATIC_ROUTES.includes(path)) return true;
+  if (RETIRED_STATIC_ROUTES.includes(path)) return true;
   return DYNAMIC_ROUTES.some((re) => re.test(path));
 }
 
