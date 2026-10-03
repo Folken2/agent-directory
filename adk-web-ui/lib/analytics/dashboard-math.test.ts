@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { deltaPct, niceTicks, pageLabel, rankShares, referrerSource } from './dashboard-math.ts';
+import { deltaPct, formatAgo, formatDuration, niceTicks, pageLabel, rankShares, referrerSource } from './dashboard-math.ts';
 
 describe('pageLabel', () => {
   it('names known routes and agent pages', () => {
@@ -66,5 +66,26 @@ describe('rankShares', () => {
       ['other', 5, 25],
     ]);
     assert.equal(rankShares([], 3).length, 0);
+  });
+});
+
+describe('formatDuration', () => {
+  it('scales units', () => {
+    assert.equal(formatDuration(null), '—');
+    assert.equal(formatDuration(850), '850 ms');
+    assert.equal(formatDuration(12_440), '12.4 s');
+    assert.equal(formatDuration(125_000), '2m 05s');
+  });
+});
+
+describe('formatAgo', () => {
+  const now = new Date('2026-10-03T12:00:00Z');
+  it('reads like a feed', () => {
+    assert.equal(formatAgo('2026-10-03T11:59:40Z', now), 'just now');
+    assert.equal(formatAgo('2026-10-03T11:55:00Z', now), '5 min ago');
+    assert.equal(formatAgo('2026-10-03T09:00:00Z', now), '3 h ago');
+    assert.equal(formatAgo('2026-10-01T12:00:00Z', now), '2 d ago');
+    assert.equal(formatAgo('2026-07-01T12:00:00Z', now), 'Jul 1');
+    assert.equal(formatAgo('nope', now), '');
   });
 });

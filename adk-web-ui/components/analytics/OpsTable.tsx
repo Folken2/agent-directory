@@ -67,13 +67,16 @@ export default function OpsTable<T>({
 
   return (
     <div className="space-y-3">
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={filterPlaceholder}
-        className="w-full max-w-sm rounded-lg border border-md-outline/50 bg-md-surface px-3 py-2 text-sm text-md-on-surface placeholder:text-md-on-surface-variant/50 focus:outline-none focus:ring-1 focus:ring-md-primary/40"
-      />
+      {filterText ? (
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={filterPlaceholder}
+          aria-label={filterPlaceholder}
+          className="w-full max-w-sm rounded-lg border border-md-outline/50 bg-md-surface px-3 py-2 text-sm text-md-on-surface placeholder:text-md-on-surface-variant/50 focus:outline-none focus:ring-1 focus:ring-md-primary/40"
+        />
+      ) : null}
       <div className="overflow-x-auto rounded-xl border border-md-outline/40">
         <table className="w-full text-left text-sm">
           <thead className="bg-md-surface-container/60 text-label-small text-md-on-surface-variant">
@@ -81,7 +84,8 @@ export default function OpsTable<T>({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-2.5 font-medium ${
+                  aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : undefined}
+                  className={`whitespace-nowrap px-4 py-2.5 font-medium ${
                     col.align === 'right' ? 'text-right' : ''
                   }`}
                 >

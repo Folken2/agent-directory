@@ -65,3 +65,27 @@ export function rankShares(rows: Array<{ id: string; label: string; count: numbe
   const rest = sorted.slice(limit).reduce((s, r) => s + r.count, 0);
   return rest > 0 ? [...head, { id: 'other', label: 'Other', count: rest, share: share(rest) }] : head;
 }
+
+/** 850 ms, 12.4 s, 2m 05s. */
+export function formatDuration(ms: number | null): string {
+  if (ms === null || !Number.isFinite(ms) || ms < 0) return '—';
+  if (ms < 1000) return `${Math.round(ms)} ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)} s`;
+  const totalSeconds = Math.round(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  return `${minutes}m ${String(totalSeconds % 60).padStart(2, '0')}s`;
+}
+
+/** "just now", "5 min ago", "3 h ago", "2 d ago", then a short date. */
+export function formatAgo(iso: string, now: Date = new Date()): string {
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '';
+  const minutes = Math.floor((now.getTime() - t) / 60_000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} d ago`;
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}

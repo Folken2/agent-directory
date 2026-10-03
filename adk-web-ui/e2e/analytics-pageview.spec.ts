@@ -75,3 +75,21 @@ test.describe('Visitor analytics ingest', () => {
     await expect(link).toHaveAttribute('href', '/analytics');
   });
 });
+
+test.describe('Ops endpoints are private', () => {
+  for (const path of [
+    '/api/analytics/ops/insights?range=30',
+    '/api/analytics/ops/conversation?app=adk_agent_builder&session=s-1',
+  ]) {
+    test(`${path.split('?')[0]} is 404 when signed out`, async ({ request }) => {
+      const res = await request.get(path);
+      expect(res.status()).toBe(404);
+      expect(res.headers()['cache-control'] ?? '').not.toContain('public');
+    });
+  }
+
+  test('/analytics/ops is 404 when signed out', async ({ request }) => {
+    const res = await request.get('/analytics/ops');
+    expect(res.status()).toBe(404);
+  });
+});
