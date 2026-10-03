@@ -17,7 +17,8 @@ from google.adk.tools.skill_toolset import SkillToolset
 
 from .config.llm import FAST_MODEL
 from .config.utils import before_agent_callback_update_tools
-from .prompt.prompt import prompt_v1
+from .callbacks.blueprint_document import capture_blueprint
+from .prompt.prompt import prompt_v2
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +103,8 @@ root_agent = Agent(
     model=FAST_MODEL,
     name="adk_agent_builder",
     description="Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in a curated library of ADK skills.",
-    instruction=LANGUAGE_INSTRUCTION + prompt_v1,
+    instruction=LANGUAGE_INSTRUCTION + prompt_v2,
     tools=_build_tools(),
     before_agent_callback=before_agent_callback_update_tools,
+    after_model_callback=capture_blueprint,
 )
