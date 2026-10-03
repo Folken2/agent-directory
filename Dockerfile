@@ -4,10 +4,11 @@ FROM python:3.11-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies (git: uv fetches nuvel-cli from GitHub)
 RUN apt-get update && apt-get install -y \
     curl \
     ca-certificates \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv first
