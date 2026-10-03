@@ -18,17 +18,17 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
-      <h1 className="text-headline-small text-md-on-surface">Something went wrong</h1>
-      <p className="text-body-large text-md-on-surface-variant">
-        This page hit an unexpected error. You can try again or go back home.
+    <div className="mx-auto flex min-h-[calc(100dvh-14rem)] max-w-md flex-col items-center justify-center px-4 py-16 text-center">
+      <h1 className="text-headline-small tracking-tight text-md-on-surface">Something went wrong</h1>
+      <p className="mt-2 text-body-large text-md-on-surface-variant">
+        This page hit an unexpected error. Try again, or go back to the start.
       </p>
-      <div className="flex gap-3">
-        <Button variant="outlined" onClick={reset}>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Button variant="filled" onClick={reset}>
           Try again
         </Button>
-        <Link href="/" className={buttonVariants({ variant: 'filled' })}>
-          Home
+        <Link href="/" className={buttonVariants({ variant: 'outlined' })}>
+          Go home
         </Link>
       </div>
     </div>
