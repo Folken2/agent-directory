@@ -1,6 +1,5 @@
 {
   "app/chat/page.tsx": 26,
-  "components/AgentGrid.tsx": 16,
   "components/ChatHistory.tsx": 17,
   "components/ChatInterface.tsx": 19,
   "components/InlineArtifact.tsx": 34,

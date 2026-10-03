@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore } from '@/lib/store';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
 import { useArtifactsForConversation } from '@/lib/hooks/useArtifactsForConversation';
@@ -14,9 +14,12 @@ import { Info } from 'lucide-react';
 
 interface ChatInterfaceProps {
   initialPrompt?: string;
+  /** Sent once, as soon as the chat is idle, instead of prefilling the composer. */
+  autoSendPrompt?: string | null;
+  onAutoSent?: () => void;
 }
 
-export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
+export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSent }: ChatInterfaceProps) {
   const { selectedAgent, currentConversation } = useAppStore();
 
   // UI-only state. Streaming state, abort handling, message accumulation —
@@ -47,6 +50,15 @@ export default function ChatInterface({ initialPrompt }: ChatInterfaceProps) {
     streamingSubAgentSteps,
     busy,
   } = useStreamingChat();
+
+  const autoSentRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!autoSendPrompt || !selectedAgent || busy) return;
+    if (autoSentRef.current === autoSendPrompt) return;
+    autoSentRef.current = autoSendPrompt;
+    void send({ text: autoSendPrompt, attachments: [] });
+    onAutoSent?.();
+  }, [autoSendPrompt, selectedAgent, busy, send, onAutoSent]);
 
   const handleAttachFiles = useCallback((files: File[]) => {
     setAttachments((prev) => [...prev, ...files]);

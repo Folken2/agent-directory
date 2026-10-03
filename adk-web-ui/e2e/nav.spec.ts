@@ -3,7 +3,9 @@ import { test, expect } from '@playwright/test';
 test('desktop nav shows destinations and theme switch', async ({ page }) => {
   await page.goto('/about');
   const nav = page.getByRole('navigation', { name: 'Main' });
-  await expect(nav.getByRole('link', { name: 'Agents' })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Build' })).toHaveAttribute('href', '/');
+  await expect(nav.getByRole('link', { name: 'Examples' })).toHaveAttribute('href', '/examples');
+  await expect(nav.getByRole('link', { name: 'Agents' })).toHaveCount(0);
   await expect(nav.getByRole('link', { name: 'About' })).toHaveAttribute('aria-current', 'page');
   await expect(nav.getByRole('radiogroup', { name: 'Theme' })).toBeVisible();
 });
@@ -35,7 +37,8 @@ test('mobile menu is an accessible sheet', async ({ browser }) => {
   await page.keyboard.press('Enter');
   const dialog = page.getByRole('dialog', { name: 'Menu' });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole('link', { name: 'Agents' })).toBeVisible();
+  await expect(dialog.getByRole('link', { name: 'Build' })).toBeVisible();
+  await expect(dialog.getByRole('link', { name: 'Examples' })).toBeVisible();
   const inside = () => dialog.evaluate((d) => d.contains(document.activeElement));
   await expect.poll(inside).toBe(true);
   for (let i = 0; i < 12; i++) {

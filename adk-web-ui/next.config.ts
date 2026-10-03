@@ -49,6 +49,8 @@ const nextConfig: NextConfig = {
   // size limit, so it is pinned off Vercel and excluded on Vercel.
   outputFileTracingIncludes: {
     '/api/agents': ['../agents/**/metadata.json'],
+    '/agents/[name]': ['../agents/**/metadata.json'],
+    '/agents/[name]/opengraph-image': ['../agents/**/metadata.json'],
     ...(process.env.VERCEL ? {} : { '/api/analytics/pageview': [GEOIP_DATA] }),
   },
   ...(process.env.VERCEL

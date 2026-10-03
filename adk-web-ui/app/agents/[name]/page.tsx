@@ -1,19 +1,12 @@
-'use client';
-
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import type { Metadata } from 'next';
 import Link from 'next/link';
-import { adkClient } from '@/lib/adk-client';
-import { Agent } from '@/lib/types';
-import { useAppStore } from '@/lib/store';
+import { notFound } from 'next/navigation';
 import {
   ArrowLeft,
-  Star,
   MessageSquare,
   Wrench,
   Tag,
   Sparkles,
-  Share2,
   ExternalLink,
   Github,
   FileText,
@@ -21,110 +14,64 @@ import {
   User,
   ArrowRight,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { getCatalogAgent, loadOfflineCatalog } from '@/lib/agent-catalog';
+import { BUILDER_AGENT } from '@/lib/builder';
+import { buttonVariants } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Chip } from '@/components/ui/chip';
-import { notify } from '@/components/ui/snackbar';
+import AgentActions from '@/components/agent/AgentActions';
 
-const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
+type Params = Promise<{ name: string }>;
 
-export default function AgentDetailPage() {
-  const params = useParams();
-  const agentName = params?.name as string;
-  const [agent, setAgent] = useState<Agent | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toggleStarAgent, isAgentStarred, setSelectedAgent, setCurrentConversation } = useAppStore();
+// Every agent ships its metadata.json with the site, so unknown names are a plain 404.
+export const dynamicParams = false;
 
-  useEffect(() => {
-    const loadAgent = async () => {
-      setIsLoading(true);
-      try {
-        const agents = await adkClient.listAgents();
-        const foundAgent = agents.find((a) => a.name === agentName);
-        if (foundAgent) {
-          setAgent(foundAgent);
-        }
-      } catch (error) {
-        console.error('Error loading agent:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+export function generateStaticParams() {
+  return loadOfflineCatalog().map((agent) => ({ name: agent.name }));
+}
 
-    if (agentName) {
-      loadAgent();
-    }
-  }, [agentName]);
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { name } = await params;
+  const agent = getCatalogAgent(decodeURIComponent(name));
+  if (!agent) return { title: 'Agent not found | ADK Agent Directory' };
 
-  const handleShare = async () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: `${agent?.displayName || agent?.name} - Agent Directory`,
-          text: agent?.description || '',
-          url,
-        });
-      } catch {
-        // User cancelled
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url);
-        notify('Link copied');
-      } catch {
-        notify('Could not copy the link');
-      }
-    }
+  const title = `${agent.displayName} | ADK Agent Directory`;
+  const url = `/agents/${encodeURIComponent(agent.name)}`;
+  return {
+    title,
+    description: agent.description,
+    alternates: { canonical: url },
+    openGraph: {
+      type: 'website',
+      url,
+      siteName: 'ADK Agent Directory',
+      title,
+      description: agent.description,
+    },
+    twitter: { card: 'summary_large_image', title, description: agent.description },
   };
+}
 
-  const handleStartChat = () => {
-    if (agent) {
-      setSelectedAgent(agent);
-      setCurrentConversation(null);
-    }
-  };
+export default async function AgentDetailPage({ params }: { params: Params }) {
+  const { name } = await params;
+  const agent = getCatalogAgent(decodeURIComponent(name));
+  if (!agent) notFound();
 
-  const handleTryPrompt = handleStartChat;
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-md-primary"></div>
-      </div>
-    );
-  }
-
-  if (!agent) {
-    return (
-      <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-md-on-surface mb-4">Agent Not Found</h1>
-          <Link
-            href="/"
-            className="text-md-primary hover:underline inline-flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Agents
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  const isStarred = isAgentStarred(agent.name);
+  const displayName = agent.displayName || agent.name;
+  const chatHref = `/chat?agent=${encodeURIComponent(agent.name)}`;
+  const isBuilder = agent.name === BUILDER_AGENT;
+  const back = isBuilder ? { href: '/', label: 'Back to Build' } : { href: '/examples', label: 'Back to Examples' };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-md-surface via-md-surface-container-low/50 to-md-surface-container-low">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <Link
-          href="/"
+          href={back.href}
           className="inline-flex items-center gap-2 text-md-on-surface-variant hover:text-md-on-surface mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Agents
+          {back.label}
         </Link>
 
         {/* ZONE 1: HERO */}
@@ -134,19 +81,13 @@ export default function AgentDetailPage() {
               <div className="flex items-center gap-3 mb-3">
                 {agent.logo && (
                   <div className="shrink-0 w-12 h-12 rounded-lg bg-md-surface-container border border-md-outline-variant/50 flex items-center justify-center overflow-hidden p-2">
-                    <img
-                      src={agent.logo}
-                      alt={`${agent.displayName || agent.name} logo`}
-                      className="object-contain w-full h-full"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
-                    />
+                    {/* eslint-disable-next-line @next/next/no-img-element -- remote favicons of varying hosts */}
+                    <img src={agent.logo} alt="" className="object-contain w-full h-full" />
                   </div>
                 )}
                 <div>
                   <h1 className="text-4xl font-bold text-md-on-surface tracking-tight">
-                    {agent.displayName || agent.name}
+                    {displayName}
                   </h1>
                   <div className="flex items-center gap-3 mt-1.5">
                     {agent.category && (
@@ -169,29 +110,11 @@ export default function AgentDetailPage() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 mt-6">
-            <Link
-              href={`/chat?agent=${encodeURIComponent(agent.name)}`}
-              onClick={handleStartChat}
-              className={buttonVariants({ variant: 'filled' })}
-            >
+            <Link href={chatHref} className={buttonVariants({ variant: 'filled' })}>
               <MessageSquare />
               Start chat
             </Link>
-            {COMMUNITY_WRITES && (
-              <Button
-                variant={isStarred ? 'filled' : 'tonal'}
-                onClick={() => toggleStarAgent(agent.name)}
-                aria-label={isStarred ? 'Unstar agent' : 'Star agent'}
-              >
-                <Star className={cn(isStarred && 'fill-current')} />
-                {isStarred ? 'Starred' : 'Star'}
-                {agent.starsCount !== undefined && <span className="text-sm">({agent.starsCount})</span>}
-              </Button>
-            )}
-            <Button variant="outlined" onClick={handleShare} aria-label="Share agent">
-              <Share2 />
-              Share
-            </Button>
+            <AgentActions name={agent.name} displayName={displayName} description={agent.description} />
           </div>
         </section>
 
@@ -229,8 +152,7 @@ export default function AgentDetailPage() {
               {agent.samplePrompts.map((prompt, idx) => (
                 <Link
                   key={idx}
-                  href={`/chat?agent=${encodeURIComponent(agent.name)}&prompt=${encodeURIComponent(prompt)}`}
-                  onClick={handleTryPrompt}
+                  href={`${chatHref}&prompt=${encodeURIComponent(prompt)}`}
                   className="group/prompt flex items-center gap-4 rounded-[var(--md-shape-lg)] border border-md-outline bg-md-surface px-5 py-4 text-left transition-shadow hover:shadow-elevation-2"
                 >
                   <span className="shrink-0 text-md-primary">

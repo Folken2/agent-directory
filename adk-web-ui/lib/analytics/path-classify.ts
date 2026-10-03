@@ -37,6 +37,7 @@ export const KNOWN_STATIC_ROUTES: readonly string[] = [
   '/analytics/ops',
   '/auth/signin',
   '/chat',
+  '/examples',
   '/me/sessions',
   '/privacy',
   '/settings',

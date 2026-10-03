@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, Suspense } from 'react';
+import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
@@ -10,11 +10,15 @@ import { toConversationId, replayedMessageId } from '@/lib/ids';
 import { Agent, ChatConversation, Message } from '@/lib/types';
 import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MAX_BUILDER_PROMPT_LENGTH, resolveChatAgentName } from '@/lib/builder';
 
 function ChatContent() {
   const { error, setError, agents, setAgents, setSelectedAgent, setCurrentConversation, selectedAgent } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
+  // Set once the requested agent is selected and a fresh conversation is in
+  // place, so an auto-sent prompt can't race the conversation reset.
+  const [autoSendPrompt, setAutoSendPrompt] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const resumedSessionRef = useRef<string | null>(null);
   const resolvedAgentRef = useRef<string | null>(null);
@@ -43,12 +47,14 @@ function ChatContent() {
     // not the store.
     useAppStore.getState().loadPreferences();
 
-    const agentName = searchParams.get('agent');
+    // No ?agent= means the builder: it is the site's default conversation.
+    const agentName = resolveChatAgentName(searchParams.get('agent'));
     const sessionParam = searchParams.get('session');
-    const promptParam = searchParams.get('prompt');
-    setInitialPrompt(promptParam || null);
+    const promptParam = searchParams.get('prompt')?.slice(0, MAX_BUILDER_PROMPT_LENGTH) || null;
+    // ?send=1 sends the prompt on arrival instead of prefilling the composer.
+    const autoSend = searchParams.get('send') === '1' && !!promptParam && !sessionParam;
+    setInitialPrompt(autoSend ? null : promptParam);
 
-    if (!agentName) return;
     // Important: the global agents array isn't reliably populated (AgentGrid
     // uses local state and nothing else populates it), so we can't gate on
     // agents.length here. Resolve the agent from whichever source is fastest
@@ -128,9 +134,19 @@ function ChatContent() {
       } else if (!sessionParam) {
         // Fresh chat for this agent
         setCurrentConversation(null);
+        if (autoSend) setAutoSendPrompt(promptParam);
       }
     })();
   }, [searchParams, agents, selectedAgent, setAgents, setSelectedAgent, setCurrentConversation]);
+
+  const handleAutoSent = useCallback(() => {
+    setAutoSendPrompt(null);
+    // Drop prompt/send from the URL so a refresh doesn't send it again.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('prompt');
+    url.searchParams.delete('send');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search);
+  }, []);
 
   return (
     <div className="flex h-[calc(100dvh-4rem)] overflow-hidden bg-background text-foreground">
@@ -228,7 +244,11 @@ function ChatContent() {
         <div className="flex-1 flex overflow-hidden relative">
           {/* Chat Area */}
           <div className="flex-1 flex flex-col overflow-hidden bg-background">
-            <ChatInterface initialPrompt={initialPrompt || undefined} />
+            <ChatInterface
+              initialPrompt={initialPrompt || undefined}
+              autoSendPrompt={autoSendPrompt}
+              onAutoSent={handleAutoSent}
+            />
           </div>
         </div>
       </div>

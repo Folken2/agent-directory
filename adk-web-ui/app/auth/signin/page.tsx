@@ -46,7 +46,7 @@ export default function SignInPage() {
           className="inline-flex items-center gap-2 text-md-on-surface-variant hover:text-md-on-surface mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Agents
+          Back to home
         </Link>
 
         <Card variant="elevated" className="rounded-[var(--md-shape-xl)] p-8">

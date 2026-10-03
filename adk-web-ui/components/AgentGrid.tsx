@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import AgentCard from './AgentCard';
+import { exampleAgents } from '@/lib/builder';
+import { Input } from '@/components/ui/input';
 import {
   AlertCircle,
   Search,
@@ -27,7 +29,14 @@ type SortOption = 'featured' | 'mostStarred' | 'name';
 
 const COMMUNITY_WRITES = process.env.NEXT_PUBLIC_COMMUNITY_WRITE_ENABLED === 'true';
 
-export default function AgentGrid() {
+interface AgentGridProps {
+  /** Show only the first N agents of the default ordering. */
+  limit?: number;
+  /** Search and sort controls (off for compact previews). */
+  showControls?: boolean;
+}
+
+export default function AgentGrid({ limit, showControls = true }: AgentGridProps = {}) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [listWarning, setListWarning] = useState<string | null>(null);
@@ -70,7 +79,7 @@ export default function AgentGrid() {
         const { agents: agentList, warning } = await adkClient.listAgentsDetailed();
         setListWarning(warning ?? null);
         setAgents(
-          agentList.map((agent) => ({
+          exampleAgents(agentList).map((agent) => ({
             ...agent,
             starsCount: agent.starsCount ?? 0,
             tags: agent.tags ?? [],
@@ -217,25 +226,25 @@ export default function AgentGrid() {
       if (bStars !== aStars) return bStars - aStars;
       return a.name.localeCompare(b.name);
     });
-    return sorter;
-  }, [filteredAgents, sortOption, starredAgents]);
+    return limit ? sorter.slice(0, limit) : sorter;
+  }, [filteredAgents, sortOption, starredAgents, limit]);
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          Loading agents… If the directory backend was cold, this may take a few minutes.
+      <div className="space-y-4" aria-busy="true">
+        <p className="text-body-medium text-md-on-surface-variant">
+          Loading examples… If the directory backend was cold, this may take a few minutes.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
-              className="bg-card rounded-2xl border border-border p-6 animate-pulse"
+              className="rounded-[var(--md-shape-lg)] border border-md-outline-variant p-6 animate-pulse"
             >
-              <div className="h-6 bg-muted rounded w-3/4 mb-4"></div>
-              <div className="h-4 bg-muted rounded w-full mb-2"></div>
-              <div className="h-4 bg-muted rounded w-5/6 mb-6"></div>
-              <div className="h-4 bg-muted rounded w-1/2 mt-auto"></div>
+              <div className="h-6 bg-md-surface-container-high rounded w-3/4 mb-4"></div>
+              <div className="h-4 bg-md-surface-container-high rounded w-full mb-2"></div>
+              <div className="h-4 bg-md-surface-container-high rounded w-5/6 mb-6"></div>
+              <div className="h-4 bg-md-surface-container-high rounded w-1/2 mt-auto"></div>
             </div>
           ))}
         </div>
@@ -245,14 +254,14 @@ export default function AgentGrid() {
 
   if (agents.length === 0) {
     return (
-      <div className="text-center py-24 bg-muted/20 rounded-3xl border border-dashed border-border">
+      <div className="text-center py-24 bg-md-surface-container-low rounded-[var(--md-shape-xl)] border border-dashed border-md-outline-variant">
         <div className="flex flex-col items-center gap-4">
-          <div className="p-4 bg-muted rounded-full">
-            <AlertCircle className="w-8 h-8 text-muted-foreground" />
+          <div className="p-4 bg-md-surface-container-high rounded-full">
+            <AlertCircle className="w-8 h-8 text-md-on-surface-variant" />
           </div>
           <div>
-            <p className="text-lg font-medium text-foreground">No agents available</p>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-title-medium text-md-on-surface">No examples available</p>
+            <p className="text-body-medium text-md-on-surface-variant mt-1">
               {listWarning ||
                 'The directory backend may still be warming up. Refresh in a moment.'}
             </p>
@@ -267,19 +276,22 @@ export default function AgentGrid() {
       {listWarning ? (
         <p
           role="status"
-          className="mb-4 text-sm text-muted-foreground border border-border/70 bg-muted/30 rounded-xl px-4 py-3"
+          className="mb-4 text-body-medium text-md-on-surface-variant border border-md-outline-variant bg-md-surface-container-low rounded-[var(--md-shape-md)] px-4 py-3"
         >
           {listWarning}
         </p>
       ) : null}
+      {showControls ? (
       <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
         <div className="relative w-full md:max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-md-on-surface-variant/70" />
-          <input
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-md-on-surface-variant" aria-hidden />
+          <Input
+            type="search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search agents by name, description, tools..."
-            className="w-full pl-10 pr-3 py-3 rounded-xl bg-md-surface text-body-medium text-md-on-surface placeholder:text-md-on-surface-variant/50 border border-md-outline/80 focus:outline-none focus:ring-2 focus:ring-md-primary/20 focus:border-md-primary transition-all shadow-sm focus:shadow-md"
+            placeholder="Search examples by name, description, tools…"
+            aria-label="Search examples"
+            className="pl-11"
           />
         </div>
 
@@ -315,7 +327,13 @@ export default function AgentGrid() {
           </DropdownMenu>
         </div>
       </div>
+      ) : null}
 
+      {sortedAgents.length === 0 ? (
+        <p role="status" className="py-12 text-center text-body-medium text-md-on-surface-variant">
+          No examples match “{searchTerm.trim()}”.
+        </p>
+      ) : null}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
         {sortedAgents.map((agent) => (
           <AgentCard

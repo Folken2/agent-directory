@@ -2,6 +2,7 @@ import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   clearLastGoodAgentsCache,
+  getCatalogAgent,
   getLastGoodAgents,
   loadCatalogFromSnapshot,
   loadOfflineCatalog,
@@ -57,5 +58,20 @@ describe('agent-catalog cold-start fallbacks', () => {
     const { agents, source } = resolveFallbackAgents();
     assert.equal(source, 'catalog');
     assert.ok(agents.length >= 8);
+  });
+
+  it('looks up a single agent from the catalog for server-rendered pages', () => {
+    const builder = getCatalogAgent('adk_agent_builder');
+    assert.equal(builder?.name, 'adk_agent_builder');
+    assert.ok(builder?.description);
+    assert.equal(getCatalogAgent('no_such_agent'), null);
+    assert.equal(getCatalogAgent('../agents'), null);
+  });
+
+  it('does not use third-party brand logos for the builder', () => {
+    const builder = getCatalogAgent('adk_agent_builder');
+    assert.ok(builder?.logo?.startsWith('/'), `expected a local logo, got ${builder?.logo}`);
+    const snap = loadCatalogFromSnapshot().find((a) => a.name === 'adk_agent_builder');
+    assert.equal(snap?.logo, builder?.logo);
   });
 });

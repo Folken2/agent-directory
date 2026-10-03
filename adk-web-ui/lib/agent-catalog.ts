@@ -168,6 +168,17 @@ export function loadCatalogFromSnapshot(): CatalogAgent[] {
   });
 }
 
+const AGENT_NAME_RE = /^[a-z0-9][a-z0-9_-]*$/i;
+
+/**
+ * One agent from the offline catalog (disk, then snapshot), for server-rendered
+ * pages. Returns null for unknown or malformed names.
+ */
+export function getCatalogAgent(name: string): CatalogAgent | null {
+  if (!AGENT_NAME_RE.test(name)) return null;
+  return loadOfflineCatalog().find((agent) => agent.name === name) ?? null;
+}
+
 /**
  * Pick the best non-live agent list for cold starts / ADK outages.
  */

@@ -22,3 +22,15 @@ test('agent detail: start chat and share via snackbar', async ({ page, context }
   await expect(page.getByText(/link copied/i)).toBeVisible();
   expect(dialogs, 'native alert() must not be used').toEqual([]);
 });
+
+test('agent pages are server-rendered with per-agent metadata', async ({ request }) => {
+  const res = await request.get('/agents/deep_research_agent');
+  expect(res.ok()).toBe(true);
+  const html = await res.text();
+  expect(html).toMatch(/<meta property="og:title" content="[^"]*Deep Research[^"]*"/i);
+  expect(html).toMatch(/<title>[^<]*Deep Research[^<]*<\/title>/i);
+  expect(html).toContain('href="/chat?agent=deep_research_agent"');
+
+  const missing = await request.get('/agents/no_such_agent');
+  expect(missing.status()).toBe(404);
+});

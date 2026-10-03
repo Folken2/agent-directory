@@ -3,29 +3,30 @@
 import { NOT_AFFILIATED_NOTICE } from '@/lib/site';
 import { Card } from '@/components/ui/card';
 import { buttonVariants } from '@/components/ui/button';
-import { ArrowRight, Github, Code, Zap, Users, BookOpen } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Github, Code, Blocks, LayoutGrid, BookOpen } from 'lucide-react';
 
 export default function AboutPage() {
   const features = [
     {
-      icon: Zap,
-      title: 'Powerful Agents',
-      description: 'Each agent is designed with specific tools and capabilities to accomplish tasks efficiently.',
+      icon: Blocks,
+      title: 'Agent builder',
+      description: 'Describe the agent you want. The builder helps you choose an architecture, tools and prompts, and drafts the code.',
+    },
+    {
+      icon: LayoutGrid,
+      title: 'Working examples',
+      description: 'Try complete agents for research, data analysis, diagrams and more, free in the browser.',
     },
     {
       icon: Code,
-      title: 'Open Source',
-      description: 'Built on Google ADK and open-source technologies. Contribute and improve the ecosystem.',
-    },
-    {
-      icon: Users,
-      title: 'Community Driven',
-      description: 'Discover agents created by the community and share your own creations.',
+      title: 'Open source',
+      description: 'Every agent and the site itself are open source, so you can read how they are built and reuse the patterns.',
     },
     {
       icon: BookOpen,
-      title: 'Well Documented',
-      description: 'Every agent includes documentation, use cases, and sample prompts.',
+      title: 'Documented',
+      description: 'Each example lists its tools, use cases and sample prompts.',
     },
   ];
 
@@ -38,7 +39,8 @@ export default function AboutPage() {
             About ADK Agent Directory
           </h1>
           <p className="text-body-large text-md-on-surface-variant max-w-2xl mx-auto">
-            A directory of intelligent AI agents powered by Google Gemini 3 Flash. Discover, use, and contribute agents for various use cases.
+            Design your own AI agent with an agent builder, and learn from working examples built with
+            Google&apos;s Agent Development Kit (ADK).
           </p>
           <p className="text-body-medium text-md-on-surface-variant max-w-2xl mx-auto mt-4">
             {NOT_AFFILIATED_NOTICE}
@@ -51,12 +53,17 @@ export default function AboutPage() {
             What is ADK Agent Directory?
           </h2>
           <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-4">
-            ADK Agent Directory is a curated directory of AI agents built with Google&apos;s Agent Development Kit (ADK).
-            Each agent is designed to solve specific problems using specialized tools and capabilities.
+            Start by describing the agent you have in mind. The{' '}
+            <Link href="/" className="text-md-primary underline-offset-4 hover:underline">agent builder</Link>{' '}
+            asks about your goal, then proposes a design: which agents to use and how they work together,
+            the tools and data they need, and code to get started.
           </p>
           <p className="text-body-medium text-md-on-surface-variant leading-relaxed">
-            Whether you&apos;re looking for an agent to help with web search, image generation, document processing,
-            or any other task, ADK Agent Directory makes it easy to discover and use the right agent for your needs.
+            The{' '}
+            <Link href="/examples" className="text-md-primary underline-offset-4 hover:underline">examples</Link>{' '}
+            show what finished agents look like: web research, data analysis, image generation, diagrams,
+            repository exploration and more. Each one is built with the Agent Development Kit and its source is
+            on GitHub.
           </p>
         </div>
 
@@ -89,10 +96,10 @@ export default function AboutPage() {
             How Agents Work
           </h2>
           <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-4">
-            Agents in ADK Agent Directory are built using Google&apos;s Agent Development Kit (ADK), which provides:
+            The agents here are built with Google&apos;s Agent Development Kit (ADK), an open-source framework that provides:
           </p>
           <ul className="space-y-2 text-body-medium text-md-on-surface-variant list-disc list-inside">
-            <li>Integration with Google Gemini 3 Flash for natural language understanding</li>
+            <li>Model integration, with Gemini models by default</li>
             <li>Tool calling capabilities for interacting with external services</li>
             <li>Session management for maintaining conversation context</li>
             <li>Artifact handling for generating and managing outputs</li>
@@ -134,8 +141,8 @@ export default function AboutPage() {
             How to Contribute
           </h2>
           <p className="text-body-medium text-md-on-surface-variant leading-relaxed mb-6">
-            We welcome contributions! Whether you want to add a new agent, improve existing ones,
-            or enhance the platform, your contributions are valuable.
+            Contributions are welcome: a new example agent, improvements to an existing one, or changes to
+            the site itself.
           </p>
           <a
             href="https://github.com/Folken2/agent-directory"
