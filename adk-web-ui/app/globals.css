@@ -91,22 +91,27 @@
   --spacing-xl: 32px;
   --spacing-2xl: 40px;
 
-  /* Radius */
-  --radius-small: 8px;
-  --radius-medium: 12px;
-  --radius-large: 16px;
-  --radius-xlarge: 28px;
-  --radius-full: 9999px;
+  /* M3 shape scale */
+  --md-shape-sm: 8px; /* chips, snackbar */
+  --md-shape-md: 12px; /* inputs, avatars */
+  --md-shape-lg: 16px; /* cards */
+  --md-shape-xl: 28px; /* dialogs, composer */
+  --md-shape-full: 9999px; /* buttons, top bar */
+  --radius-small: var(--md-shape-sm);
+  --radius-medium: var(--md-shape-md);
+  --radius-large: var(--md-shape-lg);
+  --radius-xlarge: var(--md-shape-xl);
+  --radius-full: var(--md-shape-full);
 
-  /* Elevation (Soft Shadows) */
+  /* M3 elevation (key + ambient) */
   --shadow-elevation-0: none;
-  --shadow-elevation-1: 0 1px 3px 0 rgb(0 0 0 / 0.05), 0 1px 2px -1px rgb(0 0 0 / 0.05);
-  --shadow-elevation-2: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-  --shadow-elevation-3: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-  --shadow-elevation-4: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
-  --shadow-elevation-5: 0 25px 50px -12px rgb(0 0 0 / 0.15);
+  --shadow-elevation-1: 0 1px 2px 0 rgb(60 64 67 / 0.30), 0 1px 3px 1px rgb(60 64 67 / 0.15);
+  --shadow-elevation-2: 0 1px 2px 0 rgb(60 64 67 / 0.30), 0 2px 6px 2px rgb(60 64 67 / 0.15);
+  --shadow-elevation-3: 0 4px 8px 3px rgb(60 64 67 / 0.15), 0 1px 3px 0 rgb(60 64 67 / 0.30);
+  --shadow-elevation-4: 0 6px 10px 4px rgb(60 64 67 / 0.15), 0 2px 3px 0 rgb(60 64 67 / 0.30);
+  --shadow-elevation-5: 0 8px 12px 6px rgb(60 64 67 / 0.15), 0 4px 4px 0 rgb(60 64 67 / 0.30);
 
-  /* Legacy Mapping */
+  /* DEPRECATED aliases — use md-* tokens (guarded by npm run lint:tokens) */
   --background: var(--md-surface-container-low);
   --foreground: var(--md-on-surface);
   --card: var(--md-surface);
@@ -168,11 +173,16 @@
   --md-on-surface-variant: 215 20% 65%;
   /* #94A3B8 */
 
-  --md-outline: 217 33% 17%;
-  /* #1E293B - Very subtle borders */
-  --md-outline-variant: 217 33% 20%;
+  --md-outline: 215 20% 38%;
+  --md-outline-variant: 217 25% 24%;
 
-  /* Legacy Mapping for Dark */
+  --shadow-elevation-1: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 1px 3px 1px rgb(0 0 0 / 0.3);
+  --shadow-elevation-2: 0 1px 2px 0 rgb(0 0 0 / 0.5), 0 2px 6px 2px rgb(0 0 0 / 0.3);
+  --shadow-elevation-3: 0 4px 8px 3px rgb(0 0 0 / 0.3), 0 1px 3px 0 rgb(0 0 0 / 0.5);
+  --shadow-elevation-4: 0 6px 10px 4px rgb(0 0 0 / 0.3), 0 2px 3px 0 rgb(0 0 0 / 0.5);
+  --shadow-elevation-5: 0 8px 12px 6px rgb(0 0 0 / 0.3), 0 4px 4px 0 rgb(0 0 0 / 0.5);
+
+  /* DEPRECATED aliases — use md-* tokens (guarded by npm run lint:tokens) */
   --background: var(--md-surface-container-low);
   --foreground: var(--md-on-surface);
   --card: var(--md-surface-container);
@@ -195,6 +205,8 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-google-sans), Inter, system-ui, sans-serif;
+  --font-mono: var(--font-google-sans-code), ui-monospace, SFMono-Regular, Menlo, monospace;
   --color-md-primary: hsl(var(--md-primary));
   --color-md-primary-container: hsl(var(--md-primary-container));
   --color-md-on-primary: hsl(var(--md-on-primary));
@@ -254,6 +266,7 @@
   --radius-md: var(--radius-medium);
   --radius-lg: var(--radius-large);
   --radius-xl: var(--radius-xlarge);
+  --radius-full: var(--md-shape-full);
 
   --shadow-elevation-0: var(--shadow-elevation-0);
   --shadow-elevation-1: var(--shadow-elevation-1);
@@ -270,8 +283,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: var(--font-google-sans, var(--font-geist-sans, system-ui, sans-serif));
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+    font-family: var(--font-sans);
   }
 
   /* Typography - Clean & Minimal */
@@ -387,6 +399,12 @@
 }
 
 /* Paragraphs */
+.markdown-content pre,
+.markdown-content pre code,
+.markdown-content pre code span {
+  font-family: var(--font-mono) !important;
+}
+
 .markdown-content p {
   @apply mb-4 text-foreground;
   line-height: 1.7;
@@ -477,7 +495,7 @@
   background-color: hsl(var(--md-surface-container-high));
   border: 1px solid hsl(var(--md-outline));
   color: hsl(var(--md-on-surface));
-  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-family: var(--font-mono);
   word-wrap: break-word;
 }
 

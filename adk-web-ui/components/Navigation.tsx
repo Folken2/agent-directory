@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import UserProfile from '@/components/auth/UserProfile';
 import SignOutButton from '@/components/auth/SignOutButton';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 
 const navigation = [
   { name: 'Agents', href: '/' },
@@ -85,6 +86,7 @@ export default function Navigation() {
 
             {/* Auth Section - Desktop */}
             <div className="hidden md:flex items-center gap-3 ml-4 pl-4 border-l border-md-outline">
+              <ThemeToggle />
               {isAuthenticated ? (
                 <>
                   <Link
@@ -168,6 +170,7 @@ export default function Navigation() {
 
             {/* Auth Section - Mobile */}
             <div className="pt-2 border-t border-md-outline mt-2">
+              <div className="px-4 py-3"><ThemeToggle /></div>
               {isAuthenticated ? (
                 <div className="px-4 py-3 space-y-2">
                   <UserProfile />

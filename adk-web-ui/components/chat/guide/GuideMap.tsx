@@ -10,6 +10,7 @@ import {
   useMapsLibrary,
 } from '@vis.gl/react-google-maps';
 import type { GuidePlace } from '@/lib/guide/types';
+import { useDarkMode } from '@/lib/hooks/useDarkMode';
 
 const JS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_KEY;
 
@@ -66,6 +67,7 @@ function SelectionPan({ place }: { place: Positioned | undefined }) {
 
 function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
   const geocodingLibrary = useMapsLibrary('geocoding');
+  const isDark = useDarkMode();
   const [geocoded, setGeocoded] = useState<Record<string, { lat: number; lng: number }>>({});
   const geocodeAttemptsRef = useRef<Set<string>>(new Set());
   const geocodeInFlightRef = useRef<Set<string>>(new Set());
@@ -143,11 +145,12 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
     : FALLBACK_CENTER;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border h-48 sm:h-[280px]">
+    <div className="overflow-hidden rounded-lg border border-md-outline h-48 sm:h-[280px]">
       <Map
         // DEMO_MAP_ID is fine for local/dev Advanced Markers; production
         // should use a real Cloud Console Map ID (see README / env.example).
         mapId="DEMO_MAP_ID"
+        colorScheme={isDark ? 'DARK' : 'LIGHT'}
         defaultCenter={defaultCenter}
         defaultZoom={13}
         gestureHandling="greedy"

@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -8,22 +8,22 @@ import SessionProvider from "@/components/providers/SessionProvider";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import CookieConsentBanner from "@/components/analytics/CookieConsentBanner";
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
-// Google Sans is not available via next/font/google, so we use Inter as the closest alternative
-// Inter is Google's recommended open-source alternative with similar characteristics
-const inter = Inter({
+const googleSans = localFont({
   variable: "--font-google-sans",
-  subsets: ["latin"],
   display: "swap",
-  weight: ["400", "500", "600", "700"],
+  src: [{ path: "./fonts/GoogleSansFlex-latin.woff2", weight: "100 1000", style: "normal" }],
+  fallback: ["Inter", "system-ui", "sans-serif"],
 });
 
-// Roboto Mono for code snippets
-const robotoMono = Inter({
-  variable: "--font-roboto-mono",
-  subsets: ["latin"],
+const googleSansCode = localFont({
+  variable: "--font-google-sans-code",
   display: "swap",
-  weight: ["400", "500"],
+  preload: false,
+  src: [{ path: "./fonts/GoogleSansCode-latin.woff2", weight: "300 800", style: "normal" }],
+  fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
 });
 
 export const viewport: Viewport = {
@@ -133,25 +133,30 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className={`${googleSans.variable} ${googleSansCode.variable} h-full`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body
-        className={`${inter.variable} ${robotoMono.variable} antialiased h-full flex flex-col`}
+        className="antialiased h-full flex flex-col"
       >
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <SessionProvider>
-          <Navigation />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <Suspense fallback={null}>
-            <PageViewTracker />
-          </Suspense>
-          <CookieConsentBanner />
-        </SessionProvider>
+        <ThemeProvider>
+          <SessionProvider>
+            <Navigation />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+            <Suspense fallback={null}>
+              <PageViewTracker />
+            </Suspense>
+            <CookieConsentBanner />
+          </SessionProvider>
+        </ThemeProvider>
         <GoogleAnalytics />
       </body>
     </html>
