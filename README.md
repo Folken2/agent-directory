@@ -30,6 +30,8 @@ To learn more, check out the [ADK Documentation](https://github.com/google/adk) 
 
 The Agent Directory includes a **plugin system** that applies cross-cutting concerns to every agent run automatically. Plugins are registered at the server level in `run_adk.py` via ADK's `extra_plugins` mechanism — no changes needed in individual agents.
 
+The backend server (`run_adk.py`) requires `ADK_INTERNAL_TOKEN` (the same value configured for the web app) to accept requests, or `ADK_ALLOW_UNAUTHENTICATED=1` for local development only.
+
 ### Included Plugins
 
 | Plugin | What it does |

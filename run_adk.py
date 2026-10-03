@@ -13,7 +13,7 @@ from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 import uvicorn
 from google.adk.cli.fast_api import get_fast_api_app
 from plugins import PLUGIN_QUALIFIED_NAMES
-from server_auth import InternalTokenMiddleware
+from server_auth import InternalTokenMiddleware, resolve_internal_token
 
 # Optional: load .env automatically if python-dotenv is installed.
 try:
@@ -31,6 +31,8 @@ def main() -> None:
 
     if not session_uri:
         raise RuntimeError("SESSION_SERVICE_URI is required (set it in .env or env vars).")
+
+    internal_token = resolve_internal_token(os.environ)
 
     session_uri = _normalize_to_asyncpg_uri(session_uri)
     # Neon requires TLS. The local dev database (docker-compose.dev.yml) has
@@ -52,7 +54,7 @@ def main() -> None:
         extra_plugins=PLUGIN_QUALIFIED_NAMES,
     )
 
-    app.add_middleware(InternalTokenMiddleware, token=os.getenv("ADK_INTERNAL_TOKEN"))
+    app.add_middleware(InternalTokenMiddleware, token=internal_token)
 
     uvicorn.run(app, host=host, port=port)
 
