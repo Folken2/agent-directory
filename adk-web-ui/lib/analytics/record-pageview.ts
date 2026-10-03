@@ -6,6 +6,7 @@ import { identifyBot } from './bots';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 import { extractClientIp, hashIp } from './hash-ip';
+import { resolveGeo } from './geo';
 import { parseUserAgent } from './parse-ua';
 import {
   extractUtm,
@@ -76,13 +77,17 @@ export async function recordPageview(input: PageviewInput): Promise<{
   const query = sanitizeQuery(input.query ?? '');
   const utm = extractUtm(input.query ?? query);
 
-  const country =
-    input.country ?? headers?.get('x-vercel-ip-country') ?? null;
-  const region =
-    input.region ?? headers?.get('x-vercel-ip-country-region') ?? null;
-  const city = input.city ?? headers?.get('x-vercel-ip-city') ?? null;
-
   const ip = headers ? extractClientIp(headers) : null;
+  const geo =
+    input.country || input.region || input.city
+      ? { country: input.country ?? null, region: input.region ?? null, city: input.city ?? null }
+      : headers
+        ? await resolveGeo(headers, ip)
+        : { country: null, region: null, city: null };
+  const country = geo.country;
+  const region = geo.region;
+  const city = geo.city;
+
   const hashedIp = hashIp(ip);
 
   const row: NewPageView = {

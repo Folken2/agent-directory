@@ -1,5 +1,6 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
 import { identifyBot } from '@/lib/analytics/bots';
+import { extractClientIp } from '@/lib/analytics/client-ip';
 import {
   CONSENT_COOKIE_NAME,
   hasAnalyticsConsent,
@@ -47,6 +48,7 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
 
   if (track) {
     const origin = request.nextUrl.origin;
+    const clientIp = extractClientIp(request.headers);
     const payload = {
       path: pathname,
       query: search || null,
@@ -69,10 +71,8 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
       headers: {
         'content-type': 'application/json',
         'user-agent': userAgent || 'middleware',
-        'x-forwarded-for':
-          request.headers.get('x-forwarded-for') ||
-          request.headers.get('x-real-ip') ||
-          '',
+        'x-forwarded-for': clientIp || '',
+        'x-real-ip': clientIp || '',
         'x-vercel-ip-country': payload.country || '',
         'x-vercel-ip-country-region': payload.region || '',
         'x-vercel-ip-city': payload.city || '',

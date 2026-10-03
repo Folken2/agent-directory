@@ -1,10 +1,8 @@
 'use client';
 
 import Script from 'next/script';
-import { useEffect, useState } from 'react';
-import { Analytics } from '@vercel/analytics/next';
+import { useEffect } from 'react';
 import { readClientConsent, applyGtagConsent } from '@/lib/analytics/consent-client';
-import { hasAnalyticsConsent } from '@/lib/analytics/consent';
 
 const MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -57,19 +55,4 @@ export default function GoogleAnalytics() {
       </Script>
     </>
   );
-}
-
-/** Vercel Analytics only after Accept. */
-export function ConsentGatedVercelAnalytics() {
-  const [ok, setOk] = useState(false);
-
-  useEffect(() => {
-    const sync = () => setOk(hasAnalyticsConsent(readClientConsent()));
-    sync();
-    window.addEventListener('ad-consent-change', sync);
-    return () => window.removeEventListener('ad-consent-change', sync);
-  }, []);
-
-  if (!ok) return null;
-  return <Analytics />;
 }
