@@ -34,7 +34,7 @@ case "${1:-}" in
     ;;
   reset)
     wait_ready
-    "${PSQL[@]}" -q -c 'DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
+    "${PSQL[@]}" -q -c 'SET client_min_messages = warning; DROP SCHEMA public CASCADE; CREATE SCHEMA public;'
     npx drizzle-kit export --dialect=postgresql --schema='./lib/drizzle/schema/*' | "${PSQL[@]}" -q
     echo "Local database reset."
     ;;
