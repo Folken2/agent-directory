@@ -29,6 +29,7 @@ test('mobile menu is an accessible sheet', async ({ browser }) => {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const page = await ctx.newPage();
   await page.goto('/about');
+  await expect(page.getByRole('link', { name: 'Agent Directory home' })).toBeVisible();
   await page.getByRole('button', { name: 'Open menu' }).click();
   const dialog = page.getByRole('dialog', { name: 'Menu' });
   await expect(dialog).toBeVisible();

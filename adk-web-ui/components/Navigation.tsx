@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Menu, LogIn, History, Settings } from 'lucide-react';
+import { Menu, LogIn } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -17,29 +17,27 @@ const destinations = [
   { name: 'About', href: '/about' },
 ];
 
-function useIsActive() {
-  const pathname = usePathname() ?? '/';
-  return (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
+export function isActiveRoute(pathname: string, href: string) {
+  return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
 }
 
-function NavLink({ href, children, onNavigate }: { href: string; children: React.ReactNode; onNavigate?: () => void }) {
-  const isActive = useIsActive();
-  const active = isActive(href);
+function NavLink({ href, className, ...props }: React.ComponentProps<typeof Link>) {
+  const pathname = usePathname() ?? '/';
+  const active = isActiveRoute(pathname, String(href));
   return (
     <Link
       href={href}
-      onClick={onNavigate}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'inline-flex h-10 items-center rounded-full px-4 text-sm font-medium transition-colors',
+        'inline-flex items-center rounded-full px-4 text-sm font-medium transition-colors',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary',
         active
           ? 'bg-md-primary-container text-md-on-primary-container'
-          : 'text-md-on-surface-variant hover:bg-md-on-surface/8 hover:text-md-on-surface'
+          : 'text-md-on-surface-variant hover:bg-md-on-surface/8 hover:text-md-on-surface',
+        className ?? 'h-10'
       )}
-    >
-      {children}
-    </Link>
+      {...props}
+    />
   );
 }
 
@@ -52,8 +50,8 @@ export default function Navigation() {
 
   const accountLinks = isAuthenticated
     ? [
-        { name: 'Sessions', href: '/me/sessions', Icon: History },
-        { name: 'Settings', href: '/settings', Icon: Settings },
+        { name: 'Sessions', href: '/me/sessions' },
+        { name: 'Settings', href: '/settings' },
       ]
     : [];
 
@@ -63,7 +61,7 @@ export default function Navigation() {
         aria-label="Main"
         className="mx-auto flex h-14 max-w-7xl items-center justify-between rounded-full bg-md-surface-container px-2 pl-4"
       >
-        <Link href="/" className="flex items-center gap-2 rounded-full pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary">
+        <Link href="/" aria-label="Agent Directory home" className="flex items-center gap-2 rounded-full pr-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary">
           <Image src="/adk_logo.png" alt="" width={28} height={28} className="h-7 w-7" priority />
           <span className="hidden text-base font-medium text-md-on-surface sm:inline">
             Agent <span className="text-md-primary">Directory</span>
@@ -100,13 +98,7 @@ export default function Navigation() {
             <div className="flex flex-col gap-1 px-1">
               {[...destinations, ...accountLinks].map((d) => (
                 <SheetClose asChild key={d.href}>
-                  <Link
-                    href={d.href}
-                    aria-current={pathname === d.href ? 'page' : undefined}
-                    className="flex h-12 items-center rounded-full px-4 text-sm font-medium text-md-on-surface-variant hover:bg-md-on-surface/8 aria-[current=page]:bg-md-primary-container aria-[current=page]:text-md-on-primary-container"
-                  >
-                    {d.name}
-                  </Link>
+                  <NavLink href={d.href} className="h-12">{d.name}</NavLink>
                 </SheetClose>
               ))}
               <div className="mt-3 border-t border-md-outline-variant px-3 pt-3">
