@@ -152,12 +152,12 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en" className="h-full" suppressHydrationWarning>
+    <html lang="en" className={`${googleSans.variable} ${googleSansCode.variable} h-full`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body
-        className={`${googleSans.variable} ${googleSansCode.variable} antialiased h-full flex flex-col`}
+        className="antialiased h-full flex flex-col"
       >
         <script
           type="application/ld+json"

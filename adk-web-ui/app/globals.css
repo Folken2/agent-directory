@@ -400,6 +400,12 @@
 }
 
 /* Paragraphs */
+.markdown-content pre,
+.markdown-content pre code,
+.markdown-content pre code span {
+  font-family: var(--font-mono) !important;
+}
+
 .markdown-content p {
   @apply mb-4 text-foreground;
   line-height: 1.7;
