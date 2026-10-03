@@ -25,10 +25,9 @@
  * second indirection; the hook returns the same shape ChatInterface used to
  * compute inline.
  *
- * The dedupe rules and sub-agent routing in handleChunk preserve the
- * pre-extraction behavior verbatim — see the comments at each branch for
- * why they look the way they look. Behavior change in this hook should be a
- * separate, separately-reviewed commit.
+ * Chunk handling (text dedupe, sub-agent routing, guide/maps collection)
+ * lives in the pure, unit-tested `lib/chat/*` modules; this hook only maps
+ * their updates onto React state and the store.
  */
 
 import { useCallback, useRef, useState } from 'react';
@@ -36,63 +35,15 @@ import { useAppStore } from '@/lib/store';
 import { adkClient } from '@/lib/adk-client';
 import { toSessionId, newConversationId, newMessageId } from '@/lib/ids';
 import type { MessageId } from '@/lib/ids';
-import {
-  Artifact,
-  MapsCapture,
-  Message,
-  SubAgentStep,
-} from '@/lib/types';
-import type { GuideDocument } from '@/lib/guide/types';
-import { resolveGuideMessageContent } from '@/lib/guide/parse';
+import { Artifact, Message, SubAgentStep } from '@/lib/types';
+import { StreamAssembler, type AssembledMessage } from '@/lib/chat/stream-assembler';
+import { extractRateLimit, isRateLimitError, type RateLimitInfo } from '@/lib/chat/rate-limit';
 import { trackEngagement, trackGtagEvent } from '@/lib/analytics/track-engagement';
 import { ChatApiError, friendlyMessage, isApiErrorCode } from '@/lib/api-error';
 
-const ANON_RATE_LIMIT_FALLBACK = 5;
+export type { RateLimitInfo };
 
-export type RateLimitInfo = {
-  count: number;
-  limit: number;
-  userType: 'authenticated' | 'anonymous';
-};
-
-/**
- * Pulls a RateLimitInfo out of any of the three shapes our error payloads
- * can take:
- *   - error.rateLimit                       (thrown by adk-client)
- *   - error.response.data.rateLimit         (axios-style nesting)
- *   - error.rateLimit (on a result object)  (caller passes the result, not error)
- *
- * Returns null when the error isn't a 429 or doesn't carry a rate-limit
- * payload. Centralizes the defaults so the three sites that previously did
- * this inline can't drift apart.
- */
-function extractRateLimit(source: unknown): RateLimitInfo | null {
-  if (!source || typeof source !== 'object') return null;
-  const s = source as Record<string, any>;
-  const raw =
-    s.rateLimit ??
-    s.response?.data?.rateLimit ??
-    null;
-  if (!raw) return null;
-  return {
-    count: Number(raw.count) || 0,
-    limit: Number(raw.limit) || ANON_RATE_LIMIT_FALLBACK,
-    userType: raw.userType === 'authenticated' ? 'authenticated' : 'anonymous',
-  };
-}
-
-/**
- * True when the given error indicates a 429 / rate-limit response, regardless
- * of which client surface emitted it (fetch error, axios-style, ADK custom).
- */
-function isRateLimitError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const e = error as Record<string, any>;
-  if (e.status === 429) return true;
-  if (e.response?.status === 429) return true;
-  if (typeof e.message === 'string' && e.message.includes('429')) return true;
-  return false;
-}
+type InlineDataPart = { text?: string; inline_data?: { mime_type: string; data: string; filename: string } };
 
 export type UseStreamingChatResult = {
   send: (input: { text: string; attachments: File[] }) => Promise<void>;
@@ -219,141 +170,27 @@ export function useStreamingChat(): UseStreamingChatResult {
         // want to collide with it inside the same millisecond.
         const assistantMessageId = newMessageId(1);
         setCurrentAssistantMessageId(assistantMessageId);
-        let fullResponse = '';
-        let fullThinking = '';
         let hasReceivedFirstChunk = false;
-
-        // Multi-agent routing: when the agent declares a `finalSubAgent`, only
-        // text from that author streams to the main bubble. Other authors are
-        // accumulated as collapsible progress steps. A transition to a new
-        // author flips the previous step from "running" → "done".
-        const finalAuthor = selectedAgent.finalSubAgent || selectedAgent.name;
-        const subAgentSteps: SubAgentStep[] = [];
-        const mapsCaptures: MapsCapture[] = [];
-        let guideDocument: GuideDocument | undefined;
-        const isIntermediateAuthor = (author: string | undefined): boolean =>
-          !!selectedAgent.finalSubAgent &&
-          !!author &&
-          author !== finalAuthor &&
-          author !== selectedAgent.name;
-
-        const cloneSubAgentSteps = (): SubAgentStep[] =>
-          subAgentSteps.map((s) => ({
-            ...s,
-            tools: s.tools ? s.tools.map((t) => ({ ...t })) : undefined,
-          }));
-
-        const publishSubAgentSteps = () => {
-          setStreamingSubAgentSteps(cloneSubAgentSteps());
-        };
-
-        /** Ensure a running step exists for this author (tools/thinking may arrive before text). */
-        const ensureIntermediateStep = (author: string): SubAgentStep => {
-          const last = subAgentSteps[subAgentSteps.length - 1];
-          if (last && last.author === author && last.status === 'running') {
-            return last;
-          }
-          if (last && last.status === 'running' && last.author !== author) {
-            last.status = 'done';
-            last.completedAt = Date.now();
-          }
-          const priorRuns = subAgentSteps.filter((s) => s.author === author).length;
-          const step: SubAgentStep = {
-            author,
-            content: '',
-            status: 'running',
-            startedAt: Date.now(),
-            runIndex: priorRuns + 1,
-            tools: [],
-          };
-          subAgentSteps.push(step);
-          return step;
-        };
-
-        const appendThinking = (existing: string | undefined, incoming: string): string => {
-          if (!existing) return incoming;
-          if (incoming === existing) return existing;
-          if (incoming.length > existing.length && incoming.startsWith(existing)) return incoming;
-          if (existing.includes(incoming)) return existing;
-          return existing + incoming;
-        };
-
-        const recordIntermediate = (author: string, content: string) => {
-          const step = ensureIntermediateStep(author);
-          if (content === step.content) return;
-          if (content.length > step.content.length && content.startsWith(step.content)) {
-            step.content = content;
-          } else if (step.content.includes(content)) {
-            return;
-          } else {
-            step.content += content;
-          }
-          publishSubAgentSteps();
-        };
-
-        const recordIntermediateThinking = (author: string, content: string) => {
-          const step = ensureIntermediateStep(author);
-          const next = appendThinking(step.thinking, content);
-          if (next === step.thinking) return;
-          step.thinking = next;
-          publishSubAgentSteps();
-        };
-
-        const recordIntermediateToolCall = (
-          author: string,
-          tool: { id: string; name: string; args?: Record<string, unknown>; status: string },
-        ) => {
-          const step = ensureIntermediateStep(author);
-          if (!step.tools) step.tools = [];
-          const existing = step.tools.find((t) => t.id === tool.id);
-          if (existing) {
-            existing.name = tool.name;
-            existing.args = tool.args;
-            existing.status = tool.status === 'running' ? 'running' : 'pending';
-          } else {
-            step.tools.push({
-              id: tool.id,
-              name: tool.name,
-              args: tool.args,
-              status: tool.status === 'running' ? 'running' : 'pending',
-            });
-          }
-          publishSubAgentSteps();
-        };
-
-        const recordIntermediateToolResponse = (
-          toolResponse: { id: string; response: unknown; error?: string },
-        ) => {
-          for (let i = subAgentSteps.length - 1; i >= 0; i--) {
-            const tool = subAgentSteps[i].tools?.find((t) => t.id === toolResponse.id);
-            if (!tool) continue;
-            tool.response = toolResponse.response;
-            tool.error = toolResponse.error;
-            tool.status = toolResponse.error ? 'error' : 'completed';
-            publishSubAgentSteps();
-            return;
-          }
-        };
-
-        const closeIntermediateOnFinalEmit = () => {
-          // Whenever the final author emits text, all prior intermediate steps
-          // are necessarily done.
-          let mutated = false;
-          for (const s of subAgentSteps) {
-            if (s.status === 'running') {
-              s.status = 'done';
-              s.completedAt = Date.now();
-              mutated = true;
-            }
-          }
-          if (mutated) publishSubAgentSteps();
-        };
+        const assembler = new StreamAssembler(selectedAgent);
+        const agentName = selectedAgent.name;
+        const toMessage = (m: AssembledMessage, artifacts: Artifact[]): Message => ({
+          id: assistantMessageId,
+          role: 'assistant',
+          content: m.content,
+          thinking: m.thinking,
+          timestamp: new Date(),
+          agentName,
+          artifacts: artifacts.length > 0 ? artifacts : undefined,
+          subAgentSteps: m.subAgentSteps,
+          mapsCaptures: m.mapsCaptures,
+          guideDocument: m.guideDocument,
+        });
 
         const sessionId = toSessionId(conversation.id);
 
-        let messageContent: string | { parts: Array<{ text?: string; inline_data?: any }> } = messageText;
+        let messageContent: string | { parts: InlineDataPart[] } = messageText;
         if (filesToSend.length > 0) {
-          const parts: Array<{ text?: string; inline_data?: any }> = [];
+          const parts: InlineDataPart[] = [];
           if (messageText) parts.push({ text: messageText });
           for (const file of filesToSend) {
             const base64 = await fileToBase64(file);
@@ -382,109 +219,51 @@ export function useStreamingChat(): UseStreamingChatResult {
               setIsStreaming(true);
             }
 
-            if (chunk.type === 'thinking' && chunk.content) {
-              if (isIntermediateAuthor(chunk.author)) {
-                recordIntermediateThinking(chunk.author!, chunk.content);
-                continue;
-              }
-              const newThinking = chunk.content;
-              setIsThinking(true);
-              if (newThinking === fullThinking && fullThinking.length > 0) continue;
-              if (newThinking.length > fullThinking.length && newThinking.startsWith(fullThinking)) {
-                fullThinking = newThinking;
-              } else if (fullThinking.length > 0 && fullThinking.includes(newThinking)) {
-                continue;
-              } else {
-                fullThinking += newThinking;
-              }
-              setStreamingThinking(fullThinking);
-            } else if (chunk.type === 'text' && chunk.content) {
-              // Route by author: intermediate sub-agents become collapsed steps;
-              // only the final author's text reaches the main bubble.
-              if (isIntermediateAuthor(chunk.author)) {
-                recordIntermediate(chunk.author!, chunk.content);
-                continue;
-              }
-              // Final author emitted — close any still-running intermediate steps.
-              closeIntermediateOnFinalEmit();
-              if (isThinking) setIsThinking(false);
-              const newContent = chunk.content;
-              if (newContent === fullResponse && fullResponse.length > 0) continue;
-              if (newContent.length > fullResponse.length && newContent.startsWith(fullResponse)) {
-                fullResponse = newContent;
-                setStreamingContent(fullResponse);
-                continue;
-              }
-              if (fullResponse.length > 50 && newContent.length > 50) {
-                const prefixLen = Math.min(50, fullResponse.length, newContent.length);
-                if (newContent.substring(0, prefixLen) === fullResponse.substring(0, prefixLen)) {
-                  fullResponse = newContent.length >= fullResponse.length ? newContent : fullResponse;
-                  setStreamingContent(fullResponse);
-                  continue;
-                }
-              }
-              if (fullResponse.length > 0 && fullResponse.includes(newContent)) continue;
-              fullResponse += newContent;
-              setStreamingContent(fullResponse);
-            } else if (chunk.type === 'artifact' && chunk.artifact) {
-              addArtifact(chunk.artifact);
-              setCurrentMessageArtifacts((prev) => [...prev, chunk.artifact!]);
-            } else if (chunk.type === 'toolCall' && chunk.toolCall) {
+            const update = assembler.apply(chunk);
+            if (update.thinkingActive !== undefined) setIsThinking(update.thinkingActive);
+            if (update.thinking !== undefined) setStreamingThinking(update.thinking);
+            if (update.content !== undefined) setStreamingContent(update.content);
+            if (update.subAgentSteps) setStreamingSubAgentSteps(update.subAgentSteps);
+            if (update.artifact) {
+              const artifact = update.artifact;
+              addArtifact(artifact);
+              setCurrentMessageArtifacts((prev) => [...prev, artifact]);
+            }
+            if (update.toolCallName) {
               trackEngagement({
                 eventType: 'tool_call',
-                agentSlug: selectedAgent.name,
+                agentSlug: agentName,
                 sessionKey: conversation?.id,
-                metadata: { tool: chunk.toolCall.name },
+                metadata: { tool: update.toolCallName },
               });
-              if (isIntermediateAuthor(chunk.author)) {
-                recordIntermediateToolCall(chunk.author!, {
-                  id: chunk.toolCall.id,
-                  name: chunk.toolCall.name,
-                  args: chunk.toolCall.args,
-                  status: chunk.toolCall.status,
-                });
-                continue;
-              }
+            }
+            if (update.toolCall) {
               addToolCall(
                 {
-                  id: chunk.toolCall.id,
-                  name: chunk.toolCall.name,
-                  args: chunk.toolCall.args,
+                  id: update.toolCall.id,
+                  name: update.toolCall.name,
+                  args: update.toolCall.args,
                   status: 'running',
-                  isLongRunning: chunk.toolCall.status === 'running',
+                  isLongRunning: update.toolCall.status === 'running',
                   startTime: new Date(),
                 },
                 assistantMessageId,
               );
-            } else if (chunk.type === 'toolResponse' && chunk.toolResponse) {
-              // Prefer nesting under a sub-agent step when the id matches;
-              // otherwise update the flat tool list (root / final author).
-              const nested = subAgentSteps.some((s) =>
-                s.tools?.some((t) => t.id === chunk.toolResponse!.id),
-              );
-              if (nested) {
-                recordIntermediateToolResponse(chunk.toolResponse);
-                continue;
-              }
-              if (isIntermediateAuthor(chunk.author)) {
-                recordIntermediateToolResponse(chunk.toolResponse);
-                continue;
-              }
-              updateToolResponse(chunk.toolResponse.id, chunk.toolResponse.response, chunk.toolResponse.error);
-            } else if (chunk.type === 'mapsCapture' && chunk.mapsCapture) {
-              mapsCaptures.push(chunk.mapsCapture);
-            } else if (chunk.type === 'guideDocument' && chunk.guideDocument) {
-              guideDocument = chunk.guideDocument;
-            } else if (chunk.type === 'error') {
-              const code = isApiErrorCode(chunk.code) ? chunk.code : 'internal';
-              throw new ChatApiError(code, 0, isApiErrorCode(chunk.code) ? { message: chunk.error } : {});
-            } else if (chunk.type === 'done') {
+            }
+            if (update.toolResponse) {
+              updateToolResponse(update.toolResponse.id, update.toolResponse.response, update.toolResponse.error);
+            }
+            if (update.error) {
+              const code = isApiErrorCode(update.error.code) ? update.error.code : 'internal';
+              throw new ChatApiError(code, 0, isApiErrorCode(update.error.code) ? { message: update.error.message } : {});
+            }
+            if (update.done) {
               streamDone = true;
               break;
             }
           }
 
-          if (fullResponse && streamDone) {
+          if (assembler.content && streamDone) {
             let finalArtifacts = currentMessageArtifacts;
             if (finalArtifacts.length === 0) {
               try {
@@ -503,36 +282,9 @@ export function useStreamingChat(): UseStreamingChatResult {
               }
             }
 
-            // Mark any still-running step as done — the stream is over.
-            for (const s of subAgentSteps) {
-              if (s.status === 'running') {
-                s.status = 'done';
-                s.completedAt = Date.now();
-              }
-            }
-
-            // Client-side backup: if the guide_agent's state_delta never
-            // surfaced (e.g. non-streaming fallback, dropped event), fall
-            // back to parsing the ```guidejson``` fence out of the final
-            // text. When a guide document is present, store its lead as
-            // `content` (not the raw fenced text) so copy/chrome affordances
-            // that read `message.content` show the lead instead of JSON.
-            const resolved = resolveGuideMessageContent(fullResponse, guideDocument);
-            guideDocument = resolved.guideDocument;
-            const contentForMessage = resolved.content;
-
-            const assistantMessage: Message = {
-              id: assistantMessageId,
-              role: 'assistant',
-              content: contentForMessage,
-              thinking: fullThinking || undefined,
-              timestamp: new Date(),
-              agentName: selectedAgent.name,
-              artifacts: finalArtifacts.length > 0 ? finalArtifacts : undefined,
-              subAgentSteps: subAgentSteps.length > 0 ? cloneSubAgentSteps() : undefined,
-              mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
-              guideDocument,
-            };
+            // Closes running steps and resolves the guide document (state_delta,
+            // else the ```guidejson``` fence) so `content` holds the lead text.
+            const assistantMessage = toMessage(assembler.finalize(), finalArtifacts);
             // Commit the saved message BEFORE tearing down the streaming bubble
             // so SubAgentProgress doesn't remount through an empty gap (which
             // reset expand state and looked like an auto-collapse).
@@ -547,9 +299,9 @@ export function useStreamingChat(): UseStreamingChatResult {
           setStreamingThinking('');
           setCurrentAssistantMessageId(null);
           setStreamingSubAgentSteps([]);
-        } catch (streamError: any) {
+        } catch (streamError: unknown) {
           // User clicked stop — commit whatever we streamed and exit cleanly.
-          if (stoppedRef.current || streamError?.name === 'AbortError') {
+          if (stoppedRef.current || (streamError instanceof Error && streamError.name === 'AbortError')) {
             setIsStreaming(false);
             setIsThinking(false);
             setIsInitializing(false);
@@ -557,29 +309,8 @@ export function useStreamingChat(): UseStreamingChatResult {
             setStreamingThinking('');
             setStreamingSubAgentSteps([]);
             setCurrentAssistantMessageId(null);
-            if (fullResponse.trim() || subAgentSteps.length > 0) {
-              for (const s of subAgentSteps) {
-                if (s.status === 'running') {
-                  s.status = 'done';
-                  s.completedAt = Date.now();
-                }
-              }
-              const stoppedResolved = resolveGuideMessageContent(fullResponse, guideDocument);
-              guideDocument = stoppedResolved.guideDocument;
-              const stoppedContent = stoppedResolved.content;
-              const stoppedMessage: Message = {
-                id: assistantMessageId,
-                role: 'assistant',
-                content: stoppedContent,
-                thinking: fullThinking || undefined,
-                timestamp: new Date(),
-                agentName: selectedAgent.name,
-                artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
-                subAgentSteps: subAgentSteps.length > 0 ? cloneSubAgentSteps() : undefined,
-                mapsCaptures: mapsCaptures.length > 0 ? mapsCaptures : undefined,
-                guideDocument,
-              };
-              addMessage(stoppedMessage);
+            if (assembler.content.trim() || assembler.steps.length > 0) {
+              addMessage(toMessage(assembler.finalize(), currentMessageArtifacts));
               setCurrentMessageArtifacts([]);
             }
             return;
@@ -596,18 +327,8 @@ export function useStreamingChat(): UseStreamingChatResult {
 
           // No silent /run retry: it re-ran the agent and double-charged quota.
           // Keep whatever streamed, then surface a retryable error.
-          if (fullResponse.trim()) {
-            const partialResolved = resolveGuideMessageContent(fullResponse, guideDocument);
-            addMessage({
-              id: assistantMessageId,
-              role: 'assistant',
-              content: partialResolved.content,
-              thinking: fullThinking || undefined,
-              timestamp: new Date(),
-              agentName: selectedAgent.name,
-              artifacts: currentMessageArtifacts.length > 0 ? currentMessageArtifacts : undefined,
-              guideDocument: partialResolved.guideDocument,
-            });
+          if (assembler.content.trim()) {
+            addMessage(toMessage(assembler.finalize({ includeExtras: false }), currentMessageArtifacts));
             setCurrentMessageArtifacts([]);
           }
           throw streamError;
@@ -651,7 +372,6 @@ export function useStreamingChat(): UseStreamingChatResult {
       isLoading,
       isStreaming,
       isInitializing,
-      isThinking,
       currentMessageArtifacts,
       setCurrentConversation,
       patchCurrentConversation,
