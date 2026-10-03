@@ -39,6 +39,19 @@ export default function PrivacyPage() {
             </p>
           </section>
 
+          <section id="blueprints">
+            <h2 className="text-title-medium text-md-on-surface mb-2">Saved blueprints</h2>
+            <p>
+              When you choose to save a blueprint from the agent builder, we store the blueprint,
+              the email address you enter, the time you gave consent, and, if you are signed in,
+              your account id. We send the site owner a notification with the same details so they
+              can follow up with you about building the agent. We use your email only for that
+              follow-up, never for marketing lists or advertising, and we do not sell or share it.
+              Nothing is saved unless you tick the consent box. To have a saved blueprint and your
+              email deleted, contact us (below) from the same address.
+            </p>
+          </section>
+
           <section>
             <h2 className="text-title-medium text-md-on-surface mb-2">Contact</h2>
             <p>

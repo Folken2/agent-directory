@@ -1,5 +1,7 @@
 import type { Artifact, MapsCapture } from '../types';
 import type { GuideDocument } from '../guide/types';
+import type { Blueprint } from '../blueprint/types';
+import { parseBlueprint } from '../blueprint/parse';
 import { filterInternalInstructions } from '../instruction-filter';
 import { mergeGuideWithCaptures } from '../guide/merge';
 import { parseGuideDocument } from '../guide/parse';
@@ -13,7 +15,8 @@ export type MessagePayload =
   | { type: 'text'; text: string }
   | { type: 'artifact'; artifacts: Artifact[] }
   | { type: 'maps'; captures: MapsCapture[] }
-  | { type: 'guide'; document: GuideDocument };
+  | { type: 'guide'; document: GuideDocument }
+  | { type: 'blueprint'; blueprint: Blueprint };
 
 export type PayloadType = MessagePayload['type'];
 
@@ -50,6 +53,7 @@ export function messagePayloads(message: {
   artifacts?: Artifact[];
   mapsCaptures?: MapsCapture[];
   guideDocument?: unknown;
+  blueprint?: unknown;
 }): MessagePayload[] {
   const guide = message.guideDocument ? parseGuideDocument(message.guideDocument) : null;
   if (guide) return [{ type: 'guide', document: mergeGuideWithCaptures(guide, message.mapsCaptures ?? []) }];
@@ -59,5 +63,7 @@ export function messagePayloads(message: {
   if (text) payloads.push({ type: 'text', text });
   if (message.artifacts?.length) payloads.push({ type: 'artifact', artifacts: message.artifacts });
   if (message.mapsCaptures?.length) payloads.push({ type: 'maps', captures: message.mapsCaptures });
+  const blueprint = message.blueprint ? parseBlueprint(message.blueprint) : null;
+  if (blueprint) payloads.push({ type: 'blueprint', blueprint });
   return payloads;
 }

@@ -14,7 +14,7 @@ Merged to `main`:
 | #36 | Backend `agents/uv.lock` committed + `uv sync --frozen`; google-adk pinned 1.32.0, `mcp<2`; builder's `mcpdoc` pinned |
 | #37 | M3 primitives in `components/ui/` (Button, Chip, Card, Dialog, Sheet, DropdownMenu, Tooltip, Input, Snackbar), pill top bar + Account menu, migrated agent/sessions/settings/about/privacy/signin/error pages |
 
-Remaining sub-projects: **2** and **3** can run in parallel; **4** needs 3.
+On branch `claude/determined-heisenberg-pr5xqk` (not yet merged): sub-projects **2**, **3** and **4** below are implemented. Blueprint saves need `BLUEPRINT_WEBHOOK_URL` / `BLUEPRINT_WEBHOOK_SECRET` / `BLUEPRINT_BOOKING_URL` set on the frontend (see `adk-web-ui/env.example`); the table is created by migration `0014_blueprint_submissions` and also bootstraps itself on first save.
 
 ## Ground rules (all sub-projects)
 

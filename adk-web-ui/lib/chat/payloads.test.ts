@@ -38,4 +38,9 @@ describe('messagePayloads', () => {
   it('empty messages have no payloads', () => {
     assert.deepEqual(messagePayloads({ content: '' }), []);
   });
+  it('appends a valid blueprint after the text', () => {
+    const blueprint = { name: 'Bp', goal: 'G', agents: [{ name: 'a', role: 'r' }] };
+    assert.deepEqual(messagePayloads({ content: 'Hi', blueprint }).map((x) => x.type), ['text', 'blueprint']);
+    assert.deepEqual(messagePayloads({ content: 'Hi', blueprint: { name: 'bad' } }).map((x) => x.type), ['text']);
+  });
 });

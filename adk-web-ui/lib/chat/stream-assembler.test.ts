@@ -71,4 +71,18 @@ describe('StreamAssembler', () => {
     assert.ok(msg.guideDocument, 'expected guide document from fence');
     assert.ok(!msg.content.includes('guidejson'));
   });
+
+  it('keeps a streamed blueprint and falls back to the fence', () => {
+    const bp = { name: 'Bp', goal: 'G', agents: [{ name: 'a', role: 'r', kind: 'llm' as const, tools: [], subAgents: [] }], tools: [], dataSources: [], models: [], risks: [], nextSteps: [] };
+    const a = new StreamAssembler({ name: 'adk_agent_builder' });
+    a.apply({ type: 'text', content: 'Design.' });
+    assert.deepEqual(a.apply({ type: 'blueprint', blueprint: bp }), {});
+    assert.equal(a.finalize().blueprint?.name, 'Bp');
+
+    const b = new StreamAssembler({ name: 'adk_agent_builder' });
+    b.apply({ type: 'text', content: 'Design.\n```blueprintjson\n' + JSON.stringify(bp) + '\n```' });
+    const msg = b.finalize();
+    assert.equal(msg.blueprint?.name, 'Bp');
+    assert.equal(msg.content, 'Design.');
+  });
 });
