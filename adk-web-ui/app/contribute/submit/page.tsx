@@ -110,7 +110,7 @@ export default function SubmitPage() {
                 </p>
                 <div className="bg-muted rounded-lg p-4 font-mono text-sm space-y-2">
                   <div><code>git add your_agent_name/</code></div>
-                  <div><code>git commit -m "Add your_agent_name agent"</code></div>
+                  <div><code>git commit -m &quot;Add your_agent_name agent&quot;</code></div>
                   <div><code>git push origin main</code></div>
                 </div>
               </div>
@@ -178,7 +178,7 @@ Link to any additional documentation or examples.`}
             <li>• Your pull request will be reviewed by maintainers</li>
             <li>• Feedback may be requested for improvements</li>
             <li>• Once approved, your agent will be merged and appear in the Agent Directory</li>
-            <li>• You'll be credited as the agent author</li>
+            <li>• You&apos;ll be credited as the agent author</li>
           </ul>
         </div>
 
