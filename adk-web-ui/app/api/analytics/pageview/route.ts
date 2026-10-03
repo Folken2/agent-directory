@@ -13,6 +13,10 @@ import {
   visitorCookieOptions,
 } from '@/lib/analytics/visitor-cookie';
 import { shouldTrackPath } from '@/lib/analytics/should-track';
+import { reserveBuckets } from '@/lib/limits/limiter';
+import { dbCounterStore } from '@/lib/limits/db-store';
+import { envInt } from '@/lib/env-int';
+import { extractClientIp, hashIp } from '@/lib/analytics/hash-ip';
 
 export const runtime = 'nodejs';
 
@@ -31,6 +35,19 @@ type Body = {
 
 export async function POST(request: NextRequest) {
   try {
+    // Analytics never blocks the user: over-limit or DB trouble just skips recording.
+    const clientIp = extractClientIp(request.headers);
+    const ipHash = hashIp(clientIp);
+    if (ipHash) {
+      const ipLimit = envInt('PAGEVIEW_IP_DAILY_LIMIT', 3000);
+      const quota = await reserveBuckets([{ key: `pv:ip:${ipHash}`, limit: ipLimit }], {
+        store: dbCounterStore,
+      });
+      if (!quota.ok) {
+        return NextResponse.json({ ok: true, recorded: false, reason: quota.reason });
+      }
+    }
+
     let body: Body;
     try {
       body = (await request.json()) as Body;

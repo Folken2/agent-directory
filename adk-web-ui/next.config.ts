@@ -1,6 +1,34 @@
 import type { NextConfig } from "next";
 import { join } from "path";
 
+const isProd = process.env.NODE_ENV === 'production';
+
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isProd ? '' : " 'unsafe-eval'"} https://www.googletagmanager.com https://maps.googleapis.com`,
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://maps.googleapis.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
+  "frame-src https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com",
+  "worker-src 'self' blob:",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self' https://accounts.google.com",
+].join('; ');
+
+const securityHeaders = [
+  {
+    key: process.env.CSP_ENFORCE === 'true' ? 'Content-Security-Policy' : 'Content-Security-Policy-Report-Only',
+    value: csp,
+  },
+  { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
+];
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   // Include monorepo root so Vercel bundles agents/*/metadata.json for API routes
@@ -17,11 +45,20 @@ const nextConfig: NextConfig = {
         port: '8000',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'www.google.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'exa.ai', pathname: '/**' },
+      { protocol: 'https', hostname: 'github.githubassets.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'mermaid.js.org', pathname: '/**' },
+      { protocol: 'https', hostname: 'tavily.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'xquik.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'img.youtube.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'yt3.ggpht.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'yt3.googleusercontent.com', pathname: '/**' },
     ],
+  },
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }];
   },
 };
 
