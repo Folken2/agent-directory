@@ -11,7 +11,7 @@ import { neonConfig } from '@neondatabase/serverless';
 export const LOCAL_DB_HOST = 'db.localtest.me';
 const LOCAL_PROXY_PORT = 4444;
 
-export function configureLocalNeon(url: string | undefined = process.env.DATABASE_URL): boolean {
+export function configureLocalNeon(url: string | undefined): boolean {
   if (!url) return false;
   let host: string;
   try {
@@ -24,4 +24,4 @@ export function configureLocalNeon(url: string | undefined = process.env.DATABAS
   return true;
 }
 
-configureLocalNeon();
+configureLocalNeon(process.env.DATABASE_URL);
