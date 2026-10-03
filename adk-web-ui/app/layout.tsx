@@ -7,9 +7,7 @@ import Footer from "@/components/Footer";
 import SessionProvider from "@/components/providers/SessionProvider";
 import PageViewTracker from "@/components/analytics/PageViewTracker";
 import CookieConsentBanner from "@/components/analytics/CookieConsentBanner";
-import GoogleAnalytics, {
-  ConsentGatedVercelAnalytics,
-} from "@/components/analytics/GoogleAnalytics";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 
 // Google Sans is not available via next/font/google, so we use Inter as the closest alternative
 // Inter is Google's recommended open-source alternative with similar characteristics
@@ -175,7 +173,6 @@ export default function RootLayout({
           <CookieConsentBanner />
         </SessionProvider>
         <GoogleAnalytics />
-        <ConsentGatedVercelAnalytics />
       </body>
     </html>
   );

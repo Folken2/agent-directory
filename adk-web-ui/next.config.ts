@@ -43,7 +43,9 @@ const nextConfig: NextConfig = {
   // Dynamic fs reads of agents/*/metadata.json are not always traced — pin them.
   outputFileTracingIncludes: {
     '/api/agents': ['../agents/**/metadata.json'],
+    '/api/analytics/pageview': ['./node_modules/fast-geoip/data/**/*'],
   },
+  serverExternalPackages: ['fast-geoip'],
   images: {
     remotePatterns: [
       {

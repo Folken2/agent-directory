@@ -21,10 +21,4 @@ export function hashIp(
   return createHmac('sha256', salt).update(ip.trim()).digest('hex');
 }
 
-export function extractClientIp(headers: Headers): string | null {
-  const forwarded = headers.get('x-forwarded-for');
-  if (forwarded) {
-    return forwarded.split(',')[0]?.trim() || null;
-  }
-  return headers.get('x-real-ip')?.trim() || null;
-}
+export { extractClientIp } from './client-ip';
