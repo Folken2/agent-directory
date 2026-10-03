@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import AgentGrid from '@/components/AgentGrid';
 import BuilderHero from '@/components/home/BuilderHero';
-import HowItWorks from '@/components/story/HowItWorks';
 import { Page, Section } from '@/components/layout/Page';
 import { loadExampleAgents } from '@/lib/agent-catalog';
 
@@ -26,10 +25,6 @@ export default function Home() {
         </div>
         <BuilderHero />
       </section>
-
-      <Section id="how" title="How it works" description="From an idea to a design you can build, in one conversation.">
-        <HowItWorks />
-      </Section>
 
       <Section
         id="examples"

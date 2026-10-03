@@ -1,10 +1,8 @@
 import { test, expect } from '@playwright/test';
 
-test('home tells the story: composer, three steps, examples', async ({ page }) => {
+test('home goes from the composer straight to examples', async ({ page }) => {
   await page.goto('/');
-  const how = page.getByRole('region', { name: 'How it works' });
-  await expect(how.getByRole('listitem')).toHaveCount(3);
-  await expect(how.getByRole('heading', { level: 3 })).toHaveText(['Describe it', 'Design it together', 'Take the blueprint']);
+  await expect(page.getByRole('region', { name: 'How it works' })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Examples' }).getByRole('heading', { level: 3 })).toHaveCount(4);
 });
 
