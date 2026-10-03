@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import { join } from "path";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -10,7 +10,7 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data: https://fonts.gstatic.com",
-  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://maps.googleapis.com https://*.ingest.sentry.io https://*.ingest.de.sentry.io",
+  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://maps.googleapis.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io https://*.ingest.de.sentry.io",
   "frame-src https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com",
   "worker-src 'self' blob:",
   "frame-ancestors 'none'",

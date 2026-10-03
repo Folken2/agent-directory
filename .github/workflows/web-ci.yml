@@ -10,6 +10,11 @@ on:
     branches: [main]
     paths:
       - 'adk-web-ui/**'
+      - 'agents/**/metadata.json'
+      - '.github/workflows/web-ci.yml'
+
+permissions:
+  contents: read
 
 concurrency:
   group: web-ci-${{ github.ref }}
