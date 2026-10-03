@@ -45,9 +45,13 @@ def _build_adk_docs_mcp_toolset() -> McpToolset:
         connection_params=StdioConnectionParams(
             server_params=StdioServerParameters(
                 command="uvx",
+                # Pin the tool's environment: uvx resolves at runtime, and
+                # mcpdoc 0.0.10 uses the mcp 1.x API (FastMCP), removed in mcp 2.
                 args=[
                     "--from",
-                    "mcpdoc",
+                    "mcpdoc==0.0.10",
+                    "--with",
+                    "mcp>=1.0,<2",
                     "mcpdoc",
                     "--urls",
                     _ADK_DOCS_LLMS_TXT,
