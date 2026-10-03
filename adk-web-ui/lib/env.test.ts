@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { missingEnv, envWarnings } from './env.ts';
+import { missingEnv } from './env.ts';
 
 const FULL = {
   DATABASE_URL: 'postgres://x',
@@ -25,6 +25,7 @@ describe('missingEnv', () => {
       'ADK_SERVER_URL',
       'GOOGLE_CLIENT_ID',
       'GOOGLE_CLIENT_SECRET',
+      'ADK_INTERNAL_TOKEN',
       'AUTH_SECRET (or NEXTAUTH_SECRET)',
     ]);
   });
@@ -33,19 +34,5 @@ describe('missingEnv', () => {
       'DATABASE_URL',
       'AUTH_SECRET (or NEXTAUTH_SECRET)',
     ]);
-  });
-});
-
-describe('envWarnings', () => {
-  it('warns when ADK_INTERNAL_TOKEN is unset in production', () => {
-    assert.deepEqual(envWarnings({ NODE_ENV: 'production' } as NodeJS.ProcessEnv), [
-      'ADK_INTERNAL_TOKEN is not set; backend calls are not authenticated',
-    ]);
-  });
-  it('does not warn when ADK_INTERNAL_TOKEN is set in production', () => {
-    assert.deepEqual(envWarnings({ NODE_ENV: 'production', ADK_INTERNAL_TOKEN: 't' } as NodeJS.ProcessEnv), []);
-  });
-  it('does not warn in development even without ADK_INTERNAL_TOKEN', () => {
-    assert.deepEqual(envWarnings({ NODE_ENV: 'development' } as NodeJS.ProcessEnv), []);
   });
 });
