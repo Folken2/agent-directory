@@ -14,6 +14,7 @@ import uvicorn
 from google.adk.cli.fast_api import get_fast_api_app
 from plugins import PLUGIN_QUALIFIED_NAMES
 from server_auth import InternalTokenMiddleware, resolve_internal_token
+from server_net import dual_stack_socket
 
 # Optional: load .env automatically if python-dotenv is installed.
 try:
@@ -56,7 +57,12 @@ def main() -> None:
 
     app.add_middleware(InternalTokenMiddleware, token=internal_token)
 
-    uvicorn.run(app, host=host, port=port)
+    if host == "::":
+        # Dual-stack: accept IPv4 (127.0.0.1, IPv4-only proxies) and IPv6.
+        sock = dual_stack_socket(port)
+        uvicorn.Server(uvicorn.Config(app, host=host, port=port)).run(sockets=[sock])
+    else:
+        uvicorn.run(app, host=host, port=port)
 
 
 def _normalize_to_asyncpg_uri(uri: str) -> str:
