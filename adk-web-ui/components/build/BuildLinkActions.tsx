@@ -14,11 +14,12 @@ export default function BuildLinkActions({ token, fileName }: { token: string; f
     setStatus('deleting');
     try {
       const res = await fetch(`/api/builds/${encodeURIComponent(token)}`, { method: 'DELETE' });
-      if (!res.ok) {
-        setStatus('error');
+      // 404: already deleted elsewhere; refresh shows "Build deleted".
+      if (res.ok || res.status === 404) {
+        router.refresh();
         return;
       }
-      router.refresh();
+      setStatus('error');
     } catch {
       setStatus('error');
     }

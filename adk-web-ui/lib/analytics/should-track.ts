@@ -9,6 +9,11 @@ const SKIP_PREFIXES = [
   '/manifest',
 ];
 
+/** Paths whose URL is a secret: no analytics of any kind may see them. */
+export function isPrivatePath(pathname: string | null | undefined): boolean {
+  return !!pathname && pathname.startsWith('/builds/');
+}
+
 const SKIP_EXTENSIONS =
   /\.(ico|png|jpg|jpeg|gif|webp|svg|css|js|map|txt|xml|woff2?|ttf|eot|mp4|webm|pdf)$/i;
 

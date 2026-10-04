@@ -1,7 +1,9 @@
 'use client';
 
 import Script from 'next/script';
+import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
+import { isPrivatePath } from '@/lib/analytics/should-track';
 import { readClientConsent, applyGtagConsent } from '@/lib/analytics/consent-client';
 
 const MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -11,8 +13,11 @@ const MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
  * Consent Mode defaults to denied; updates when the user Accepts.
  */
 export default function GoogleAnalytics() {
+  const pathname = usePathname();
+  // Build links carry a secret token; gtag would send the full URL to Google.
+  const isPrivate = isPrivatePath(pathname);
   useEffect(() => {
-    if (!MEASUREMENT_ID) return;
+    if (!MEASUREMENT_ID || isPrivate) return;
     const sync = () => {
       const level = readClientConsent();
       if (level) applyGtagConsent(level);
@@ -20,9 +25,9 @@ export default function GoogleAnalytics() {
     sync();
     window.addEventListener('ad-consent-change', sync);
     return () => window.removeEventListener('ad-consent-change', sync);
-  }, []);
+  }, [isPrivate]);
 
-  if (!MEASUREMENT_ID) return null;
+  if (!MEASUREMENT_ID || isPrivate) return null;
 
   return (
     <>

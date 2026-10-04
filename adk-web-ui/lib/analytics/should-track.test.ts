@@ -1,11 +1,21 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  isPrivatePath,
   sanitizeQuery,
   shouldTrackPath,
   shouldTrackServerRequest,
   extractUtm,
 } from './should-track.ts';
+
+describe('isPrivatePath', () => {
+  it('flags build links only', () => {
+    assert.equal(isPrivatePath('/builds/' + 'a'.repeat(43)), true);
+    assert.equal(isPrivatePath('/builds'), false);
+    assert.equal(isPrivatePath('/agents/foo'), false);
+    assert.equal(isPrivatePath(null), false);
+  });
+});
 
 describe('shouldTrackPath', () => {
   it('tracks app pages', () => {
