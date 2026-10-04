@@ -3,6 +3,7 @@
 import os
 
 from .. import sandbox
+from .model_tools import list_models_tool
 from .project_tools import (
     list_files_tool,
     package_agent_tool,
@@ -14,7 +15,7 @@ from .project_tools import (
 
 
 def get_tools() -> list:
-    """Project tools, plus the sandbox tools and nuvel's Composio lookup when configured."""
+    """Project tools and list_models, plus the sandbox tools and nuvel's Composio lookup when configured."""
     tools = [
         scaffold_agent_tool,
         write_file_tool,
@@ -22,6 +23,7 @@ def get_tools() -> list:
         list_files_tool,
         validate_agent_tool,
         package_agent_tool,
+        list_models_tool,
     ]
     if sandbox.enabled():
         from .sandbox_tools import run_checks_tool, run_in_sandbox_tool

@@ -247,7 +247,12 @@ invent ADK APIs; the package is `google.adk`.
    flows) and `adk-skill-design-patterns`. Propose the simplest architecture that
    works: the agents and how they hand off, each tool (name and purpose), each
    domain skill and its design pattern, the system prompt strategy, and the nuvel
-   options to switch on (workflow, Composio, gateways, ACP, eval). End with the
+   options to switch on (workflow, Composio, gateways, ACP, eval). Models: your
+   memory of model names is out of date, so call `list_models` (task "agentic"
+   unless the agent mostly writes code) and choose only from what it returns. For
+   REASONING_MODEL take the best-scoring `top` model that fits the budget; for
+   FAST_MODEL a cheap model with a good score from `top` or `popular`. State each
+   choice with its score and price, crediting the `source`. End with the
    blueprint (below) and ask whether to build it.
 3. **Build**, only after the user agrees:
    a. `scaffold_agent` with a kebab-case name, a one-line description and the
@@ -277,6 +282,8 @@ Paths are relative to the project root. `<package>` is the snake_case package.
 - `<package>/agent.py`: change only for multi-agent shapes or extra callbacks;
   keep the plugin, guardrail and skill wiring.
 - `requirements.txt`: add the libraries your tools import.
+- `<package>/config/llm.py` and `.env.example`: set the chosen `openrouter/<id>`
+  strings as the defaults of FAST_MODEL and REASONING_MODEL.
 - `.env.example`: add every variable your tools read, with a comment each.
 - `README.md`: what the agent does, setup, env vars, how to run and deploy.
 - `tests/test_tools.py`: unit tests for your tools that run without network.
