@@ -6,7 +6,7 @@ import type { TimelineRange } from './timeline-range';
 import type { OpsSignal } from './signals';
 import type {
   AgentHealthRow,
-  BlueprintInsights,
+  BuildInsights,
   ConversationOutcome,
   ConversationOverview,
   DemandInsights,
@@ -133,7 +133,7 @@ export type OpsInsights = {
   funnel: FunnelStep[];
   agents: AgentHealthRow[];
   demand: DemandInsights;
-  blueprints: BlueprintInsights;
+  builds: BuildInsights;
   tools: ToolUsageRow[];
   conversations: ConversationListItem[];
 };

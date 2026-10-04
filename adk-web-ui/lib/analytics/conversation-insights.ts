@@ -7,6 +7,7 @@
  * purpose: every match can be explained by pointing at the words that
  * triggered it, and nothing leaves the database to be classified.
  */
+import { optionLabel } from '../build/summary';
 
 export const BUILDER_APP = 'adk_agent_builder';
 
@@ -30,8 +31,12 @@ export type ConversationRow = {
   prompts: string[];
   /** Time from the first user message to the first agent response. */
   firstReplyMs: number | null;
-  hasBlueprint: boolean;
-  saved: boolean;
+  /** The session state holds a packaged build (`builder:build`). */
+  hasBuild: boolean;
+  /** A build from this session was emailed (build_saves.email_sent_at set). */
+  emailed: boolean;
+  /** The visitor ticked "I'd like help deploying it". */
+  helpRequested: boolean;
 };
 
 export type ToolUsageRow = { agentSlug: string; tool: string; calls: number; conversations: number };
@@ -45,11 +50,11 @@ export type TranscriptEntry = {
   error: string | null;
 };
 
-export type ConversationOutcome = 'saved' | 'blueprint' | 'error' | 'one-and-done' | 'engaged' | 'short';
+export type ConversationOutcome = 'emailed' | 'zip' | 'error' | 'one-and-done' | 'engaged' | 'short';
 
 export const OUTCOME_LABELS: Record<ConversationOutcome, string> = {
-  saved: 'Blueprint saved',
-  blueprint: 'Blueprint',
+  emailed: 'Emailed build',
+  zip: 'Got a zip',
   error: 'Error',
   'one-and-done': 'Single message',
   engaged: 'Engaged',
@@ -57,9 +62,9 @@ export const OUTCOME_LABELS: Record<ConversationOutcome, string> = {
 };
 
 /** The single most important thing that happened, best outcome first. */
-export function conversationOutcome(c: Pick<ConversationRow, 'saved' | 'hasBlueprint' | 'errors' | 'userTurns'>): ConversationOutcome {
-  if (c.saved) return 'saved';
-  if (c.hasBlueprint) return 'blueprint';
+export function conversationOutcome(c: Pick<ConversationRow, 'emailed' | 'hasBuild' | 'errors' | 'userTurns'>): ConversationOutcome {
+  if (c.emailed) return 'emailed';
+  if (c.hasBuild) return 'zip';
   if (c.errors > 0) return 'error';
   if (c.userTurns <= 1) return 'one-and-done';
   if (c.userTurns >= 3) return 'engaged';
@@ -344,14 +349,15 @@ export function agentHealth(rows: readonly ConversationRow[]): AgentHealthRow[] 
 
 export type FunnelStep = { id: string; label: string; count: number; ofFirst: number; ofPrevious: number };
 
-/** Builder conversations → kept going → got a blueprint → saved it. */
+/** Builder conversations → kept going → got a zip → emailed it → asked for help. */
 export function builderFunnel(rows: readonly ConversationRow[]): FunnelStep[] {
   const builder = rows.filter((c) => c.appName === BUILDER_APP);
   const steps = [
     { id: 'started', label: 'Started a design', count: builder.length },
     { id: 'continued', label: 'Answered a follow-up', count: builder.filter((c) => c.userTurns >= 2).length },
-    { id: 'blueprint', label: 'Got a blueprint', count: builder.filter((c) => c.hasBlueprint).length },
-    { id: 'saved', label: 'Saved it', count: builder.filter((c) => c.saved).length },
+    { id: 'zip', label: 'Got a zip', count: builder.filter((c) => c.hasBuild).length },
+    { id: 'emailed', label: 'Emailed it', count: builder.filter((c) => c.emailed).length },
+    { id: 'help', label: 'Asked for help', count: builder.filter((c) => c.helpRequested).length },
   ];
   return steps.map((step, i) => ({
     ...step,
@@ -410,124 +416,116 @@ export function demandInsights(
 }
 
 // ---------------------------------------------------------------------------
-// Blueprints
+// Builds
 // ---------------------------------------------------------------------------
 
-export type BlueprintRecord = {
+/** One builder session with a packaged build, plus what its build_saves rows say. */
+export type BuildRecord = {
   sessionId: string;
   userId: string;
   updatedAt: string;
-  saved: boolean;
-  doc: unknown;
+  emailed: boolean;
+  updates: boolean;
+  help: boolean;
+  /** `state["builder:build"]`, unvalidated. */
+  build: unknown;
 };
 
-type BpAgent = { kind?: string; tools?: unknown; subAgents?: unknown };
-type BpDoc = {
+type RawBuild = {
   name?: unknown;
-  goal?: unknown;
-  agents?: BpAgent[];
-  tools?: Array<{ name?: unknown; kind?: unknown }>;
-  models?: Array<{ model?: unknown }>;
-  dataSources?: unknown[];
+  description?: unknown;
+  options?: unknown;
+  models?: unknown;
+  tools?: unknown;
+  skills?: unknown;
+  files?: unknown;
 };
 
-const ARCHITECTURE_LABELS: Record<string, string> = {
-  single: 'Single agent',
-  sequential: 'Sequential pipeline',
-  parallel: 'Parallel fan-out',
-  loop: 'Loop (draft and refine)',
-  routed: 'Coordinator with sub-agents',
-  custom: 'Custom orchestration',
+export type BuildSummary = {
+  sessionId: string;
+  name: string;
+  description: string;
+  options: string[];
+  tools: number;
+  skills: number;
+  files: number;
+  emailed: boolean;
+  help: boolean;
+  updatedAt: string;
 };
 
-const TOOL_KIND_LABELS: Record<string, string> = {
-  builtin: 'Built-in (search, code)',
-  function: 'Custom function',
-  mcp: 'MCP server',
-  openapi: 'OpenAPI / REST',
-  agent: 'Agent as tool',
-  other: 'Other',
+export type BuildInsights = {
+  total: number;
+  emailed: number;
+  updates: number;
+  help: number;
+  options: ShareRow[];
+  models: ShareRow[];
+  tools: ShareRow[];
+  recent: BuildSummary[];
 };
-
-export function blueprintArchitecture(doc: unknown): string {
-  const raw = (doc as BpDoc | null)?.agents;
-  const agents = (Array.isArray(raw) ? raw : []).filter(Boolean);
-  const kinds = new Set(agents.map((a) => String(a.kind ?? 'llm')));
-  for (const kind of ['sequential', 'parallel', 'loop', 'custom']) if (kinds.has(kind)) return kind;
-  return agents.length <= 1 ? 'single' : 'routed';
-}
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
-export type BlueprintSummary = {
-  sessionId: string;
-  name: string;
-  goal: string;
-  agents: number;
-  tools: string[];
-  architecture: string;
-  saved: boolean;
-  updatedAt: string;
-};
+function record(v: unknown): Record<string, unknown> {
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+}
 
-export type BlueprintInsights = {
-  total: number;
-  saved: number;
-  avgAgents: number;
-  withDataSources: number;
-  architectures: ShareRow[];
-  toolKinds: ShareRow[];
-  tools: ShareRow[];
-  models: ShareRow[];
-  recent: BlueprintSummary[];
-};
+function strings(v: unknown): string[] {
+  return Array.isArray(v) ? v.map(str).filter(Boolean) : [];
+}
 
-export function blueprintInsights(records: readonly BlueprintRecord[], recentLimit = 12): BlueprintInsights {
-  const architectures = new Map<string, number>();
-  const toolKinds = new Map<string, number>();
+export function buildInsights(records: readonly BuildRecord[], recentLimit = 12): BuildInsights {
+  const options = new Map<string, number>();
+  const optionLabels: Record<string, string> = {};
+  const models = new Map<string, number>();
   const tools = new Map<string, number>();
   const toolLabels: Record<string, string> = {};
-  const models = new Map<string, number>();
-  let agentCount = 0;
-  let withData = 0;
-  let saved = 0;
-  const summaries: BlueprintSummary[] = [];
+  let emailed = 0;
+  let updates = 0;
+  let help = 0;
+  const summaries: BuildSummary[] = [];
 
   for (const r of records) {
-    const doc = (r.doc ?? {}) as BpDoc;
-    const agents = Array.isArray(doc.agents) ? doc.agents : [];
-    const docTools = Array.isArray(doc.tools) ? doc.tools : [];
-    const arch = blueprintArchitecture(doc);
-    architectures.set(arch, (architectures.get(arch) ?? 0) + 1);
-    agentCount += agents.length;
-    if (Array.isArray(doc.dataSources) && doc.dataSources.length > 0) withData++;
-    if (r.saved) saved++;
+    const b = record(r.build) as RawBuild;
+    if (r.emailed) emailed++;
+    if (r.updates) updates++;
+    if (r.help) help++;
 
-    // Each blueprint counts a tool or kind once, however many agents use it.
-    const kinds = new Set(docTools.map((t) => str(t.kind) || 'other'));
-    for (const k of kinds) toolKinds.set(k, (toolKinds.get(k) ?? 0) + 1);
+    const on = Object.entries(record(b.options))
+      .filter(([, v]) => v === true)
+      .map(([k]) => k);
+    for (const key of on) {
+      options.set(key, (options.get(key) ?? 0) + 1);
+      optionLabels[key] ??= optionLabel(key);
+    }
+
+    const m = record(b.models);
+    for (const model of new Set([str(m.fast), str(m.reasoning)].filter(Boolean))) {
+      models.set(model, (models.get(model) ?? 0) + 1);
+    }
+
+    // Each build counts a tool once, whatever its casing.
     const names = new Set<string>();
-    for (const t of docTools) {
-      const label = str(t.name);
-      if (!label) continue;
+    for (const label of strings(b.tools)) {
       const id = label.toLowerCase();
       names.add(id);
       toolLabels[id] ??= label;
     }
     for (const id of names) tools.set(id, (tools.get(id) ?? 0) + 1);
-    const modelNames = new Set((Array.isArray(doc.models) ? doc.models : []).map((m) => str(m.model)).filter(Boolean));
-    for (const m of modelNames) models.set(m, (models.get(m) ?? 0) + 1);
 
     summaries.push({
       sessionId: r.sessionId,
-      name: str(doc.name) || 'Untitled design',
-      goal: str(doc.goal),
-      agents: agents.length,
-      tools: [...names].map((id) => toolLabels[id]),
-      architecture: ARCHITECTURE_LABELS[arch],
-      saved: r.saved,
+      name: str(b.name) || 'Untitled build',
+      description: str(b.description),
+      options: on.map((k) => optionLabels[k]).sort(),
+      tools: names.size,
+      skills: strings(b.skills).length,
+      files: typeof b.files === 'number' && b.files >= 0 ? b.files : 0,
+      emailed: r.emailed,
+      help: r.help,
       updatedAt: r.updatedAt,
     });
   }
@@ -536,13 +534,12 @@ export function blueprintInsights(records: readonly BlueprintRecord[], recentLim
   const modelLabels = Object.fromEntries([...models.keys()].map((m) => [m, m]));
   return {
     total,
-    saved,
-    avgAgents: total ? Math.round((agentCount / total) * 10) / 10 : 0,
-    withDataSources: withData,
-    architectures: rankByShareOf(architectures, total, ARCHITECTURE_LABELS, 6),
-    toolKinds: rankByShareOf(toolKinds, total, TOOL_KIND_LABELS, 6),
-    tools: rankByShareOf(tools, total, toolLabels, 12),
+    emailed,
+    updates,
+    help,
+    options: rankByShareOf(options, total, optionLabels, 10),
     models: rankByShareOf(models, total, modelLabels, 6),
+    tools: rankByShareOf(tools, total, toolLabels, 12),
     recent: summaries.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, recentLimit),
   };
 }
@@ -573,30 +570,31 @@ export function buildHighlights(input: {
   funnel: FunnelStep[];
   agents: AgentHealthRow[];
   demand: DemandInsights;
-  blueprints: BlueprintInsights;
   nameOf?: (agentSlug: string) => string;
 }): Highlight[] {
-  const { overview, funnel, agents, demand, blueprints } = input;
+  const { overview, funnel, agents, demand } = input;
   const nameOf = input.nameOf ?? ((s: string) => s);
   const out: Highlight[] = [];
   const sized = agents.filter((a) => a.conversations >= MIN_SAMPLE);
   const worst = (key: keyof AgentHealthRow) =>
     [...sized].sort((a, b) => Number(b[key] ?? 0) - Number(a[key] ?? 0))[0];
 
-  // The weakest step of the builder funnel, judged on a real sample.
-  const leaks = funnel.slice(1).filter((s, i) => funnel[i].count >= MIN_SAMPLE);
+  // The weakest step of the builder funnel, judged on a real sample. Asking
+  // for help is optional, so it is not a leak.
+  const leaks = funnel.slice(1).filter((s, i) => s.id !== 'help' && funnel[i].count >= MIN_SAMPLE);
   const leak = [...leaks].sort((a, b) => a.ofPrevious - b.ofPrevious)[0];
   if (leak) {
     const sentence: Record<string, string> = {
       continued: `${pctText(100 - leak.ofPrevious)} of builder conversations stop after the first reply`,
-      blueprint: `Only ${pctText(leak.ofPrevious)} of builder conversations that continue reach a blueprint`,
-      saved: `Only ${pctText(leak.ofPrevious)} of blueprints get saved`,
+      zip: `Only ${pctText(leak.ofPrevious)} of builder conversations that continue get a zip`,
+      emailed: `Only ${pctText(leak.ofPrevious)} of zips get emailed`,
     };
+    const emailedStep = funnel.find((s) => s.id === 'emailed') ?? funnel[funnel.length - 1];
     out.push({
       id: 'funnel-leak',
       tone: 'risk',
       title: sentence[leak.id] ?? `${leak.label}: ${pctText(leak.ofPrevious)} of the step before`,
-      detail: `Biggest drop in the builder funnel. ${pctText(funnel[funnel.length - 1].ofFirst)} of started designs end with a saved blueprint.`,
+      detail: `Biggest drop in the builder funnel. ${pctText(emailedStep.ofFirst)} of started designs end with an emailed build.`,
     });
   }
 
@@ -640,16 +638,6 @@ export function buildHighlights(input: {
       detail: integration
         ? `${integration.label} comes up in ${pctText(integration.share)} of typed conversations; worth an example agent.`
         : 'Share of conversations whose first message was typed, not a suggestion.',
-    });
-  }
-
-  const mcp = blueprints.toolKinds.find((k) => k.id === 'mcp');
-  if (blueprints.total >= MIN_SAMPLE && mcp && mcp.share >= 30) {
-    out.push({
-      id: 'mcp',
-      tone: 'opportunity',
-      title: `${pctText(mcp.share)} of blueprints need an MCP server`,
-      detail: `Most proposed tools: ${blueprints.tools.slice(0, 3).map((t) => t.label).join(', ')}.`,
     });
   }
 
