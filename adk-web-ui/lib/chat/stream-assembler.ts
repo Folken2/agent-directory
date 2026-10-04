@@ -1,8 +1,7 @@
 import type { Agent, Artifact, MapsCapture, StreamChunk, SubAgentStep, ToolCall, ToolResponse } from '../types';
 import type { GuideDocument } from '../guide/types';
 import { resolveGuideMessageContent } from '../guide/parse';
-import type { Blueprint } from '../blueprint/types';
-import { resolveBlueprintContent } from '../blueprint/parse';
+import type { Build } from '../build/types';
 import type { PreviewState } from '../preview/types';
 import { mergeFinalText, mergeMainThinking } from './text-assembly';
 import { SubAgentTracker, isIntermediateAuthor } from './sub-agent-steps';
@@ -36,7 +35,7 @@ export type AssembledMessage = {
   subAgentSteps?: SubAgentStep[];
   mapsCaptures?: MapsCapture[];
   guideDocument?: GuideDocument;
-  blueprint?: Blueprint;
+  build?: Build;
 };
 
 /**
@@ -50,7 +49,7 @@ export class StreamAssembler {
   readonly steps: SubAgentTracker;
   private readonly mapsCaptures: MapsCapture[] = [];
   private guideDocument: GuideDocument | undefined;
-  private blueprint: Blueprint | undefined;
+  private build: Build | undefined;
 
   constructor(private readonly agent: Pick<Agent, 'name' | 'finalSubAgent'>, now: () => number = Date.now) {
     this.steps = new SubAgentTracker(now);
@@ -108,8 +107,9 @@ export class StreamAssembler {
       case 'guideDocument':
         if (chunk.guideDocument) this.guideDocument = chunk.guideDocument;
         return {};
-      case 'blueprint':
-        if (chunk.blueprint) this.blueprint = chunk.blueprint;
+      case 'build':
+        // Each repackage overwrites the state key; the latest one wins.
+        if (chunk.build) this.build = chunk.build;
         return {};
       case 'preview':
         return { preview: chunk.preview };
@@ -122,18 +122,15 @@ export class StreamAssembler {
 
   /**
    * The assistant message for this turn. Closes running steps and resolves
-   * the guide document and blueprint (state_delta first, fenced-JSON
-   * fallback) so the
+   * the guide document (state_delta first, fenced-JSON fallback) so the
    * stored `content` is the lead text rather than raw JSON.
    */
   finalize({ includeExtras = true }: { includeExtras?: boolean } = {}): AssembledMessage {
     this.steps.closeRunning();
     const resolved = resolveGuideMessageContent(this.content, this.guideDocument);
-    // Blueprint: state_delta first, ```blueprintjson fence as the fallback.
-    const bp = resolveBlueprintContent(resolved.content, this.blueprint);
     return {
-      content: bp.content,
-      blueprint: bp.blueprint,
+      content: resolved.content,
+      build: this.build,
       thinking: this.thinking || undefined,
       subAgentSteps: includeExtras && this.steps.length > 0 ? this.steps.snapshot() : undefined,
       mapsCaptures: includeExtras && this.mapsCaptures.length > 0 ? [...this.mapsCaptures] : undefined,

@@ -55,3 +55,33 @@ describe('adk-client preview stream', () => {
   });
 });
 
+
+describe('adk-client build state', () => {
+  it('yields a parsed builder:build from the state delta', async () => {
+    const build = {
+      name: 'research-summarizer',
+      package: 'research_summarizer',
+      artifact: 'research-summarizer.zip',
+      version: 0,
+      files: 41,
+      bytes: 58213,
+    };
+    const events = [
+      { author: 'adk_agent_builder', actions: { stateDelta: { 'builder:build': build } } },
+      { author: 'adk_agent_builder', actions: { state_delta: { 'builder:build': { name: 'bad' } } } },
+    ];
+    const body = events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join('');
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })) as typeof fetch;
+    try {
+      const chunks = [];
+      for await (const chunk of adkClient.streamPreview('session-abc', 'p-1', 'Hello')) chunks.push(chunk);
+      const builds = chunks.filter((c) => c.type === 'build');
+      assert.equal(builds.length, 1);
+      assert.equal(builds[0].type === 'build' ? builds[0].build.artifact : null, 'research-summarizer.zip');
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});

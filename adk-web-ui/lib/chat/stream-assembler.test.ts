@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { StreamAssembler } from './stream-assembler.ts';
+import { BUILD } from '../build/test-fixtures.ts';
 
 describe('StreamAssembler', () => {
   it('passes the builder preview state straight through', () => {
@@ -78,17 +79,21 @@ describe('StreamAssembler', () => {
     assert.ok(!msg.content.includes('guidejson'));
   });
 
-  it('keeps a streamed blueprint and falls back to the fence', () => {
-    const bp = { name: 'Bp', goal: 'G', agents: [{ name: 'a', role: 'r', kind: 'llm' as const, tools: [], subAgents: [] }], tools: [], dataSources: [], models: [], risks: [], nextSteps: [] };
+  it('keeps the latest streamed build', () => {
     const a = new StreamAssembler({ name: 'adk_agent_builder' });
-    a.apply({ type: 'text', content: 'Design.' });
-    assert.deepEqual(a.apply({ type: 'blueprint', blueprint: bp }), {});
-    assert.equal(a.finalize().blueprint?.name, 'Bp');
+    a.apply({ type: 'text', content: 'Packaged.' });
+    assert.deepEqual(a.apply({ type: 'build', build: BUILD }), {});
+    assert.deepEqual(a.apply({ type: 'build', build: { ...BUILD, version: 1 } }), {});
+    const msg = a.finalize();
+    assert.equal(msg.build?.version, 1);
+    assert.equal(msg.content, 'Packaged.');
+  });
 
-    const b = new StreamAssembler({ name: 'adk_agent_builder' });
-    b.apply({ type: 'text', content: 'Design.\n```blueprintjson\n' + JSON.stringify(bp) + '\n```' });
-    const msg = b.finalize();
-    assert.equal(msg.blueprint?.name, 'Bp');
-    assert.equal(msg.content, 'Design.');
+  it('leaves blueprint-looking fences as plain text', () => {
+    const a = new StreamAssembler({ name: 'adk_agent_builder' });
+    a.apply({ type: 'text', content: 'Design.\n```blueprintjson\n{}\n```' });
+    const msg = a.finalize();
+    assert.equal(msg.build, undefined);
+    assert.ok(msg.content.includes('blueprintjson'));
   });
 });

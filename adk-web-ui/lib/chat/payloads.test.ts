@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { getDisplayContent, messagePayloads } from './payloads.ts';
+import { BUILD } from '../build/test-fixtures.ts';
 
 const guide = {
   shape: 'single',
@@ -38,9 +39,19 @@ describe('messagePayloads', () => {
   it('empty messages have no payloads', () => {
     assert.deepEqual(messagePayloads({ content: '' }), []);
   });
-  it('appends a valid blueprint after the text', () => {
-    const blueprint = { name: 'Bp', goal: 'G', agents: [{ name: 'a', role: 'r' }] };
-    assert.deepEqual(messagePayloads({ content: 'Hi', blueprint }).map((x) => x.type), ['text', 'blueprint']);
-    assert.deepEqual(messagePayloads({ content: 'Hi', blueprint: { name: 'bad' } }).map((x) => x.type), ['text']);
+  it('renders the build card and drops the duplicate zip artifact', () => {
+    const zip = { id: 'research-summarizer.zip', name: 'research-summarizer.zip', type: 'file' as const, url: 'data:application/zip;base64,UEs=' };
+    const p = messagePayloads({ content: 'Packaged.', artifacts: [zip, artifact], build: BUILD });
+    assert.deepEqual(p.map((x) => x.type), ['text', 'build', 'artifact']);
+    const listed = p.find((x) => x.type === 'artifact');
+    assert.deepEqual(listed?.type === 'artifact' ? listed.artifacts.map((a) => a.name) : null, ['a.png']);
+  });
+  it('omits the artifact payload when the zip was the only artifact', () => {
+    const zip = { id: 'z', name: 'research-summarizer.zip', type: 'file' as const, url: 'data:application/zip;base64,UEs=' };
+    assert.deepEqual(messagePayloads({ content: 'Packaged.', artifacts: [zip], build: BUILD }).map((x) => x.type), ['text', 'build']);
+  });
+  it('ignores an invalid stored build and keeps the artifacts', () => {
+    const zip = { id: 'z', name: 'research-summarizer.zip', type: 'file' as const, url: 'data:application/zip;base64,UEs=' };
+    assert.deepEqual(messagePayloads({ content: 'Hi', artifacts: [zip], build: { name: 'bad' } }).map((x) => x.type), ['text', 'artifact']);
   });
 });

@@ -1,8 +1,10 @@
 import { pgTable, uuid, text, timestamp, jsonb, index } from 'drizzle-orm/pg-core';
 
 /**
- * Builder blueprints a visitor chose to save, with the email they gave and
- * the time they consented to being contacted. Personal data: see /privacy.
+ * LEGACY: blueprints visitors saved before builds replaced them. Nothing
+ * writes or reads this table any more; the schema stays so drizzle-kit
+ * doesn't generate a DROP and existing rows are kept. Personal data: see
+ * /privacy.
  */
 export const blueprintSubmissions = pgTable(
   'blueprint_submissions',
