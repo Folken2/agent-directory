@@ -44,15 +44,19 @@ export default function PrivacyPage() {
         <p>
           When you choose &ldquo;Email me a permanent link&rdquo;, we store your email address, the zip and that
           build summary so we can send you the link and serve the download, plus your account id if you are
-          signed in. The email is sent through our email provider (Resend). We only send you that email unless
-          you tick &ldquo;Send me updates about the builder and nuvel&rdquo;; then your address is added to our
-          updates list. If you tick &ldquo;I&apos;d like help deploying it&rdquo;, the site owner is notified so
-          they can get in touch. We do not sell or share your email.
+          signed in. They are kept until you delete the build. The email is sent through our email provider
+          (Resend). When an owner notification is configured, the site owner is told that you emailed a build,
+          including your email address and the build summary; if you tick &ldquo;I&apos;d like help
+          deploying it&rdquo;, they may get in touch about deploying it. We only send you the link email unless
+          you tick &ldquo;Send me updates about the builder and nuvel&rdquo;; then we store the time you agreed
+          and add your address to our updates list. We do not sell or share your email.
         </p>
         <p>
-          &ldquo;Delete this build&rdquo; on the link page removes your email address and the zip straight away,
-          and the link stops working. Blueprints saved with an earlier version of the builder are kept; to have
-          one deleted, contact us as below.
+          &ldquo;Delete this build&rdquo; on the link page removes your email address and the zip from the
+          stored build straight away, and the link stops working. It does not remove you from the updates list:
+          if you opted in to updates you stay on it until you unsubscribe with the link in an update email or
+          contact us as below. Blueprints saved with an earlier version of the builder are kept; to have one
+          deleted, contact us as below.
         </p>
       </ProseSection>
 

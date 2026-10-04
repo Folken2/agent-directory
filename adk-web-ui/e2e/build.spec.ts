@@ -67,7 +67,12 @@ test('the build card renders and the zip is not listed twice', async ({ page }) 
   const requests: URL[] = [];
   await stubBuilderTurn(page);
   await stubArtifacts(page, requests);
+  const listed = page.waitForResponse(
+    (r) => new URL(r.url()).pathname === '/api/artifacts' && !new URL(r.url()).searchParams.get('artifact_name'),
+  );
   const card = await getBuildCard(page);
+  await listed;
+  await expect(card).toBeVisible();
   await expect(page.getByText('Packaged research-summarizer.')).toBeVisible();
   await expect(card).toContainText('41 files · 1 tool · 1 skill · 56.8 KB');
   await expect(card.getByText('Eval', { exact: true })).toBeVisible();
