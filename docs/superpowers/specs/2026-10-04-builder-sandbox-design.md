@@ -1,7 +1,8 @@
 # Agent Builder Sandbox — Run, Test and Preview Generated Agents
 
 **Date:** 2026-10-04
-**Status:** Approved (user: E2B as the sandbox provider; start with Step 1)
+**Status:** Approved (user: E2B as the sandbox provider; start with Step 1. Step 2: proxy the
+preview through the web app, use our capped key, protect the preview link)
 **Extends:** the nuvel-based builder (`agents/adk_agent_builder/`, PR #40)
 
 ## Goal
@@ -48,20 +49,22 @@ files and nothing else.
 | Sandbox image | Custom E2B template: Python 3.11 + nuvel's template `requirements.txt` + pytest, built by `sandbox_template.py` |
 | Source of truth for files | The backend workspace (Step 1), object storage later (Step 3). The sandbox is disposable |
 | Persistence | Not a Railway volume. ADK artifact service on GCS/S3, with `user:` artifacts for per-user projects (Step 3) |
-| Preview UI | `adk web` in the sandbox, embedded in the canvas (Step 2); own test panel later (Step 4) |
-| LLM key for previews | **Open**: capped per-sandbox key vs bring-your-own (Step 2) |
+| Preview UI | Our own chat panel next to the builder chat, talking to the preview agent through the proxy. Not an `adk web` iframe: that would serve sandbox-generated HTML and JS from our origin |
+| Preview access | Browser → Next.js (session ownership) → ADK backend (internal token) → sandbox (private port: E2B traffic token, plus the agent's own `API_KEY`). The browser never sees a sandbox URL or key |
+| LLM key for previews | Ours, capped: one OpenRouter key per preview from the management API, with a spending limit and an expiry, deleted when the preview stops |
 
 ## Architecture
 
 ```
 Browser ─ chat (left) ──► Next.js ──► ADK server: builder
-   │                                     │  (no generated code runs here)
-   │                                     │  sync files, run commands, start preview
-   │                                     ▼
-   └─ canvas (right) ◄─ preview URL ── E2B sandbox for this session
-                                         /home/user/projects/<name>  (project files)
-                                         pip deps from the template, pytest
-                                         Step 2: `adk web --reload` on a port
+   │                        ▲            │  (no generated code runs here)
+   │                        │            │  sync files, run commands, start preview
+   │                        │            ▼
+   └─ canvas (right) ───────┘  ADK server preview proxy ──► E2B sandbox for this session
+      (our chat panel)          (internal token)            /home/user/projects/<name>
+                                                             pip deps from the template
+                                                             Step 2: the project's run_adk.py
+                                                             on a private port
 ```
 
 ## Steps
@@ -97,23 +100,41 @@ Anonymous sessions get a clear "sign in to run" result. Without the key, nothing
 
 ### Step 2 — live preview canvas
 
-- `start_preview` tool: `adk web --reload --host 0.0.0.0 --port 8000` in the project
-  directory (background command), then `sandbox.get_host(8000)` for the URL.
-  `adk web` serves the dev UI with the event, trace and state inspector.
-- The URL lands in state (`builder:preview`); the web UI picks it up from `state_delta`,
-  like the blueprint, and opens the canvas.
-- File writes already re-sync; `--reload` picks them up.
-- **Preview access**: the host URL is reachable by anyone who has it, and the agent spends
-  our LLM key. Proxy it through Next.js with the user's session, or use E2B's access
-  controls if they cover HTTP ports. To decide before Step 2 ships.
-- **LLM key** (open decision):
-  1. a per-sandbox OpenRouter key with a small credit limit, revoked when the sandbox ends;
-  2. bring-your-own key, entered in the canvas and stored only in the sandbox's env;
-  3. worth evaluating: E2B egress rules (`network.rules` transforms) that add the key to
-     requests to `openrouter.ai` in transit, so code in the sandbox never sees it.
-  Whatever the choice, nuvel's `COST_GUARD_BUDGET` in the generated agent is a second cap.
-- Third-party credentials (Slack, Gmail …): mock by default; BYO keys only into the
-  sandbox env, never into our database or session state.
+**Decided:** proxy through the web app, our capped key, a protected link.
+
+- **`start_preview` tool**: uploads the project, installs requirements, and (re)starts the
+  project's own `run_adk.py` in the sandbox, in `DEV_MODE` (in-memory sessions,
+  `reload_agents`) on port 8000. It waits for `/health` and records the preview on the
+  server. State gets `builder:preview` (project, package, status): no URL, no key.
+  `stop_preview` stops it.
+- **Protected link**, three independent locks, and the browser never holds a sandbox
+  URL or key:
+  1. Next.js resolves the ADK user from the browser's identity and checks they own the
+     builder session (`resolveAdkScope`), as for every other ADK call.
+  2. The ADK backend only takes the call with the internal token.
+  3. The sandbox is created with `network={"allow_public_traffic": False}`, so its port
+     answers only requests carrying the `e2b-traffic-access-token`. The generated server
+     also requires a random per-start `API_KEY`.
+- **Proxy endpoints** on the ADK backend (`preview_api.py`): status, `run_sse` (creates the
+  preview session on first use or after a restart, then streams the agent's events),
+  and stop. Next.js `app/api/preview/route.ts` relays them with `guardStream`.
+- **Our capped key**: each start creates an OpenRouter key through the management API with
+  `limit` (default $0.50) and `expires_at` (2 hours), passed to the sandbox as
+  `OPENROUTER_API_KEY`. It is deleted on stop, on restart and when the sandbox is
+  closed. The generated agent also runs with `COST_GUARD_BUDGET` at the same limit.
+  The key is visible to code in the sandbox; the limit and expiry are what bound it.
+- **Keepalive**: proxy traffic doesn't touch the ADK environment, so each preview request
+  extends the sandbox TTL and the registry's idle clock.
+- **Sync in place**: a running preview must not lose its working directory, so uploads
+  replace files and remove only files that were uploaded before and are gone from the
+  workspace. Files the running code creates (memory, traces) stay. `reload_agents` picks
+  up agent changes after any sync; a dependency change needs `start_preview` again.
+- **Canvas**: a panel beside the builder chat (full screen on phones), opened when
+  `builder:preview` arrives. It is a plain chat with the preview agent, rendered by our
+  React components from the ADK events. A Stop button ends the preview.
+- **Limits**: preview messages per builder session; the capped key bounds spend.
+- Third-party credentials (Slack, Gmail …): mock by default. BYO keys stay out of scope.
+- **Later**: `adk web`'s trace inspector, if wanted, from a separate preview origin.
 
 ### Step 3 — files and saved projects
 
@@ -151,10 +172,15 @@ Anonymous sessions get a clear "sign in to run" result. Without the key, nothing
 | `BUILDER_SANDBOX_MAX_RUNS` | `30` | `run_checks` + `run_in_sandbox` calls per session |
 | `BUILDER_SANDBOX_MAX_ACTIVE` | `10` | Sandboxes alive at once on one server |
 | `BUILDER_SANDBOX_PYTHON` | `python3` | Interpreter inside the sandbox |
+| `OPENROUTER_MANAGEMENT_KEY` | unset | OpenRouter management key; with `E2B_API_KEY`, enables previews |
+| `BUILDER_PREVIEW_KEY_LIMIT_USD` | `0.50` | Spending limit of each preview's OpenRouter key |
+| `BUILDER_PREVIEW_KEY_HOURS` | `2` | Expiry of each preview's OpenRouter key |
+| `BUILDER_PREVIEW_MAX_MESSAGES` | `60` | Preview messages per builder session |
+| `BUILDER_PREVIEW_START_TIMEOUT` | `90` | Seconds to wait for the preview server's `/health` |
 
 ## Open questions
 
-1. Preview LLM key: options 1–3 above.
-2. Preview access control: proxy vs E2B access control.
-3. Should `package_agent` refuse to package when the last `run_checks` failed? (Step 1
+1. Should `package_agent` refuse to package when the last `run_checks` failed? (Step 1
    leaves it advisory: validation is still the hard gate.)
+2. The preview registry is per process: a second backend replica would need sticky
+   sessions or a shared registry (Step 3 territory).
