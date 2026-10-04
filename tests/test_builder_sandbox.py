@@ -42,9 +42,25 @@ class ScriptedEnvironment:
         self.responses = responses or {}
         self.commands: list[str] = []
         self.files: dict[str, bytes] = {}
+        self.background: list[dict] = []
+        self.killed: list[int] = []
+        self.alive = True
         self.is_initialized = False
         self.closed = False
         ScriptedEnvironment.instances.append(self)
+
+    async def start_background(self, command, *, cwd, envs):
+        self.background.append({"command": command, "cwd": cwd, "envs": envs})
+        return 4242
+
+    async def kill(self, pid):
+        self.killed.append(pid)
+
+    def endpoint(self, port):
+        return f"https://{port}-sbx.e2b.app", {"e2b-traffic-access-token": "traffic-token"}
+
+    async def keepalive(self):
+        return self.alive
 
     @property
     def working_dir(self):
@@ -275,8 +291,14 @@ def test_a_scaffolded_project_runs_for_real(tmp_path, monkeypatch):
     assert failed["steps"][-1]["step"] == "import"
     assert "boom" in failed["steps"][-1]["stderr"]
 
-    # Every run starts from the workspace: files made in the sandbox do not survive.
-    asyncio.run(run_in_sandbox("touch stray.txt", ctx))
-    again = asyncio.run(run_in_sandbox("test -f stray.txt", ctx))
-    assert again["result"]["exit_code"] == 1
+    # Uploads mirror the workspace in place: a file removed from the workspace
+    # disappears, while files the running code made (memory, traces) stay.
+    asyncio.run(run_in_sandbox("touch made-by-the-agent.txt", ctx))
+    write_file("notes.md", "temporary", ctx)
+    asyncio.run(run_in_sandbox("test -f notes.md", ctx))
+    (workspace.session_dir("u_123", "s1") / "support-triage" / "notes.md").unlink()
+    gone = asyncio.run(run_in_sandbox("test -f notes.md", ctx))
+    assert gone["result"]["exit_code"] == 1
+    kept = asyncio.run(run_in_sandbox("test -f made-by-the-agent.txt", ctx))
+    assert kept["result"]["exit_code"] == 0
     asyncio.run(sandbox.close_all())

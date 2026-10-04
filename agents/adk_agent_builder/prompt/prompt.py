@@ -318,12 +318,24 @@ If a run answers `sign_in_required`, tell the user once that signing in lets you
 test the agent, and carry on to validation and packaging.
 """
 
+PREVIEW_INSTRUCTION = """
+# Live preview
+`start_preview` runs the project's own server in the sandbox, with a capped model
+key, and opens a panel next to this chat where the user talks to their agent.
+After `run_checks` passes, start the preview and tell the user they can try the
+agent in the panel. After you change the project's files, call `start_preview`
+again so the panel runs the latest version. `stop_preview` ends it. The preview's
+model budget is small: suggest a few focused test messages.
+"""
 
-def build_prompt_v3(state, sandbox: bool = False) -> str:
-    """The v3 prompt for one turn: date, workflow, sandbox, blueprint, current project."""
+
+def build_prompt_v3(state, sandbox: bool = False, preview: bool = False) -> str:
+    """The v3 prompt for one turn: date, workflow, sandbox, preview, blueprint, project."""
     prompt = PROMPT_V3.format(date=get_current_date())
     if sandbox:
         prompt += SANDBOX_INSTRUCTION
+    if preview:
+        prompt += PREVIEW_INSTRUCTION
     prompt += BLUEPRINT_INSTRUCTION
     name = state.get("current_agent_name")
     package = state.get("current_agent_package")

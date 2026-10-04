@@ -27,6 +27,10 @@ def get_tools() -> list:
         from .sandbox_tools import run_checks_tool, run_in_sandbox_tool
 
         tools.extend([run_checks_tool, run_in_sandbox_tool])
+    if sandbox.preview_enabled():
+        from .sandbox_tools import start_preview_tool, stop_preview_tool
+
+        tools.extend([start_preview_tool, stop_preview_tool])
     if os.getenv("COMPOSIO_API_KEY"):
         from nuvel.tools.composio_tools import list_composio_toolkits_tool
 

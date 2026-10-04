@@ -43,6 +43,7 @@ DEV_MODE=true python run_adk.py
 | `package_agent` | Validates, zips the project (no `.env`, no caches) and saves it as the `<name>.zip` artifact |
 | `run_checks` | In an E2B sandbox: upload, install requirements, import `<package>.agent`, run pytest. Only with `E2B_API_KEY` |
 | `run_in_sandbox` | One shell command in the project root inside the sandbox, for debugging. Only with `E2B_API_KEY` |
+| `start_preview`, `stop_preview` | Run the project's own server in the sandbox for the live preview panel. Also needs `OPENROUTER_MANAGEMENT_KEY` |
 | `list_composio_toolkits` | nuvel's Composio catalog lookup; only when the server has `COMPOSIO_API_KEY` |
 | `list_skills`, `load_skill`, `load_skill_resource` | nuvel's 15 ADK skills via `SkillToolset` |
 | `list_doc_sources`, `fetch_docs` | Official ADK docs via `mcpdoc` (launched with `uvx`) |
@@ -117,6 +118,23 @@ The template is Python 3.11 with nuvel's template `requirements.txt` and pytest 
 | `BUILDER_SANDBOX_MAX_ACTIVE` | `10` | Sandboxes alive at once on one server |
 | `BUILDER_SANDBOX_PYTHON` | `python3` | Interpreter inside the sandbox |
 
+## Live preview
+
+With `OPENROUTER_MANAGEMENT_KEY` also set, `start_preview` runs the project's own `run_adk.py` in the chat's sandbox and the web app opens a panel next to the chat where the user talks to their agent.
+
+- **Private all the way.** The sandbox's port is private (`allow_public_traffic: False`, so E2B wants the traffic token) and the server wants a random per-start `API_KEY`. Only `preview_api.py` on the backend holds both. The browser goes through `/api/preview`, which checks it owns the builder chat, then the backend proxy under the internal token. Session state carries the project name and status, never a URL or key.
+- **Our key, capped.** Each start creates an OpenRouter key through the management API with a spending limit and an expiry, deleted on stop, restart or sandbox close. The generated agent's own cost guard gets the same budget.
+- **Kept current.** Uploads update the project in place and `reload_agents` picks up agent changes; the builder calls `start_preview` again after edits (needed for dependency changes).
+- **Kept alive.** Each preview message extends the sandbox TTL; idle previews end with the sandbox.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `OPENROUTER_MANAGEMENT_KEY` | unset | OpenRouter management key; with `E2B_API_KEY`, turns previews on |
+| `BUILDER_PREVIEW_KEY_LIMIT_USD` | `0.50` | Spending limit of each preview's key |
+| `BUILDER_PREVIEW_KEY_HOURS` | `2` | Expiry of each preview's key |
+| `BUILDER_PREVIEW_MAX_MESSAGES` | `60` | Preview messages per builder chat |
+| `BUILDER_PREVIEW_START_TIMEOUT` | `90` | Seconds to wait for the server's `/health` |
+
 ## Project structure
 
 ```text
@@ -124,12 +142,14 @@ adk_agent_builder/
 ├── agent.py             # root_agent (skills, tools, guards) and app (nuvel plugins)
 ├── nuvel_plugins.py     # nuvel plugin chain for the builder
 ├── workspace.py         # per-session workspace, limits, cleanup
-├── sandbox.py           # E2B sandbox per session: upload, install, run
+├── sandbox.py           # E2B sandbox per session: upload, install, run, preview
 ├── sandbox_template.py  # builds the E2B template (nuvel requirements + pytest)
+├── openrouter_keys.py   # capped, expiring OpenRouter keys for previews
+├── preview_api.py       # backend proxy to the preview (mounted by run_adk.py)
 ├── tools/
 │   ├── __init__.py      # get_tools()
 │   ├── project_tools.py # scaffold / write / read / list / validate / package
-│   └── sandbox_tools.py # run_checks / run_in_sandbox
+│   └── sandbox_tools.py # run_checks / run_in_sandbox / start_preview / stop_preview
 ├── blueprint.py         # Blueprint model + ```blueprintjson parsing
 ├── callbacks/
 │   └── blueprint_document.py  # moves the blueprint into session state
@@ -150,7 +170,7 @@ cd agents && uv sync && cd ..
 adk web agents            # or: python run_adk.py (needs SESSION_SERVICE_URI)
 ```
 
-Tests: `python -m pytest tests/test_agent_builder.py tests/test_builder_sandbox.py tests/test_blueprint.py`.
+Tests: `python -m pytest tests/test_agent_builder.py tests/test_builder_sandbox.py tests/test_builder_preview.py tests/test_blueprint.py`.
 
 ## Customization
 

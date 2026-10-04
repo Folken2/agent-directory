@@ -1,12 +1,15 @@
 """Tools that run the current project in an isolated E2B sandbox.
 
-Registered only when the server has E2B_API_KEY (see tools/__init__.py).
-Only signed-in users may run code; runs per chat are capped. See sandbox.py.
+run_checks and run_in_sandbox are registered when the server has E2B_API_KEY;
+start_preview and stop_preview also need OPENROUTER_MANAGEMENT_KEY (see
+tools/__init__.py). Only signed-in users may run code; runs per chat are
+capped. See sandbox.py and preview_api.py.
 """
 
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from google.adk.tools import FunctionTool
@@ -67,8 +70,8 @@ async def run_checks(tool_context: ToolContext) -> dict:
 
     package = tool_context.state.get(workspace.PROJECT_PACKAGE_KEY) or ""
     try:
-        async with sandbox.open_session(workspace.session_key_for(tool_context)) as env:
-            steps = await sandbox.check_project(env, project, name, package)
+        async with sandbox.open_session(workspace.session_key_for(tool_context)) as box:
+            steps = await sandbox.check_project(box.env, project, name, package)
     except SandboxError as exc:
         return _error(str(exc))
     except Exception as exc:  # E2B API errors, network
@@ -107,9 +110,9 @@ async def run_in_sandbox(command: str, tool_context: ToolContext) -> dict:
         return stop
 
     try:
-        async with sandbox.open_session(workspace.session_key_for(tool_context)) as env:
-            remote = await sandbox.sync_project(env, project, name)
-            result = await sandbox.run_command(env, remote, command, sandbox.COMMAND_TIMEOUT)
+        async with sandbox.open_session(workspace.session_key_for(tool_context)) as box:
+            remote = await sandbox.sync_project(box.env, project, name)
+            result = await sandbox.run_command(box.env, remote, command, sandbox.COMMAND_TIMEOUT)
     except SandboxError as exc:
         return _error(str(exc))
     except Exception as exc:
@@ -129,5 +132,62 @@ async def run_in_sandbox(command: str, tool_context: ToolContext) -> dict:
     return {"status": "ok", "result": outcome, "runs_left": _runs_left(tool_context)}
 
 
+async def start_preview(tool_context: ToolContext) -> dict:
+    """Start (or restart) a live preview of the current project next to the chat.
+
+    Uploads the latest files, installs requirements and runs the project's own
+    server in the sandbox with a capped model key. The user then chats with
+    their agent in the preview panel. Call it after run_checks passes, and
+    again after you change files so the panel runs the latest version.
+    """
+    try:
+        name, project = workspace.current_project(tool_context)
+    except WorkspaceError as exc:
+        return _error(str(exc))
+    stop = _start_run(tool_context)
+    if stop:
+        return stop
+
+    package = tool_context.state.get(workspace.PROJECT_PACKAGE_KEY) or ""
+    key = workspace.session_key_for(tool_context)
+    try:
+        async with sandbox.open_session(key) as box:
+            steps = await sandbox.start_preview(box, project, name, package, f"adk-builder-preview-{key[:12]}")
+    except SandboxError as exc:
+        return _error(str(exc))
+    except Exception as exc:
+        logger.error("start_preview failed: %s", exc)
+        return _error("The preview failed to start unexpectedly. Try again.")
+
+    running = bool(steps) and steps[-1]["step"] == "start" and steps[-1]["ok"]
+    if running:
+        tool_context.state[sandbox.PREVIEW_STATE_KEY] = {
+            "status": "running",
+            "project": name,
+            "package": package,
+            "startedAt": datetime.now(timezone.utc).isoformat(),
+        }
+    return {
+        "status": "running" if running else "failed",
+        "steps": steps,
+        "runs_left": _runs_left(tool_context),
+        **({"next": "Tell the user the preview panel is open next to the chat."} if running else {}),
+    }
+
+
+async def stop_preview(tool_context: ToolContext) -> dict:
+    """Stop the live preview and release its model key."""
+    box = sandbox.find(workspace.session_key_for(tool_context))
+    stopped = False
+    if box is not None:
+        async with box.lock:
+            stopped = await sandbox.stop_preview(box)
+    if tool_context.state.get(sandbox.PREVIEW_STATE_KEY):
+        tool_context.state[sandbox.PREVIEW_STATE_KEY] = {"status": "stopped"}
+    return {"status": "stopped" if stopped else "not_running"}
+
+
 run_checks_tool = FunctionTool(func=run_checks)
 run_in_sandbox_tool = FunctionTool(func=run_in_sandbox)
+start_preview_tool = FunctionTool(func=start_preview)
+stop_preview_tool = FunctionTool(func=stop_preview)

@@ -116,7 +116,9 @@ def _build_tools():
 
 
 async def _instruction(ctx) -> str:
-    return LANGUAGE_INSTRUCTION + build_prompt_v3(ctx.state, sandbox=sandbox.enabled())
+    return LANGUAGE_INSTRUCTION + build_prompt_v3(
+        ctx.state, sandbox=sandbox.enabled(), preview=sandbox.preview_enabled()
+    )
 
 
 root_agent = Agent(

@@ -10,6 +10,10 @@ The backend workspace stays the source of truth. Every run re-uploads the
 project, because E2B recreates an expired sandbox without its files. For the
 same reason the "requirements installed" marker lives inside the sandbox.
 
+A preview runs the project's own server in the sandbox on a private port: E2B
+only lets requests through with the sandbox's traffic token, and the server
+wants a per-start API key. Only preview_api.py, on this server, holds both.
+
 See docs/superpowers/specs/2026-10-04-builder-sandbox-design.md.
 """
 
@@ -22,6 +26,7 @@ import io
 import logging
 import os
 import re
+import secrets
 import shlex
 import tarfile
 import time
@@ -29,7 +34,10 @@ from dataclasses import dataclass, field
 from pathlib import Path, PurePosixPath
 from typing import Any, AsyncIterator
 
-from . import workspace
+from google.adk.integrations.e2b import E2BEnvironment
+
+from . import openrouter_keys, workspace
+from .openrouter_keys import PreviewKeyError
 from .workspace import int_env
 
 logger = logging.getLogger(__name__)
@@ -43,6 +51,10 @@ MAX_ACTIVE = int_env("BUILDER_SANDBOX_MAX_ACTIVE", 10)
 PYTHON = os.getenv("BUILDER_SANDBOX_PYTHON") or "python3"
 OUTPUT_TAIL_CHARS = 3000
 RUNS_STATE_KEY = "builder:sandbox_runs"
+PREVIEW_STATE_KEY = "builder:preview"
+PREVIEW_PORT = 8000
+PREVIEW_START_TIMEOUT = int_env("BUILDER_PREVIEW_START_TIMEOUT", 90)
+PREVIEW_MAX_MESSAGES = int_env("BUILDER_PREVIEW_MAX_MESSAGES", 60)
 
 # The sandbox's whole environment. Never forward the server's variables.
 SANDBOX_ENV = {
@@ -67,6 +79,11 @@ def enabled() -> bool:
     return bool(os.getenv("E2B_API_KEY"))
 
 
+def preview_enabled() -> bool:
+    """Previews also need our OpenRouter management key for the capped model key."""
+    return enabled() and openrouter_keys.enabled()
+
+
 def may_run(user_id: str) -> bool:
     """Only signed-in users (web app ids `u_<id>`) run code, unless switched off."""
     if os.getenv("BUILDER_SANDBOX_SIGNED_IN_ONLY", "1").strip().lower() in ("0", "false", "no"):
@@ -74,11 +91,66 @@ def may_run(user_id: str) -> bool:
     return str(user_id).startswith("u_")
 
 
+class PrivateE2BEnvironment(E2BEnvironment):
+    """ADK's E2BEnvironment with private ports, and what the preview proxy needs.
+
+    Overrides ADK's _create_sandbox (google-adk 2.10) to pass
+    network={"allow_public_traffic": False}: the sandbox's URLs then answer only
+    requests that carry its traffic access token.
+    """
+
+    async def _create_sandbox(self):
+        from e2b import AsyncSandbox
+
+        return await AsyncSandbox.create(
+            template=self._image,
+            timeout=self._timeout,
+            envs=self._env_vars,
+            api_key=self._api_key,
+            network={"allow_public_traffic": False},
+        )
+
+    def endpoint(self, port: int) -> tuple[str, dict[str, str]]:
+        """Base URL of a sandbox port and the header that lets a request through."""
+        if self._sandbox is None:
+            raise SandboxError("The sandbox is not running.")
+        headers = {}
+        if self._sandbox.traffic_access_token:
+            headers["e2b-traffic-access-token"] = self._sandbox.traffic_access_token
+        return f"https://{self._sandbox.get_host(port)}", headers
+
+    async def start_background(self, command: str, *, cwd: str, envs: dict[str, str]) -> int:
+        """Start a long-running command (E2B's background mode); returns its pid.
+
+        Secrets go in `envs`, so they are neither written to disk nor part of
+        the command line.
+        """
+        sandbox = await self._ensure_sandbox()
+        handle = await sandbox.commands.run(command, background=True, cwd=cwd, envs=envs, timeout=0)
+        await handle.disconnect()
+        return handle.pid
+
+    async def kill(self, pid: int) -> None:
+        if self._sandbox is not None:
+            await self._sandbox.commands.kill(pid)
+
+    async def keepalive(self) -> bool:
+        """Extend the TTL. False when E2B has already ended the sandbox."""
+        if self._sandbox is None:
+            return False
+        try:
+            if not await self._sandbox.is_running():
+                return False
+            await self._sandbox.set_timeout(self._timeout)
+            return True
+        except Exception as exc:
+            logger.warning("Sandbox keepalive failed: %s", exc)
+            return False
+
+
 def new_environment() -> Any:
     """A fresh, uninitialised sandbox environment. Tests replace this."""
-    from google.adk.integrations.e2b import E2BEnvironment
-
-    return E2BEnvironment(
+    return PrivateE2BEnvironment(
         image=TEMPLATE,
         # The TTL must outlast the longest command, or E2B kills the sandbox mid-run.
         timeout=max(TTL_SECONDS, INSTALL_TIMEOUT + 60, COMMAND_TIMEOUT + 60),
@@ -87,16 +159,38 @@ def new_environment() -> Any:
 
 
 @dataclass
+class Preview:
+    """A running preview. Lives only in this process; never in session state."""
+
+    project: str
+    package: str
+    api_key: str
+    key_hash: str
+    pid: int
+    started_at: float = field(default_factory=time.time)
+    messages: int = 0
+
+
+@dataclass
 class _Sandbox:
     env: Any
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
     last_used: float = field(default_factory=time.monotonic)
+    preview: Preview | None = None
 
 
 _active: dict[str, _Sandbox] = {}
 
 
+def find(key: str) -> _Sandbox | None:
+    """The session's sandbox if one is open (the preview proxy's lookup)."""
+    return _active.get(key)
+
+
 async def _close(box: _Sandbox) -> None:
+    if box.preview:
+        await openrouter_keys.delete_key(box.preview.key_hash)
+        box.preview = None
     try:
         await box.env.close()
     except Exception as exc:  # E2B already killed it, network blip, ...
@@ -111,7 +205,7 @@ async def _reap_idle(now: float) -> None:
 
 
 @contextlib.asynccontextmanager
-async def open_session(key: str) -> AsyncIterator[Any]:
+async def open_session(key: str) -> AsyncIterator[_Sandbox]:
     """The session's sandbox, started on first use; one caller at a time."""
     await _reap_idle(time.monotonic())
     box = _active.get(key)
@@ -129,7 +223,7 @@ async def open_session(key: str) -> AsyncIterator[Any]:
                 logger.error("Starting a sandbox failed: %s", exc)
                 raise SandboxError("Could not start a sandbox. Try again shortly.") from exc
         try:
-            yield box.env
+            yield box
         finally:
             box.last_used = time.monotonic()
 
@@ -165,14 +259,29 @@ def _tarball(project: Path, name: str) -> bytes:
 
 
 async def sync_project(env: Any, project: Path, name: str) -> PurePosixPath:
-    """Replace the sandbox copy of the project with the workspace's files."""
+    """Bring the sandbox copy of the project in line with the workspace.
+
+    Updated in place, so a running preview keeps its working directory:
+    uploaded files are overwritten, and files uploaded last time but gone from
+    the workspace are removed. Files the running code created stay.
+    """
     projects, builder = _layout(env)
+    files = workspace.project_files(project)
     upload = builder / "upload.tar.gz"
     remote = projects / name
+    manifest = builder / f"{name}.manifest"
+    incoming = builder / f"{name}.manifest.new"
     await env.write_file(str(upload), _tarball(project, name))
+    await env.write_file(str(incoming), "".join(f"{rel}\n" for rel in files))
+    prune = (
+        f"if [ -f {_q(manifest)} ]; then sort {_q(manifest)} > {_q(builder / 'old')} "
+        f"&& sort {_q(incoming)} > {_q(builder / 'new')} "
+        f"&& comm -23 {_q(builder / 'old')} {_q(builder / 'new')} "
+        f"| while IFS= read -r f; do rm -f -- {_q(remote)}/\"$f\"; done; fi"
+    )
     result = await env.execute(
-        f"rm -rf {_q(remote)} && mkdir -p {_q(projects)} "
-        f"&& tar -xzf {_q(upload)} -C {_q(projects)} && rm -f {_q(upload)}",
+        f"mkdir -p {_q(projects)} && tar -xzf {_q(upload)} -C {_q(projects)} && rm -f {_q(upload)} "
+        f"&& {prune} && mv {_q(incoming)} {_q(manifest)}",
         timeout=120,
     )
     if result.exit_code != 0 or result.timed_out:
@@ -223,8 +332,8 @@ async def _install(env: Any, project: Path, remote: PurePosixPath) -> dict:
     return _step("install", result, result.exit_code == 0 and not result.timed_out)
 
 
-async def check_project(env: Any, project: Path, name: str, package: str) -> list[dict]:
-    """Upload, then Python version, install, import the agent, pytest; stop at the first failure."""
+async def _prepare(env: Any, project: Path, name: str, package: str) -> tuple[PurePosixPath, list[dict]]:
+    """Upload, check Python, install requirements. Steps end early on a failure."""
     if not _PACKAGE_RE.match(package or ""):
         raise SandboxError(f"Invalid package name: {package!r}")
     remote = await sync_project(env, project, name)
@@ -240,11 +349,20 @@ async def check_project(env: Any, project: Path, name: str, package: str) -> lis
         "(python -m adk_agent_builder.sandbox_template) and set BUILDER_E2B_TEMPLATE.",
     ))
     if not ok:
-        return steps
+        return remote, steps
 
-    install = await _install(env, project, remote)
-    steps.append(install)
-    if not install["ok"]:
+    steps.append(await _install(env, project, remote))
+    return remote, steps
+
+
+def _all_ok(steps: list[dict]) -> bool:
+    return all(step["ok"] for step in steps)
+
+
+async def check_project(env: Any, project: Path, name: str, package: str) -> list[dict]:
+    """Upload, then Python version, install, import the agent, pytest; stop at the first failure."""
+    remote, steps = await _prepare(env, project, name, package)
+    if not _all_ok(steps):
         return steps
 
     result = await run_command(env, remote, f'{PYTHON} -c "import {package}.agent"', COMMAND_TIMEOUT)
@@ -259,4 +377,88 @@ async def check_project(env: Any, project: Path, name: str, package: str) -> lis
         "tests", result, (result.exit_code == 0 or no_tests) and not result.timed_out,
         "No tests were collected." if no_tests else "",
     ))
+    return steps
+
+
+async def stop_preview(box: _Sandbox) -> bool:
+    """Stop the session's preview server and delete its model key."""
+    preview = box.preview
+    if preview is None:
+        return False
+    box.preview = None
+    try:
+        await box.env.kill(preview.pid)
+    except Exception as exc:  # already exited, or the sandbox is gone
+        logger.info("Stopping preview pid %s: %s", preview.pid, exc)
+    await openrouter_keys.delete_key(preview.key_hash)
+    return True
+
+
+async def start_preview(box: _Sandbox, project: Path, name: str, package: str, key_name: str) -> list[dict]:
+    """(Re)start the project's own server in the sandbox on a private port.
+
+    Upload, check Python, install, then run `run_adk.py` in DEV_MODE (in-memory
+    sessions, agent hot reload) with a per-start API key and a capped OpenRouter
+    key, and wait for /health. On success the preview is recorded on `box`.
+    """
+    env = box.env
+    await stop_preview(box)
+    remote, steps = await _prepare(env, project, name, package)
+    if not _all_ok(steps):
+        return steps
+
+    try:
+        model_key = await openrouter_keys.create_key(key_name)
+    except PreviewKeyError as exc:
+        raise SandboxError(str(exc)) from exc
+
+    _projects, builder = _layout(env)
+    log = builder / "preview.log"
+    api_key = secrets.token_urlsafe(32)
+    envs = {
+        **SANDBOX_ENV,
+        "PORT": str(PREVIEW_PORT),
+        "API_KEY": api_key,
+        "OPENROUTER_API_KEY": model_key.key,
+        # nuvel's CostGuard in the generated agent: a second cap on the same budget.
+        "COST_GUARD_BUDGET": f"{openrouter_keys.LIMIT_USD:.2f}",
+    }
+    try:
+        pid = await env.start_background(
+            f"exec {PYTHON} run_adk.py > {_q(log)} 2>&1", cwd=str(remote), envs=envs
+        )
+    except Exception as exc:
+        await openrouter_keys.delete_key(model_key.hash)
+        logger.error("Starting the preview server failed: %s", exc)
+        raise SandboxError("Could not start the preview server. Try again shortly.") from exc
+
+    health = f"http://127.0.0.1:{PREVIEW_PORT}/health"
+    wait = await env.execute(
+        f"for i in $(seq 1 {PREVIEW_START_TIMEOUT}); do "
+        f"kill -0 {pid} 2>/dev/null || exit 2; "
+        f"{PYTHON} -c \"import urllib.request; urllib.request.urlopen('{health}', timeout=2)\" "
+        f"2>/dev/null && exit 0; sleep 1; done; exit 1",
+        timeout=PREVIEW_START_TIMEOUT + 30,
+    )
+    if wait.exit_code == 0 and not wait.timed_out:
+        box.preview = Preview(project=name, package=package, api_key=api_key, key_hash=model_key.hash, pid=pid)
+        steps.append({"step": "start", "ok": True, "note": "The preview server is up."})
+        return steps
+
+    logs = await env.execute(f"tail -c {OUTPUT_TAIL_CHARS} {_q(log)}", timeout=30)
+    try:
+        await env.kill(pid)
+    except Exception:
+        pass
+    await openrouter_keys.delete_key(model_key.hash)
+    steps.append({
+        "step": "start",
+        "ok": False,
+        "note": (
+            "The server exited before answering /health."
+            if wait.exit_code == 2
+            else f"The server did not answer /health within {PREVIEW_START_TIMEOUT}s."
+        ),
+        "stderr": tail(logs.stdout),
+    })
     return steps
