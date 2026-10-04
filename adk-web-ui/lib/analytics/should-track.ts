@@ -1,6 +1,8 @@
 const SKIP_PREFIXES = [
   '/_next',
   '/api/',
+  // Build links carry a secret token in the path.
+  '/builds/',
   '/favicon',
   '/robots.txt',
   '/sitemap',

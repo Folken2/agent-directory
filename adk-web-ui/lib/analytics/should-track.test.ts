@@ -20,6 +20,11 @@ describe('shouldTrackPath', () => {
     assert.equal(shouldTrackPath('/favicon.ico'), false);
     assert.equal(shouldTrackPath('/logo.png'), false);
   });
+
+  it('never records build links (their path is a secret)', () => {
+    assert.equal(shouldTrackPath('/builds/' + 'a'.repeat(43)), false);
+    assert.equal(shouldTrackPath('/builds'), true);
+  });
 });
 
 describe('shouldTrackServerRequest', () => {
