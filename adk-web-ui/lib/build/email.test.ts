@@ -33,4 +33,22 @@ describe('buildLinkEmail', () => {
     assert.ok(evil.html.includes('&lt;script&gt;'));
     assert.ok(evil.html.includes('&lt;b&gt;x&lt;/b&gt;'));
   });
+
+  it('defangs URLs and header injection steered by the visitor', () => {
+    const hostile = buildLinkEmail(
+      {
+        ...BUILD,
+        name: 'x.test\r\nBcc: a@b.test',
+        description: 'Go to https://phish.example/login or www.evil.test or evil.test/path now',
+      },
+      LINK,
+    );
+    for (const body of [hostile.text, hostile.html, hostile.subject]) {
+      for (const url of body.match(URL_RE) ?? []) assert.equal(url, LINK);
+      assert.ok(!body.includes('www.'));
+      assert.ok(!body.includes('evil.test'));
+      assert.ok(!body.includes('phish.example'));
+    }
+    assert.ok(!/[\r\n]/.test(hostile.subject));
+  });
 });

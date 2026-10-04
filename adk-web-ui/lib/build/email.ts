@@ -16,25 +16,38 @@ function escapeHtml(s: string): string {
 }
 
 /**
+ * Build name/description are steered by an anonymous visitor and the
+ * recipient is any address they type, so URL-like text must not survive as
+ * something a mail client would auto-link: the build link is the only URL.
+ */
+function defang(s: string): string {
+  return s
+    .replace(/\b[a-z][a-z0-9+.-]*:\/\//gi, (m) => m.replace('://', '[:]//'))
+    .replace(/\b[a-z0-9-]+(?:\.[a-z0-9-]+)*\.[a-z]{2,}\b/gi, (m) => m.replace(/\./g, '[.]'));
+}
+
+/**
  * The link email. The only URL in it is `link`, and the site is named by
  * that link's host, so nothing deployment-specific is baked in.
  */
 export function buildLinkEmail(build: Build, link: string): BuildLinkMessage {
   const site = new URL(link).host;
+  const name = defang(build.name);
+  const description = build.description ? defang(build.description) : '';
   const options = enabledOptions(build);
   const facts = [plural(build.files, 'file'), plural(build.tools.length, 'tool'), plural(build.skills.length, 'skill')]
     .concat(options)
     .join(' · ');
   const steps = runSteps(build.artifact);
 
-  const lines = [`Here is the agent you built on ${site}: ${build.name}.`];
-  if (build.description) lines.push('', build.description);
+  const lines = [`Here is the agent you built on ${site}: ${name}.`];
+  if (description) lines.push('', description);
   lines.push('', facts, '', `Download it any time: ${link}`, PRIVATE_NOTE, '', 'Run it locally:');
   lines.push(...steps.map((s, i) => `${i + 1}. ${s}`));
 
   const html = [
-    `<p>Here is the agent you built on ${escapeHtml(site)}: <strong>${escapeHtml(build.name)}</strong>.</p>`,
-    build.description ? `<p>${escapeHtml(build.description)}</p>` : '',
+    `<p>Here is the agent you built on ${escapeHtml(site)}: <strong>${escapeHtml(name)}</strong>.</p>`,
+    description ? `<p>${escapeHtml(description)}</p>` : '',
     `<p>${escapeHtml(facts)}</p>`,
     `<p><a href="${escapeHtml(link)}">Download ${escapeHtml(build.artifact)}</a></p>`,
     `<p>${escapeHtml(PRIVATE_NOTE)}</p>`,
@@ -44,5 +57,5 @@ export function buildLinkEmail(build: Build, link: string): BuildLinkMessage {
     .filter(Boolean)
     .join('\n');
 
-  return { subject: `Your agent: ${build.name}`, html, text: lines.join('\n') + '\n' };
+  return { subject: `Your agent: ${name.replace(/\s+/g, ' ').trim()}`, html, text: lines.join('\n') + '\n' };
 }
