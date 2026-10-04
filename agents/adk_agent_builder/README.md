@@ -30,7 +30,7 @@ DEV_MODE=true python run_adk.py
 
 1. **Discover**: the builder asks only what it is missing (goal, tasks, services, channels, model).
 2. **Design**: it loads nuvel's architecture and skill-design skills, proposes the agents, tools, skills and nuvel options, and emits a **blueprint** (shown as a panel in the web UI; see `blueprint.py`). It asks before building.
-3. **Build**: `scaffold_agent` → `write_file` for the prompt, SOUL.md, tools, skills, requirements, README and tests → `validate_agent` until clean → `package_agent`.
+3. **Build**: `scaffold_agent` → `write_file` for the prompt, SOUL.md, tools, skills, requirements, README and tests → `validate_agent` until clean → `run_checks` until green (when the sandbox is on) → `package_agent`.
 4. **Hand over**: a short summary plus `<name>.zip` in the chat.
 
 ## Tools
@@ -41,6 +41,8 @@ DEV_MODE=true python run_adk.py
 | `write_file`, `read_file`, `list_files` | Edit the current project; paths are relative to its root |
 | `validate_agent` | nuvel's checks: required files, no `{{placeholders}}`, every Python file compiles, skills have a `SKILL.md` |
 | `package_agent` | Validates, zips the project (no `.env`, no caches) and saves it as the `<name>.zip` artifact |
+| `run_checks` | In an E2B sandbox: upload, install requirements, import `<package>.agent`, run pytest. Only with `E2B_API_KEY` |
+| `run_in_sandbox` | One shell command in the project root inside the sandbox, for debugging. Only with `E2B_API_KEY` |
 | `list_composio_toolkits` | nuvel's Composio catalog lookup; only when the server has `COMPOSIO_API_KEY` |
 | `list_skills`, `load_skill`, `load_skill_resource` | nuvel's 15 ADK skills via `SkillToolset` |
 | `list_doc_sources`, `fetch_docs` | Official ADK docs via `mcpdoc` (launched with `uvx`) |
@@ -82,6 +84,39 @@ Each chat session gets its own directory under `BUILDER_WORKSPACE_DIR` (default:
 
 Generated code is never imported or run on the server; `validate_agent` only compiles it.
 
+## Running the project: the E2B sandbox
+
+With `E2B_API_KEY` set, the builder can run what it wrote, in a disposable [E2B](https://e2b.dev) sandbox per chat (ADK's `E2BEnvironment`; see `sandbox.py` and `docs/superpowers/specs/2026-10-04-builder-sandbox-design.md`):
+
+- Every run uploads the workspace's files (the same set as the zip) over a clean copy, so the sandbox never holds anything the workspace doesn't.
+- The sandbox gets no server environment variables: only `DEV_MODE` and Python flags. Tests the builder writes must mock LLM and API calls.
+- Only signed-in users (web app ids `u_…`) run code; anonymous visitors still design, build and download.
+- Requirements are installed once per `requirements.txt` version; the marker lives in the sandbox, so an expired and recreated sandbox reinstalls.
+
+Setup:
+
+```bash
+cd agents
+E2B_API_KEY=... uv run python -m adk_agent_builder.sandbox_template   # builds "adk-agent-builder"
+# then on the server:
+E2B_API_KEY=...
+BUILDER_E2B_TEMPLATE=adk-agent-builder
+```
+
+The template is Python 3.11 with nuvel's template `requirements.txt` and pytest preinstalled, so checks start in seconds. Rebuild it after bumping nuvel. E2B's default `base` template works only if it has Python 3.11+; `run_checks` says so if it doesn't.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `E2B_API_KEY` | unset | Turns the sandbox tools on |
+| `BUILDER_E2B_TEMPLATE` | `base` | E2B template to start sandboxes from |
+| `BUILDER_SANDBOX_SIGNED_IN_ONLY` | `1` | Set `0` to let any user run code (local dev, where the user id is not `u_…`) |
+| `BUILDER_SANDBOX_TTL` | `900` | Sandbox time-to-live in seconds, extended on every call |
+| `BUILDER_SANDBOX_INSTALL_TIMEOUT` | `600` | Seconds for `pip install` |
+| `BUILDER_SANDBOX_COMMAND_TIMEOUT` | `300` | Seconds for the import check, pytest and `run_in_sandbox` |
+| `BUILDER_SANDBOX_MAX_RUNS` | `30` | `run_checks` + `run_in_sandbox` calls per chat |
+| `BUILDER_SANDBOX_MAX_ACTIVE` | `10` | Sandboxes alive at once on one server |
+| `BUILDER_SANDBOX_PYTHON` | `python3` | Interpreter inside the sandbox |
+
 ## Project structure
 
 ```text
@@ -89,9 +124,12 @@ adk_agent_builder/
 ├── agent.py             # root_agent (skills, tools, guards) and app (nuvel plugins)
 ├── nuvel_plugins.py     # nuvel plugin chain for the builder
 ├── workspace.py         # per-session workspace, limits, cleanup
+├── sandbox.py           # E2B sandbox per session: upload, install, run
+├── sandbox_template.py  # builds the E2B template (nuvel requirements + pytest)
 ├── tools/
 │   ├── __init__.py      # get_tools()
-│   └── project_tools.py # scaffold / write / read / list / validate / package
+│   ├── project_tools.py # scaffold / write / read / list / validate / package
+│   └── sandbox_tools.py # run_checks / run_in_sandbox
 ├── blueprint.py         # Blueprint model + ```blueprintjson parsing
 ├── callbacks/
 │   └── blueprint_document.py  # moves the blueprint into session state
@@ -112,7 +150,7 @@ cd agents && uv sync && cd ..
 adk web agents            # or: python run_adk.py (needs SESSION_SERVICE_URI)
 ```
 
-Tests: `python -m pytest tests/test_agent_builder.py tests/test_blueprint.py`.
+Tests: `python -m pytest tests/test_agent_builder.py tests/test_builder_sandbox.py tests/test_blueprint.py`.
 
 ## Customization
 

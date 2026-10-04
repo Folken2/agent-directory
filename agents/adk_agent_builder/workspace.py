@@ -26,7 +26,7 @@ from nuvel.backends.adk.scaffold import validate_agent_name
 logger = logging.getLogger(__name__)
 
 
-def _int_env(name: str, default: int) -> int:
+def int_env(name: str, default: int) -> int:
     try:
         return int(os.getenv(name, str(default)))
     except ValueError:
@@ -34,11 +34,11 @@ def _int_env(name: str, default: int) -> int:
 
 
 ROOT = Path(os.getenv("BUILDER_WORKSPACE_DIR") or Path(tempfile.gettempdir()) / "adk-agent-builder")
-TTL_SECONDS = _int_env("BUILDER_WORKSPACE_TTL_HOURS", 24) * 3600
-MAX_PROJECTS_PER_SESSION = _int_env("BUILDER_MAX_PROJECTS", 3)
-MAX_FILE_BYTES = _int_env("BUILDER_MAX_FILE_BYTES", 256 * 1024)
-MAX_PROJECT_BYTES = _int_env("BUILDER_MAX_PROJECT_BYTES", 8 * 1024 * 1024)
-MAX_PROJECT_FILES = _int_env("BUILDER_MAX_PROJECT_FILES", 400)
+TTL_SECONDS = int_env("BUILDER_WORKSPACE_TTL_HOURS", 24) * 3600
+MAX_PROJECTS_PER_SESSION = int_env("BUILDER_MAX_PROJECTS", 3)
+MAX_FILE_BYTES = int_env("BUILDER_MAX_FILE_BYTES", 256 * 1024)
+MAX_PROJECT_BYTES = int_env("BUILDER_MAX_PROJECT_BYTES", 8 * 1024 * 1024)
+MAX_PROJECT_FILES = int_env("BUILDER_MAX_PROJECT_FILES", 400)
 
 # Same keys nuvel's meta-agent uses, so nuvel's path_guard can correct
 # paths like "<agent-name>/tools/x.py". Names only, never filesystem paths.
@@ -50,14 +50,25 @@ class WorkspaceError(Exception):
     """A tool-facing error; the message is safe to show the model."""
 
 
+def session_key(user_id: str, session_id: str) -> str:
+    """Opaque per-session key: names the workspace and the sandbox."""
+    return hashlib.sha256(f"{user_id}\0{session_id}".encode("utf-8")).hexdigest()[:32]
+
+
+def user_id_for(tool_context: Any) -> str:
+    return str(tool_context.user_id or tool_context.session.user_id)
+
+
+def session_key_for(tool_context: Any) -> str:
+    return session_key(user_id_for(tool_context), str(tool_context.session.id))
+
+
 def session_dir(user_id: str, session_id: str) -> Path:
-    digest = hashlib.sha256(f"{user_id}\0{session_id}".encode("utf-8")).hexdigest()[:32]
-    return ROOT / digest
+    return ROOT / session_key(user_id, session_id)
 
 
 def session_dir_for(tool_context: Any) -> Path:
-    session = tool_context.session
-    return session_dir(str(tool_context.user_id or session.user_id), str(session.id))
+    return ROOT / session_key_for(tool_context)
 
 
 def touch(path: Path) -> None:
@@ -111,6 +122,27 @@ def inside(path: Path, root: Path) -> bool:
     real_root = os.path.realpath(root)
     real = os.path.realpath(path)
     return real == real_root or real.startswith(real_root + os.sep)
+
+
+# Never leave the workspace (zip or sandbox upload): caches, and a real .env
+# if the model wrote one.
+SKIP_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
+SKIP_FILES = {".env"}
+
+
+def project_files(project: Path) -> list[str]:
+    """Sorted relative paths of the files that ship: zipped or sent to a sandbox."""
+    files = []
+    for dirpath, dirnames, filenames in os.walk(project):
+        dirnames[:] = sorted(d for d in dirnames if d not in SKIP_DIRS)
+        for fname in sorted(filenames):
+            if fname in SKIP_FILES or fname.endswith(".pyc"):
+                continue
+            full = Path(dirpath) / fname
+            if full.is_symlink() or not inside(full, project):
+                continue
+            files.append(os.path.relpath(full, project))
+    return files
 
 
 def project_usage(project: Path) -> tuple[int, int]:

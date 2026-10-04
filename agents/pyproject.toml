@@ -5,7 +5,7 @@ description = "Repository of different ADK (Agent Development Kit) agents"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "google-adk[extensions]==2.10.0",
+    "google-adk[extensions,e2b]==2.10.0",
     # DatabaseSessionService needs SQLAlchemy; ADK 2.x moved it to an extra.
     "sqlalchemy>=2,<3",
     # The agent builder builds on nuvel: its ADK skills, scaffolder, validator,

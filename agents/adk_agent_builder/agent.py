@@ -6,6 +6,8 @@ production-ready projects on nuvel (https://github.com/Folken2/nuvel).
 - Building: nuvel's scaffolder stamps the production skeleton into a
   per-session workspace; the model writes the agent's prompt, tools and
   skills; nuvel validates; the project is handed over as a zip artifact.
+- Running: with E2B_API_KEY set, the project is installed, imported and
+  tested in a per-session E2B sandbox (sandbox.py), never on this server.
 - Safety: nuvel's path_guard and exfil_guard on every tool call, and nuvel's
   plugins on the app (see nuvel_plugins.py).
 """
@@ -26,6 +28,7 @@ from google.adk.tools.skill_toolset import SkillToolset
 from nuvel.callbacks.path_guard import path_guard
 from nuvel.guardrails.exfil_guard import exfil_guard
 
+from . import sandbox
 from .callbacks.blueprint_document import capture_blueprint
 from .config.llm import FAST_MODEL
 from .nuvel_plugins import builder_plugins
@@ -113,7 +116,7 @@ def _build_tools():
 
 
 async def _instruction(ctx) -> str:
-    return LANGUAGE_INSTRUCTION + build_prompt_v3(ctx.state)
+    return LANGUAGE_INSTRUCTION + build_prompt_v3(ctx.state, sandbox=sandbox.enabled())
 
 
 root_agent = Agent(

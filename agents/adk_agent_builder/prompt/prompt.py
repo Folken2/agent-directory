@@ -294,8 +294,8 @@ After `scaffold_agent`, the file tools work inside the project root. Write
 - Use `FAST_MODEL` / `REASONING_MODEL` from `config.llm`, not model strings.
 - Exact ADK callback parameter names (`callback_context`, `llm_request`,
   `tool_context`, ...).
-- Write each file completely in one `write_file` call. You cannot run the code,
-  so keep it simple and correct, and let `validate_agent` catch syntax errors.
+- Write each file completely in one `write_file` call. Keep the code simple and
+  correct; `validate_agent` catches syntax errors.
 
 # Limits
 At most three projects per chat, 256 KB per file, 8 MB per project. Projects on
@@ -303,9 +303,28 @@ the server are temporary; the zip is the deliverable.
 """
 
 
-def build_prompt_v3(state) -> str:
-    """The v3 prompt for one turn: date, workflow, blueprint, current project."""
-    prompt = PROMPT_V3.format(date=get_current_date()) + BLUEPRINT_INSTRUCTION
+SANDBOX_INSTRUCTION = """
+# Running the project
+You can run the project in an isolated sandbox (never on this server):
+- `run_checks`: uploads the project, installs requirements.txt, imports the
+  agent and runs pytest, stopping at the first failing step.
+- `run_in_sandbox`: one shell command in the project root, to dig into a failure
+  (e.g. `python3 -m pytest tests/test_tools.py -x -vv`).
+In the build, after `validate_agent` passes, call `run_checks`. Read the failing
+step's output, fix the files, and run it again until it passes; then package.
+The sandbox has no API keys and no secrets: tests must mock LLM and external API
+calls. Runs per chat are limited, so fix several problems per round.
+If a run answers `sign_in_required`, tell the user once that signing in lets you
+test the agent, and carry on to validation and packaging.
+"""
+
+
+def build_prompt_v3(state, sandbox: bool = False) -> str:
+    """The v3 prompt for one turn: date, workflow, sandbox, blueprint, current project."""
+    prompt = PROMPT_V3.format(date=get_current_date())
+    if sandbox:
+        prompt += SANDBOX_INSTRUCTION
+    prompt += BLUEPRINT_INSTRUCTION
     name = state.get("current_agent_name")
     package = state.get("current_agent_package")
     if name and package:

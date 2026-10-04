@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import io
 import logging
-import os
 import shutil
 import zipfile
 from pathlib import Path
@@ -35,22 +34,10 @@ logger = logging.getLogger(__name__)
 
 MAX_READ_CHARS = 60_000
 ZIP_MIME_TYPE = "application/zip"
-# Never shipped in the zip: caches, and a real .env if the model wrote one.
-_SKIP_DIRS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
-_SKIP_FILES = {".env"}
 
 
 def _error(message: str, **extra: Any) -> dict:
     return {"status": "error", "message": message, **extra}
-
-
-def _relative_files(project: Path) -> list[str]:
-    files = []
-    for dirpath, dirnames, filenames in os.walk(project):
-        dirnames[:] = sorted(d for d in dirnames if d not in _SKIP_DIRS)
-        for fname in sorted(filenames):
-            files.append(os.path.relpath(os.path.join(dirpath, fname), project))
-    return files
 
 
 def scaffold_agent(
@@ -139,7 +126,7 @@ def scaffold_agent(
 
     tool_context.state[workspace.PROJECT_NAME_KEY] = result["agent_name"]
     tool_context.state[workspace.PROJECT_PACKAGE_KEY] = result["package_name"]
-    files = _relative_files(target)
+    files = workspace.project_files(target)
     return {
         "status": "ok",
         "agent_name": result["agent_name"],
@@ -245,7 +232,7 @@ def list_files(tool_context: ToolContext, path: str = ".") -> dict:
     entries = [
         entry.name + "/" if entry.is_dir() else entry.name
         for entry in sorted(full.iterdir())
-        if entry.name not in _SKIP_DIRS
+        if entry.name not in workspace.SKIP_DIRS
     ]
     return {"status": "success", "path": path, "entries": entries, "count": len(entries)}
 
@@ -274,13 +261,8 @@ def _zip_project(project: Path, name: str) -> tuple[bytes, int]:
     buffer = io.BytesIO()
     count = 0
     with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-        for rel in _relative_files(project):
-            if os.path.basename(rel) in _SKIP_FILES or rel.endswith(".pyc"):
-                continue
-            full = project / rel
-            if full.is_symlink() or not workspace.inside(full, project):
-                continue
-            archive.write(full, f"{name}/{rel}")
+        for rel in workspace.project_files(project):
+            archive.write(project / rel, f"{name}/{rel}")
             count += 1
     return buffer.getvalue(), count
 
