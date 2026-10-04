@@ -59,6 +59,28 @@ function setup(over: Partial<SaveBuildDeps> = {}, env: Record<string, string> = 
 }
 
 describe('handleSaveBuild', () => {
+  const emailEnv = { RESEND_API_KEY: 're_x', BUILD_EMAIL_FROM: 'A <a@b.test>' };
+
+  it('refuses real email without a configured base URL, before any insert or send, releasing the reservation', async () => {
+    const logs: string[] = [];
+    const { deps, calls } = setup({ log: { warn: (m: string) => void logs.push(String(m)), error() {} } }, { ...emailEnv, NEXT_PUBLIC_BASE_URL: '' });
+    const r = await handleSaveBuild(body, deps);
+    assert.ok(!r.ok && r.code === 'temporarily_unavailable');
+    assert.equal(calls.inserted.length, 0);
+    assert.equal(calls.sent.length, 0);
+    assert.equal(calls.reserved, calls.released);
+    const logged = JSON.stringify([logs, !r.ok ? r.log : null]);
+    assert.ok(!logged.includes('example.com') && !logged.includes(TOKEN));
+    assert.ok(!r.ok && typeof r.log === 'string' && r.log.length > 0);
+  });
+
+  it('dev mode without a base URL builds the link from the request origin', async () => {
+    const { deps, calls } = setup({ sendLink: async (a) => (calls.sent.push(a), { kind: 'dev' }) }, { NEXT_PUBLIC_BASE_URL: '' });
+    const r = await handleSaveBuild(body, deps);
+    assert.ok(r.ok);
+    assert.equal(calls.sent[0].link, `http://localhost:3000/builds/${TOKEN}`);
+  });
+
   it('stores the zip from the session and emails the link', async () => {
     const { deps, calls } = setup();
     const r = await handleSaveBuild(body, deps);

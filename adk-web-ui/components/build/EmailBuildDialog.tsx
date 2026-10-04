@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { CalendarDays, MailCheck } from 'lucide-react';
@@ -36,11 +36,13 @@ export default function EmailBuildDialog({
   const [updates, setUpdates] = useState(false);
   const [help, setHelp] = useState(false);
   const [status, setStatus] = useState<Status>({ kind: 'idle' });
+  const inFlight = useRef(false);
   const effectiveEmail = (email ?? session?.user?.email ?? '').trim();
   const canSubmit = Boolean(sessionId) && EMAIL_RE.test(effectiveEmail) && status.kind !== 'sending';
 
   const submit = async () => {
-    if (!canSubmit || !sessionId) return;
+    if (!canSubmit || !sessionId || inFlight.current) return;
+    inFlight.current = true;
     setStatus({ kind: 'sending' });
     try {
       const res = await fetch('/api/builds', {
@@ -66,6 +68,8 @@ export default function EmailBuildDialog({
       });
     } catch {
       setStatus({ kind: 'error', message: "We couldn't send the link. Check your connection and try again." });
+    } finally {
+      inFlight.current = false;
     }
   };
 

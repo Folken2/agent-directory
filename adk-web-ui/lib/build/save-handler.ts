@@ -68,6 +68,10 @@ export async function handleSaveBuild(body: unknown, deps: SaveBuildDeps): Promi
   }
   if (!deps.dbEnabled()) return fail(null, 'temporarily_unavailable', undefined, 'no database');
 
+  // A link emailed to a third party must not take its host from the (spoofable) request origin.
+  // The origin fallback is for dev mode only, where the link is shown to the requester.
+  if (deps.config.email && !deps.config.baseUrl) return fail(null, 'temporarily_unavailable', undefined, 'email configured without a base URL');
+
   const { email, sessionId, updates, help } = parsed.value;
   const resolved = await deps.resolveIdentity();
   const reservation = await deps.reserve(buildSaveBuckets(resolved.identity, deps.config.limits));

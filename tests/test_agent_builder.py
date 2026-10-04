@@ -122,6 +122,14 @@ def test_prompt_designs_in_prose_and_points_to_the_email_link():
     assert "Do not ask for their email in the chat." in prompt
 
 
+def test_prompt_hand_over_never_writes_a_link_to_the_zip():
+    prompt = " ".join(build_prompt_v3({}).split())
+    assert "appears below your message as a card with Download and email buttons" in prompt
+    assert 'refer to it as "the card below"' in prompt
+    assert "never write a link, URL or markdown link to the zip" in prompt
+    assert "Under the zip" not in prompt
+
+
 # ── scaffold_agent ────────────────────────────────────────────────────
 
 

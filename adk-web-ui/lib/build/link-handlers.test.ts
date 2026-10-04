@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { handleBuildDelete, handleZipDownload, type BuildLinkStore } from './link-handlers.ts';
 import { hashBuildToken, newBuildToken } from './token.ts';
 
-type Row = { zip: Buffer | null; email: string | null; projectName: string; deletedAt: Date | null; downloads: number };
+type Row = { zip: Buffer | null; email: string | null; userId: string | null; projectName: string; deletedAt: Date | null; downloads: number };
 
 /** Same semantics as db-store's takeBuildZip / wipeBuildSave. */
 function memoryStore() {
@@ -21,7 +21,7 @@ function memoryStore() {
       calls++;
       const r = rows.get(hash);
       if (!r || r.deletedAt) return false;
-      Object.assign(r, { zip: null, email: null, deletedAt: new Date() });
+      Object.assign(r, { zip: null, email: null, userId: null, deletedAt: new Date() });
       return true;
     },
   };
@@ -33,7 +33,7 @@ const ZIP = Buffer.from([0x50, 0x4b, 5, 6]);
 function seeded() {
   const m = memoryStore();
   const { token, hash } = newBuildToken();
-  m.rows.set(hash, { zip: ZIP, email: 'delivered@resend.dev', projectName: 'research-summarizer', deletedAt: null, downloads: 0 });
+  m.rows.set(hash, { zip: ZIP, email: 'delivered@resend.dev', userId: 'user-1', projectName: 'research-summarizer', deletedAt: null, downloads: 0 });
   return { ...m, token, hash };
 }
 
@@ -64,6 +64,7 @@ describe('build link handlers', () => {
     const row = s.rows.get(s.hash);
     assert.equal(row?.zip, null);
     assert.equal(row?.email, null);
+    assert.equal(row?.userId, null);
     assert.ok(row?.deletedAt);
     assert.deepEqual(await handleZipDownload(s.token, s.store), { status: 404 });
     assert.deepEqual(await handleBuildDelete(s.token, s.store), { status: 404 });

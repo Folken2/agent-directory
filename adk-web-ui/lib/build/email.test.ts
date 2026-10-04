@@ -51,4 +51,17 @@ describe('buildLinkEmail', () => {
     }
     assert.ok(!/[\r\n]/.test(hostile.subject));
   });
+
+  it('does not let a visitor-steered .zip artifact name become a domain', () => {
+    const hostile = buildLinkEmail(
+      { ...BUILD, name: 'paypal-login', artifact: 'paypal-login.zip', package: 'paypal_login' },
+      LINK,
+    );
+    const host = new URL(LINK).host;
+    for (const body of [hostile.text, hostile.html, hostile.subject]) {
+      const stripped = body.split(LINK).join('').split(host).join('');
+      assert.ok(!/\b[a-z0-9-]+\.(zip|com|test|example)\b/i.test(stripped), stripped);
+      assert.ok(!body.includes('paypal-login.zip'));
+    }
+  });
 });

@@ -111,12 +111,12 @@ export async function takeBuildZip(tokenHash: string): Promise<{ zip: Buffer; pr
   return row?.zip ? { zip: row.zip, projectName: row.projectName } : null;
 }
 
-/** "Delete this build": drop the zip and the email, keep the anonymous metadata. */
+/** "Delete this build": drop the zip, the email and the account id, keep the anonymous metadata. */
 export async function wipeBuildSave(tokenHash: string): Promise<boolean> {
   await ensureSchema();
   const rows = await db
     .update(buildSaves)
-    .set({ zip: null, email: null, deletedAt: new Date() })
+    .set({ zip: null, email: null, userId: null, deletedAt: new Date() })
     .where(and(eq(buildSaves.tokenHash, tokenHash), isNull(buildSaves.deletedAt)))
     .returning({ id: buildSaves.id });
   return rows.length > 0;

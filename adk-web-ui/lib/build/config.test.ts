@@ -25,6 +25,20 @@ describe('buildConfig', () => {
     });
   });
 
+  it('warns once, without secrets, when the key is set but the sender is missing', () => {
+    const seen: string[] = [];
+    const warn = (m: string) => void seen.push(m);
+    buildConfig({ RESEND_API_KEY: 're_secret' }, warn);
+    buildConfig({ RESEND_API_KEY: 're_secret' }, warn);
+    assert.equal(seen.length, 1);
+    assert.match(seen[0], /BUILD_EMAIL_FROM/);
+    assert.ok(!seen[0].includes('re_secret'));
+    const quiet: string[] = [];
+    buildConfig({ RESEND_API_KEY: 're_x', BUILD_EMAIL_FROM: 'A <a@b.test>' }, (m) => void quiet.push(m));
+    buildConfig({}, (m) => void quiet.push(m));
+    assert.deepEqual(quiet, []);
+  });
+
   it('prefers BUILD_* and falls back to BLUEPRINT_*', () => {
     const legacy = buildConfig({
       BLUEPRINT_WEBHOOK_URL: 'https://hook.test/old',

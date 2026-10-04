@@ -60,9 +60,19 @@ function safeBaseUrl(raw: string | undefined): string | null {
   }
 }
 
-export function buildConfig(env: Env = process.env): BuildConfig {
+// buildConfig runs per request; warn once per logger.
+const warnedFor = new WeakSet<object>();
+function defaultWarn(message: string) {
+  console.warn(message);
+}
+
+export function buildConfig(env: Env = process.env, warn: (message: string) => void = defaultWarn): BuildConfig {
   const apiKey = value(env, 'RESEND_API_KEY');
   const from = value(env, 'BUILD_EMAIL_FROM');
+  if (apiKey && !from && !warnedFor.has(warn)) {
+    warnedFor.add(warn);
+    warn('[builds] RESEND_API_KEY is set but BUILD_EMAIL_FROM is missing: email is disabled and dev mode is active.');
+  }
   // The secret belongs to whichever webhook URL is used.
   const webhook = value(env, 'BUILD_WEBHOOK_URL')
     ? { url: value(env, 'BUILD_WEBHOOK_URL'), secret: value(env, 'BUILD_WEBHOOK_SECRET') }

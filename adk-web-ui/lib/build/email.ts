@@ -1,5 +1,5 @@
 import type { Build } from './types';
-import { enabledOptions, plural, runSteps } from './summary';
+import { enabledOptions, plural } from './summary';
 
 export type BuildLinkMessage = { subject: string; html: string; text: string };
 
@@ -38,7 +38,12 @@ export function buildLinkEmail(build: Build, link: string): BuildLinkMessage {
   const facts = [plural(build.files, 'file'), plural(build.tools.length, 'tool'), plural(build.skills.length, 'skill')]
     .concat(options)
     .join(' · ');
-  const steps = runSteps(build.artifact);
+  // The artifact name is visitor-steered and `.zip` is a real TLD, so it never appears in the email.
+  const steps = [
+    'Unzip the download.',
+    'Copy .env.example to .env and fill in the keys it lists.',
+    'Follow README.md to run it locally and deploy it.',
+  ];
 
   const lines = [`Here is the agent you built on ${site}: ${name}.`];
   if (description) lines.push('', description);
@@ -49,7 +54,7 @@ export function buildLinkEmail(build: Build, link: string): BuildLinkMessage {
     `<p>Here is the agent you built on ${escapeHtml(site)}: <strong>${escapeHtml(name)}</strong>.</p>`,
     description ? `<p>${escapeHtml(description)}</p>` : '',
     `<p>${escapeHtml(facts)}</p>`,
-    `<p><a href="${escapeHtml(link)}">Download ${escapeHtml(build.artifact)}</a></p>`,
+    `<p><a href="${escapeHtml(link)}">Download your agent</a></p>`,
     `<p>${escapeHtml(PRIVATE_NOTE)}</p>`,
     '<p>Run it locally:</p>',
     `<ol>${steps.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}</ol>`,
