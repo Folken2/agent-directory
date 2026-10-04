@@ -19,6 +19,7 @@ from google.genai import types
 
 from agents.adk_agent_builder import workspace
 from agents.adk_agent_builder.agent import NUVEL_SKILLS_DIR, app, root_agent
+from agents.adk_agent_builder.build_summary import BUILD_STATE_KEY, PROJECT_STATE_KEY
 from agents.adk_agent_builder.nuvel_plugins import builder_plugins
 from agents.adk_agent_builder.prompt.prompt import build_prompt_v3
 from agents.adk_agent_builder.tools import get_tools
@@ -139,8 +140,23 @@ def test_scaffold_creates_a_project_in_the_session_workspace(workspace_root):
 
 
 def test_scaffold_rejects_bad_names():
-    result = _scaffold(FakeToolContext(), name="../escape")
+    ctx = FakeToolContext()
+    result = _scaffold(ctx, name="../escape")
     assert result["status"] == "error"
+    assert PROJECT_STATE_KEY not in ctx.state
+
+
+def test_scaffold_stores_what_it_was_asked_for():
+    ctx = FakeToolContext()
+    assert _scaffold(ctx, workflow=True, with_slack=True)["status"] == "ok"
+    assert ctx.state[PROJECT_STATE_KEY] == {
+        "description": "Triages support email",
+        "options": {
+            "workflow": True, "with_composio": False, "with_slack": True,
+            "with_telegram": False, "with_teams": False, "with_acp": False,
+            "with_eval": False, "persona": False,
+        },
+    }
 
 
 def test_scaffold_twice_needs_replace():

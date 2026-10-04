@@ -28,6 +28,7 @@ from nuvel.tools.file_tools import resolve_safe_path
 from nuvel.tools.validate_tool import validate_agent_dir
 
 from .. import workspace
+from ..build_summary import OPTION_KEYS, PROJECT_STATE_KEY, project_request
 from ..workspace import WorkspaceError
 
 logger = logging.getLogger(__name__)
@@ -126,6 +127,19 @@ def scaffold_agent(
 
     tool_context.state[workspace.PROJECT_NAME_KEY] = result["agent_name"]
     tool_context.state[workspace.PROJECT_PACKAGE_KEY] = result["package_name"]
+    tool_context.state[PROJECT_STATE_KEY] = project_request(
+        description,
+        {
+            "workflow": workflow,
+            "with_composio": with_composio,
+            "with_slack": with_slack,
+            "with_telegram": with_telegram,
+            "with_teams": with_teams,
+            "with_acp": with_acp,
+            "with_eval": with_eval,
+            "persona": persona,
+        },
+    )
     files = workspace.project_files(target)
     return {
         "status": "ok",
@@ -133,14 +147,7 @@ def scaffold_agent(
         "package_name": result["package_name"],
         "files_created": len(files),
         "files": files,
-        "features": {
-            key: result[key]
-            for key in (
-                "workflow", "with_composio", "with_slack", "with_telegram",
-                "with_teams", "with_acp", "with_eval", "persona",
-            )
-            if result.get(key)
-        },
+        "features": {key: result[key] for key in OPTION_KEYS if result.get(key)},
         "next": (
             "Write the agent's prompt, tools, skills and wiring with write_file, "
             "then call validate_agent and package_agent."
