@@ -26,3 +26,32 @@ describe('adk-client function calls', () => {
     assert.deepEqual(extract(fragment), []);
   });
 });
+
+describe('adk-client preview stream', () => {
+  it('posts to /api/preview and surfaces text and preview state', async () => {
+    const events = [
+      { author: 'support_triage', content: { parts: [{ text: 'Hi there' }] } },
+      { author: 'adk_agent_builder', actions: { stateDelta: { 'builder:preview': { status: 'running', package: 'p' } } } },
+    ];
+    const body = events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join('');
+    const calls: Array<{ url: string; init: RequestInit }> = [];
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init });
+      return new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
+    }) as typeof fetch;
+    try {
+      const chunks = [];
+      for await (const chunk of adkClient.streamPreview('session-abc', 'p-1', 'Hello')) chunks.push(chunk);
+      assert.equal(calls[0].url, '/api/preview?session_id=session-abc');
+      assert.deepEqual(JSON.parse(String(calls[0].init.body)), { previewSessionId: 'p-1', text: 'Hello' });
+      assert.ok(chunks.some((c) => c.type === 'text' && c.content === 'Hi there'));
+      const preview = chunks.find((c) => c.type === 'preview');
+      assert.deepEqual(preview && preview.type === 'preview' ? preview.preview.status : null, 'running');
+      assert.equal(chunks.at(-1)?.type, 'done');
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});
+

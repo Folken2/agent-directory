@@ -3,6 +3,7 @@ import type { GuideDocument } from '../guide/types';
 import { resolveGuideMessageContent } from '../guide/parse';
 import type { Blueprint } from '../blueprint/types';
 import { resolveBlueprintContent } from '../blueprint/parse';
+import type { PreviewState } from '../preview/types';
 import { mergeFinalText, mergeMainThinking } from './text-assembly';
 import { SubAgentTracker, isIntermediateAuthor } from './sub-agent-steps';
 
@@ -24,6 +25,8 @@ export type StreamUpdate = {
   /** A tool response for the main author's flat tool list. */
   toolResponse?: ToolResponse;
   error?: { message: string; code?: string };
+  /** The builder started or stopped a live preview. */
+  preview?: PreviewState;
   done?: boolean;
 };
 
@@ -108,6 +111,8 @@ export class StreamAssembler {
       case 'blueprint':
         if (chunk.blueprint) this.blueprint = chunk.blueprint;
         return {};
+      case 'preview':
+        return { preview: chunk.preview };
       case 'error':
         return { error: { message: chunk.error, code: chunk.code } };
       case 'done':

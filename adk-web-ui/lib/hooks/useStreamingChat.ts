@@ -101,6 +101,7 @@ export function useStreamingChat(): UseStreamingChatResult {
     isLoading,
     addToolCall,
     updateToolResponse,
+    setBuilderPreview,
   } = useAppStore();
 
   const [streamingContent, setStreamingContent] = useState('');
@@ -243,6 +244,7 @@ export function useStreamingChat(): UseStreamingChatResult {
               addArtifact(artifact);
               setCurrentMessageArtifacts((prev) => [...prev, artifact]);
             }
+            if (update.preview) setBuilderPreview({ sessionId, state: update.preview });
             if (update.toolCallName) {
               trackEngagement({
                 eventType: 'tool_call',
@@ -396,6 +398,7 @@ export function useStreamingChat(): UseStreamingChatResult {
       setError,
       addToolCall,
       updateToolResponse,
+      setBuilderPreview,
     ],
   );
 

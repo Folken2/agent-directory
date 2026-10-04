@@ -3,6 +3,12 @@ import assert from 'node:assert/strict';
 import { StreamAssembler } from './stream-assembler.ts';
 
 describe('StreamAssembler', () => {
+  it('passes the builder preview state straight through', () => {
+    const a = new StreamAssembler({ name: 'adk_agent_builder' });
+    const preview = { status: 'running' as const, package: 'support_triage' };
+    assert.deepEqual(a.apply({ type: 'preview', preview }), { preview });
+  });
+
   it('assembles single-agent text and thinking', () => {
     const a = new StreamAssembler({ name: 'solo' });
     assert.deepEqual(a.apply({ type: 'thinking', content: 'hmm' }), { thinkingActive: true, thinking: 'hmm' });

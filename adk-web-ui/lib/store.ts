@@ -6,6 +6,7 @@
 //   - `currentConversation`: the conversation in view, including its messages
 //   - `artifacts`: artifacts emitted by the in-flight assistant turn
 //   - `starredAgents`: persisted to localStorage
+//   - `builderPreview`: the agent builder's live preview for one builder session
 //   - tool tracking state for the streaming UI
 //
 // What this store deliberately does NOT hold:
@@ -17,6 +18,10 @@
 //     read path.
 import { create } from 'zustand';
 import { Agent, Message, ChatConversation, Artifact, ToolStatus } from './types';
+import type { PreviewState } from './preview/types';
+
+/** The live preview the builder started for a builder chat (`sessionId`). */
+export type BuilderPreview = { sessionId: string; state: PreviewState };
 
 interface AppState {
   agents: Agent[];
@@ -28,6 +33,8 @@ interface AppState {
   error: string | null;
   activeTools: Record<string, ToolStatus>;
   messageTools: Record<string, string[]>;
+  builderPreview: BuilderPreview | null;
+  setBuilderPreview: (preview: BuilderPreview | null) => void;
 
   setAgents: (agents: Agent[]) => void;
   setSelectedAgent: (agent: Agent | null) => void;
@@ -65,6 +72,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   error: null,
   activeTools: {},
   messageTools: {},
+  builderPreview: null,
+
+  setBuilderPreview: (builderPreview) => set({ builderPreview }),
 
   setAgents: (agents) => set({ agents }),
 

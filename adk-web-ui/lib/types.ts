@@ -2,6 +2,7 @@
 import type { ConversationId, MessageId } from './ids';
 import type { GuideDocument } from './guide/types';
 import type { Blueprint } from './blueprint/types';
+import type { PreviewState } from './preview/types';
 
 export interface UseCase {
   title: string;
@@ -176,6 +177,7 @@ export type StreamChunk =
   | { type: 'mapsCapture'; mapsCapture: MapsCapture; author?: string }
   | { type: 'guideDocument'; guideDocument: GuideDocument; author?: string }
   | { type: 'blueprint'; blueprint: Blueprint; author?: string }
+  | { type: 'preview'; preview: PreviewState; author?: string }
   | { type: 'error'; error: string; code?: string }
   | { type: 'done' };
 

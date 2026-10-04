@@ -6,12 +6,14 @@ import Link from 'next/link';
 import ChatInterface from '@/components/ChatInterface';
 import ChatHistory from '@/components/ChatHistory';
 import AgentSwitcher from '@/components/chat/AgentSwitcher';
+import PreviewPanel from '@/components/preview/PreviewPanel';
 import { useAppStore } from '@/lib/store';
-import { toConversationId, replayedMessageId } from '@/lib/ids';
+import { toConversationId, toSessionId, replayedMessageId } from '@/lib/ids';
 import { Agent, ChatConversation, Message } from '@/lib/types';
-import { Menu, ArrowLeft, AlertCircle, X, PanelLeft } from 'lucide-react';
+import { Menu, ArrowLeft, AlertCircle, X, PanelLeft, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { MAX_BUILDER_PROMPT_LENGTH, resolveChatAgentName } from '@/lib/builder';
+import { BUILDER_AGENT, MAX_BUILDER_PROMPT_LENGTH, resolveChatAgentName } from '@/lib/builder';
+import { parsePreviewState } from '@/lib/preview/types';
 import { loadConversation, saveConversation } from '@/lib/chat/local-history';
 import ChatSkeleton from '@/components/chat/ChatSkeleton';
 
@@ -25,8 +27,12 @@ function ChatContent() {
     setCurrentConversation,
     selectedAgent,
     currentConversation,
+    builderPreview,
+    setBuilderPreview,
   } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // The preview the user closed (`<session>:<startedAt>`); a restart reopens the panel.
+  const [closedPreview, setClosedPreview] = useState<string | null>(null);
   const [initialPrompt, setInitialPrompt] = useState<string | null>(null);
   // Set once the requested agent is selected and a fresh conversation is in
   // place, so an auto-sent prompt can't race the conversation reset.
@@ -159,6 +165,33 @@ function ChatContent() {
     saveConversation(currentConversation);
   }, [currentConversation]);
 
+  // The builder's live preview for this chat, if it started one.
+  const builderSessionId =
+    selectedAgent?.name === BUILDER_AGENT && currentConversation ? toSessionId(currentConversation.id) : null;
+  const preview =
+    builderSessionId && builderPreview?.sessionId === builderSessionId ? builderPreview.state : null;
+  const hasHistory = (currentConversation?.messages.length ?? 0) > 0;
+  const previewKey = preview ? `${builderSessionId}:${preview.startedAt ?? ''}` : null;
+  const previewOpen = !!previewKey && closedPreview !== previewKey;
+
+  // After a refresh or when reopening a builder chat, ask whether its preview still runs.
+  useEffect(() => {
+    if (!builderSessionId || !hasHistory) return;
+    let cancelled = false;
+    fetch(`/api/preview?session_id=${encodeURIComponent(builderSessionId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((json) => {
+        const data = json?.data;
+        if (cancelled || !data?.running) return;
+        const state = parsePreviewState({ ...data, status: 'running' });
+        if (state) setBuilderPreview({ sessionId: builderSessionId, state });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [builderSessionId, hasHistory, setBuilderPreview]);
+
   const handleAutoSent = useCallback(() => {
     setAutoSendPrompt(null);
     // Drop prompt/send from the URL so a refresh doesn't send it again.
@@ -214,6 +247,16 @@ function ChatContent() {
               <AgentSwitcher agent={selectedAgent} />
             </div>
 
+            {preview && !previewOpen && (
+              <button
+                onClick={() => setClosedPreview(null)}
+                className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-md-primary hover:bg-md-primary/8 rounded-full transition-colors"
+              >
+                <Play className="w-4 h-4" />
+                Preview
+              </button>
+            )}
+
             <Link
               href={selectedAgent ? `/agents/${encodeURIComponent(selectedAgent.name)}` : '/'}
               className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container rounded-lg transition-colors"
@@ -252,6 +295,17 @@ function ChatContent() {
               onAutoSent={handleAutoSent}
             />
           </div>
+
+          {/* Live preview of the agent being built: a column on wide screens, full screen on small ones */}
+          {preview && builderSessionId && previewOpen && (
+            <PreviewPanel
+              key={previewKey}
+              sessionId={builderSessionId}
+              state={preview}
+              onClose={() => setClosedPreview(previewKey)}
+              className="fixed inset-0 z-50 lg:static lg:z-auto lg:w-[42%] lg:max-w-2xl lg:border-l lg:border-md-outline/40"
+            />
+          )}
         </div>
       </div>
 
