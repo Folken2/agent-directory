@@ -3,8 +3,9 @@
 scaffold_agent stamps nuvel's production ADK skeleton (FastAPI server, the
 17-plugin chain, guardrails, Dockerfile, Railway config, tests) into the
 session's workspace. write_file / read_file / list_files edit it,
-validate_agent runs nuvel's checks, and package_agent zips the project and
-saves it as an artifact the user downloads from the chat.
+validate_agent runs nuvel's checks, and package_agent zips the project,
+saves it as an artifact the user downloads from the chat, and records a
+build summary in session state (see build_summary.py).
 
 Tool names match nuvel's meta-agent so nuvel's plugins and path_guard treat
 them the same way (cache invalidation, circuit breaker, path correction).
@@ -28,7 +29,13 @@ from nuvel.tools.file_tools import resolve_safe_path
 from nuvel.tools.validate_tool import validate_agent_dir
 
 from .. import workspace
-from ..build_summary import OPTION_KEYS, PROJECT_STATE_KEY, project_request
+from ..build_summary import (
+    BUILD_STATE_KEY,
+    OPTION_KEYS,
+    PROJECT_STATE_KEY,
+    build_summary,
+    project_request,
+)
 from ..workspace import WorkspaceError
 
 logger = logging.getLogger(__name__)
@@ -304,6 +311,20 @@ async def package_agent(tool_context: ToolContext) -> dict:
     except Exception as exc:  # artifact service unavailable or misconfigured
         logger.error("Saving %s failed: %s", filename, exc)
         return _error("Could not save the zip. Try package_agent again in a moment.")
+
+    try:
+        # Each package overwrites the last summary; the web app shows it as the build card.
+        tool_context.state[BUILD_STATE_KEY] = build_summary(
+            project,
+            name,
+            tool_context.state.get(PROJECT_STATE_KEY),
+            artifact=filename,
+            version=version,
+            files=count,
+            size=len(data),
+        )
+    except Exception as exc:  # the zip is saved; never fail the hand-over over its summary
+        logger.error("Recording the build summary for %s failed: %s", filename, exc)
 
     return {
         "status": "success",

@@ -68,6 +68,15 @@ DEV_MODE=true python run_adk.py
 
 nuvel's trace and tool-events plugins are not used: they keep per-run counters on the plugin instance, which would mix sessions on a shared server.
 
+## Build records
+
+Every build is recorded in session state, without personal data (`build_summary.py`):
+
+- `scaffold_agent` stores `builder:project`: the description and the nuvel options it was asked for.
+- `package_agent`, once the zip is saved, stores `builder:build`: name, package, description, options, models (from `.env.example`, falling back to `<package>/config/llm.py`), tools and skills (at most 50 each, names cut to 64 characters), the artifact name and version, file count, bytes and `packagedAt`. Each package overwrites it; nothing is written when validation fails.
+
+The web app reads `builder:build` from the stream to show the build card, and the ops analytics read it from the `sessions` table.
+
 ## The workspace
 
 Each chat session gets its own directory under `BUILDER_WORKSPACE_DIR` (default: `<tmp>/adk-agent-builder`), named from a hash of the user and session ids. Tools derive that path on the server for every call; session state only holds the project's name (`current_agent_name`, `current_agent_package`), which must pass nuvel's name check. Workspaces are scratch space: the zip artifact is the deliverable, and idle workspaces are deleted.
@@ -147,6 +156,7 @@ adk_agent_builder/
 ├── sandbox_template.py  # builds the E2B template (nuvel requirements + pytest)
 ├── openrouter_keys.py   # capped, expiring OpenRouter keys for previews
 ├── preview_api.py       # backend proxy to the preview (mounted by run_adk.py)
+├── build_summary.py     # builder:project / builder:build session state
 ├── tools/
 │   ├── __init__.py      # get_tools()
 │   ├── project_tools.py # scaffold / write / read / list / validate / package
@@ -169,7 +179,7 @@ cd agents && uv sync && cd ..
 adk web agents            # or: python run_adk.py (needs SESSION_SERVICE_URI)
 ```
 
-Tests: `python -m pytest tests/test_agent_builder.py tests/test_builder_sandbox.py tests/test_builder_preview.py tests/test_builder_models.py`.
+Tests: `python -m pytest tests/test_agent_builder.py tests/test_build_summary.py tests/test_builder_sandbox.py tests/test_builder_preview.py tests/test_builder_models.py`.
 
 ## Customization
 

@@ -46,10 +46,12 @@ class FakeToolContext:
         self.user_id = user_id
         self.session = SimpleNamespace(id=session_id, user_id=user_id)
         self.artifacts = {}
+        self.versions = {}
 
     async def save_artifact(self, filename, artifact, custom_metadata=None):
         self.artifacts[filename] = artifact
-        return 0
+        self.versions[filename] = self.versions.get(filename, -1) + 1
+        return self.versions[filename]
 
 
 def _scaffold(ctx, name="support-triage", **flags):
@@ -312,6 +314,59 @@ def test_package_refuses_an_invalid_project():
     assert result["status"] == "error"
     assert result["errors"]
     assert ctx.artifacts == {}
+    assert BUILD_STATE_KEY not in ctx.state
+
+
+def test_package_records_the_build():
+    ctx = FakeToolContext()
+    _scaffold(ctx, with_acp=True)
+    write_file(".env.example", "OPENROUTER_API_KEY=\nFAST_MODEL=openrouter/acme/fast\n", ctx)
+    write_file(
+        "support_triage/config/llm.py",
+        'import os\n\nREASONING = os.getenv("REASONING_MODEL", "openrouter/acme/reasoning")\n',
+        ctx,
+    )
+    write_file("support_triage/tools/lookup.py", '"""Lookup."""\n', ctx)
+    write_file("support_triage/skills/triage-rules/SKILL.md", "---\nname: triage-rules\n---\n", ctx)
+    result = asyncio.run(package_agent(ctx))
+    assert result["status"] == "success", result
+
+    build = ctx.state[BUILD_STATE_KEY]
+    assert build["name"] == "support-triage"
+    assert build["package"] == "support_triage"
+    assert build["description"] == "Triages support email"
+    assert build["options"]["with_acp"] is True
+    assert build["models"] == {"fast": "openrouter/acme/fast", "reasoning": "openrouter/acme/reasoning"}
+    assert "lookup" in build["tools"] and "__init__" not in build["tools"]
+    assert build["skills"] == ["triage-rules"]
+    assert build["artifact"] == "support-triage.zip"
+    assert build["version"] == result["version"] == 0
+    assert build["files"] == result["files"]
+    assert build["bytes"] == result["bytes"]
+    assert build["packagedAt"].endswith("Z")
+    assert str(workspace.ROOT) not in repr(build)
+
+
+def test_repackaging_overwrites_the_build():
+    ctx = FakeToolContext()
+    _scaffold(ctx)
+    asyncio.run(package_agent(ctx))
+    assert "lookup" not in ctx.state[BUILD_STATE_KEY]["tools"]
+    write_file("support_triage/tools/lookup.py", '"""Lookup."""\n', ctx)
+    result = asyncio.run(package_agent(ctx))
+    assert ctx.state[BUILD_STATE_KEY]["version"] == result["version"] == 1
+    assert "lookup" in ctx.state[BUILD_STATE_KEY]["tools"]
+
+
+def test_package_records_nothing_when_the_zip_is_not_saved():
+    class FailingContext(FakeToolContext):
+        async def save_artifact(self, filename, artifact, custom_metadata=None):
+            raise RuntimeError("artifact service down")
+
+    ctx = FailingContext()
+    _scaffold(ctx)
+    assert asyncio.run(package_agent(ctx))["status"] == "error"
+    assert BUILD_STATE_KEY not in ctx.state
 
 
 # ── workspace housekeeping ────────────────────────────────────────────
@@ -405,4 +460,7 @@ def test_build_runs_end_to_end_with_the_nuvel_chain():
     assert responses["package_agent"]["status"] == "success"
     assert artifacts == ["support-triage.zip"]
     assert session.state[workspace.PROJECT_NAME_KEY] == "support-triage"
+    assert session.state[PROJECT_STATE_KEY]["description"] == "Triage email"
+    assert session.state[BUILD_STATE_KEY]["artifact"] == "support-triage.zip"
+    assert session.state[BUILD_STATE_KEY]["version"] == responses["package_agent"]["version"]
     assert "cost_guard" not in session.state or session.state["cost_guard"]["blocked"] is False
