@@ -21,14 +21,18 @@ function setup(over: Partial<SaveBuildDeps> = {}, env: Record<string, string> = 
     contacts: [] as string[],
     notified: [] as OwnerNotification[],
     markedNotified: [] as string[],
+    deleted: [] as string[],
+    fetched: 0,
+    reserved: 0,
+    resolved: 0,
   };
   const deps: SaveBuildDeps = {
     config: buildConfig({ NEXT_PUBLIC_BASE_URL: 'https://site.test', ...env }),
     origin: 'http://localhost:3000',
     dbEnabled: () => true,
-    resolveIdentity: async () => ({ identity: { kind: 'anon', anonToken: 'a'.repeat(64), ipHash: 'ip' }, newAnonToken: null }),
+    resolveIdentity: async () => (calls.resolved++, { identity: { kind: 'anon', anonToken: 'a'.repeat(64), ipHash: 'ip' }, newAnonToken: null }),
     adkUserId: async (identity) => (identity.kind === 'user' ? `u_${identity.userId}` : `a_${identity.anonToken}`),
-    reserve: async () => ({ ok: true, reservation: { day: '2026-10-04', keys: ['bd:a:x'] } }),
+    reserve: async () => (calls.reserved++, { ok: true, reservation: { day: '2026-10-04', keys: ['bd:a:x'] } }),
     release: async () => {
       calls.released++;
     },
@@ -36,11 +40,12 @@ function setup(over: Partial<SaveBuildDeps> = {}, env: Record<string, string> = 
       calls.loaded++;
       return { kind: 'ok', build: BUILD };
     },
-    fetchZip: async () => ({ kind: 'ok', bytes: ZIP }),
+    fetchZip: async () => (calls.fetched++, { kind: 'ok', bytes: ZIP }),
     store: {
       insert: async (r) => (calls.inserted.push(r), { id: 'save-1' }),
       markEmailSent: async (id) => void calls.emailSent.push(id),
       markNotified: async (id) => void calls.markedNotified.push(id),
+      delete: async (id) => void calls.deleted.push(id),
     },
     newToken: () => ({ token: TOKEN, hash: 'h'.repeat(64) }),
     sendLink: async (a) => (calls.sent.push(a), { kind: 'sent', emailId: 'em_1' }),
@@ -126,6 +131,7 @@ describe('handleSaveBuild', () => {
     assert.equal(r.code, 'invalid_input');
     assert.match(r.message ?? '', /too large/);
     assert.equal(calls.released, 1);
+    assert.equal(calls.fetched, 0);
   });
 
   it('stops at the daily limit before touching ADK', async () => {
@@ -137,14 +143,27 @@ describe('handleSaveBuild', () => {
     assert.ok(r.resolved, 'identity is returned so the route can set the cookie');
   });
 
-  it('keeps the row, releases the reservation and asks to retry when sending fails', async () => {
+  it('deletes the row, releases the reservation and asks to retry when sending fails', async () => {
     const { deps, calls } = setup({ sendLink: async () => ({ kind: 'failed', reason: 'validation_error' }) });
     const r = await handleSaveBuild(body, deps);
     assert.ok(!r.ok);
     assert.equal(r.code, 'temporarily_unavailable');
     assert.match(r.message ?? '', /couldn't send/i);
     assert.equal(calls.inserted.length, 1);
+    assert.deepEqual(calls.deleted, ['save-1']);
     assert.deepEqual(calls.emailSent, []);
+    assert.equal(calls.released, 1);
+  });
+
+  it('still returns the send-failed error when deleting the unsent row throws', async () => {
+    const { deps, calls } = setup({ sendLink: async () => ({ kind: 'failed', reason: 'x' }) });
+    deps.store.delete = async () => {
+      throw new Error('db');
+    };
+    const r = await handleSaveBuild(body, deps);
+    assert.ok(!r.ok);
+    assert.equal(r.code, 'temporarily_unavailable');
+    assert.match(r.message ?? '', /couldn't send/i);
     assert.equal(calls.released, 1);
   });
 
@@ -178,7 +197,10 @@ describe('handleSaveBuild', () => {
     assert.match(r.message ?? '', /valid email/);
     assert.equal(r.resolved, null);
 
-    const noDb = await handleSaveBuild(body, setup({ dbEnabled: () => false }).deps);
+    const noDbSetup = setup({ dbEnabled: () => false });
+    const noDb = await handleSaveBuild(body, noDbSetup.deps);
+    assert.equal(noDbSetup.calls.reserved, 0);
+    assert.equal(noDbSetup.calls.resolved, 0);
     assert.ok(!noDb.ok);
     assert.equal(noDb.code, 'temporarily_unavailable');
   });
@@ -189,6 +211,7 @@ describe('handleSaveBuild', () => {
         insert: async () => { throw new Error('db'); },
         markEmailSent: async () => {},
         markNotified: async () => {},
+        delete: async () => {},
       },
     });
     const r = await handleSaveBuild(body, deps);

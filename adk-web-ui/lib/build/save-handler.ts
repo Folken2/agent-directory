@@ -31,6 +31,8 @@ export type SaveBuildDeps = {
     insert(record: NewBuildSave): Promise<{ id: string }>;
     markEmailSent(id: string): Promise<void>;
     markNotified(id: string): Promise<void>;
+    /** Hard delete; used when the email could not be sent. */
+    delete(id: string): Promise<void>;
   };
   newToken(): BuildToken;
   sendLink(args: SendLinkArgs): Promise<SendOutcome>;
@@ -108,8 +110,13 @@ export async function handleSaveBuild(body: unknown, deps: SaveBuildDeps): Promi
 
     const link = buildLink(deps.config.baseUrl ?? deps.origin, token.token);
     const sent = await deps.sendLink({ saveId: id, to: email, link, message: buildLinkEmail(build, link) });
-    // The row stays with email_sent_at null; the user can try again.
+    // Drop the row (and its zip) so failed attempts cannot accumulate storage for free.
     if (sent.kind === 'failed') {
+      try {
+        await deps.store.delete(id);
+      } catch (e) {
+        log.warn(`[builds] could not delete unsent row id=${id} error=${e instanceof Error ? e.name : 'unknown'}`);
+      }
       return await failAndRelease('temporarily_unavailable', SEND_FAILED, `send failed id=${id} reason=${sent.reason}`);
     }
     if (sent.kind === 'sent') {

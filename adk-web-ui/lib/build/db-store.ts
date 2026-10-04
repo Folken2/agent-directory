@@ -122,5 +122,11 @@ export async function wipeBuildSave(tokenHash: string): Promise<boolean> {
   return rows.length > 0;
 }
 
-export const buildSaveStore = { insert: insertBuildSave, markEmailSent, markNotified };
+/** Hard-delete a row whose email could not be sent, so failed attempts leave no zip behind. */
+export async function deleteBuildSave(id: string): Promise<void> {
+  await ensureSchema();
+  await db.delete(buildSaves).where(eq(buildSaves.id, id));
+}
+
+export const buildSaveStore = { insert: insertBuildSave, markEmailSent, markNotified, delete: deleteBuildSave };
 export const buildLinkStore = { takeZip: takeBuildZip, wipe: wipeBuildSave };
