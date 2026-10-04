@@ -59,7 +59,8 @@ describe('buildLinkEmail', () => {
     );
     const host = new URL(LINK).host;
     for (const body of [hostile.text, hostile.html, hostile.subject]) {
-      const stripped = body.split(LINK).join('').split(host).join('');
+      // .env.example is fixed template text, not visitor input.
+      const stripped = body.split(LINK).join('').split(host).join('').split('.env.example').join('');
       assert.ok(!/\b[a-z0-9-]+\.(zip|com|test|example)\b/i.test(stripped), stripped);
       assert.ok(!body.includes('paypal-login.zip'));
     }
