@@ -1,6 +1,7 @@
 """The agent builder: nuvel wiring, the session workspace, and its tools."""
 
 import asyncio
+import importlib.util
 import io
 import os
 import time
@@ -93,7 +94,29 @@ def test_prompt_names_the_current_project():
         workspace.PROJECT_PACKAGE_KEY: "support_triage",
     })
     assert "`support-triage` (package `support_triage`)" in prompt
-    assert "```blueprintjson" in prompt
+
+
+def test_builder_has_no_blueprint():
+    # The zip is the deliverable: no blueprint module, callback or prompt section.
+    assert root_agent.after_model_callback is None
+    assert importlib.util.find_spec("agents.adk_agent_builder.blueprint") is None
+    from agents.adk_agent_builder.prompt import prompt as prompt_module
+
+    assert not hasattr(prompt_module, "prompt_v2")
+    assert not hasattr(prompt_module, "BLUEPRINT_INSTRUCTION")
+    building = {
+        workspace.PROJECT_NAME_KEY: "support-triage",
+        workspace.PROJECT_PACKAGE_KEY: "support_triage",
+    }
+    for state in ({}, building):
+        assert "blueprint" not in build_prompt_v3(state, sandbox=True, preview=True).lower()
+
+
+def test_prompt_designs_in_prose_and_points_to_the_email_link():
+    prompt = " ".join(build_prompt_v3({}).split())
+    assert "summarise the design in a few lines and ask whether to build it" in prompt
+    assert "the user can email themselves a permanent link; mention it in one line." in prompt
+    assert "Do not ask for their email in the chat." in prompt
 
 
 # ── scaffold_agent ────────────────────────────────────────────────────

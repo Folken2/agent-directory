@@ -29,9 +29,9 @@ DEV_MODE=true python run_adk.py
 ## How a build goes
 
 1. **Discover**: the builder asks only what it is missing (goal, tasks, services, channels, model).
-2. **Design**: it loads nuvel's architecture and skill-design skills, proposes the agents, tools, skills and nuvel options, and emits a **blueprint** (shown as a panel in the web UI; see `blueprint.py`). It asks before building.
+2. **Design**: it loads nuvel's architecture and skill-design skills, picks models with `list_models`, proposes the agents, tools, skills and nuvel options, then summarises the design in a few lines and asks before building.
 3. **Build**: `scaffold_agent` → `write_file` for the prompt, SOUL.md, tools, skills, requirements, README and tests → `validate_agent` until clean → `run_checks` until green (when the sandbox is on) → `package_agent`.
-4. **Hand over**: a short summary plus `<name>.zip` in the chat.
+4. **Hand over**: a short summary plus `<name>.zip` in the chat. Under the zip, the web app offers to email the user a permanent link.
 
 ## Tools
 
@@ -41,6 +41,7 @@ DEV_MODE=true python run_adk.py
 | `write_file`, `read_file`, `list_files` | Edit the current project; paths are relative to its root |
 | `validate_agent` | nuvel's checks: required files, no `{{placeholders}}`, every Python file compiles, skills have a `SKILL.md` |
 | `package_agent` | Validates, zips the project (no `.env`, no caches) and saves it as the `<name>.zip` artifact |
+| `list_models` | The best (Artificial Analysis agentic/coding/intelligence scores) and most-used current OpenRouter models with tool calling, with prices; falls back to the newest per family without `OPENROUTER_API_KEY` |
 | `run_checks` | In an E2B sandbox: upload, install requirements, import `<package>.agent`, run pytest. Only with `E2B_API_KEY` |
 | `run_in_sandbox` | One shell command in the project root inside the sandbox, for debugging. Only with `E2B_API_KEY` |
 | `start_preview`, `stop_preview` | Run the project's own server in the sandbox for the live preview panel. Also needs `OPENROUTER_MANAGEMENT_KEY` |
@@ -149,10 +150,8 @@ adk_agent_builder/
 ├── tools/
 │   ├── __init__.py      # get_tools()
 │   ├── project_tools.py # scaffold / write / read / list / validate / package
+│   ├── model_tools.py   # list_models (OpenRouter benchmarks, usage, catalogue)
 │   └── sandbox_tools.py # run_checks / run_in_sandbox / start_preview / stop_preview
-├── blueprint.py         # Blueprint model + ```blueprintjson parsing
-├── callbacks/
-│   └── blueprint_document.py  # moves the blueprint into session state
 ├── config/
 │   ├── llm.py           # FAST_MODEL / REASONING_MODEL (LiteLLM, OpenRouter)
 │   └── utils.py         # date helper
@@ -170,7 +169,7 @@ cd agents && uv sync && cd ..
 adk web agents            # or: python run_adk.py (needs SESSION_SERVICE_URI)
 ```
 
-Tests: `python -m pytest tests/test_agent_builder.py tests/test_builder_sandbox.py tests/test_builder_preview.py tests/test_blueprint.py`.
+Tests: `python -m pytest tests/test_agent_builder.py tests/test_builder_sandbox.py tests/test_builder_preview.py tests/test_builder_models.py`.
 
 ## Customization
 

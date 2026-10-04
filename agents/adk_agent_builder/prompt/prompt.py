@@ -160,42 +160,6 @@ Always consult skills or docs before answering substantive ADK questions. If nei
 """
 
 
-BLUEPRINT_INSTRUCTION = """
-# Blueprint
-When the user's agent design is settled (you know the goal, the agents and how they
-work together, and the main tools), end that answer with a structured blueprint so the
-user can save it. Emit it once per settled design, and again only when the design
-changes. Do not emit one while you are still asking clarifying questions.
-
-Write your normal explanation first, then append exactly one fenced block tagged
-`blueprintjson` containing a single JSON object with these fields (camelCase):
-
-```blueprintjson
-{
-  "name": "Short name for the user's agent",
-  "goal": "One or two sentences on what it does and for whom",
-  "agents": [
-    {"name": "root_agent", "role": "What it is responsible for", "kind": "llm",
-     "model": "gemini-2.5-flash", "tools": ["search_docs"], "subAgents": []}
-  ],
-  "tools": [{"name": "search_docs", "kind": "function", "purpose": "What it does"}],
-  "dataSources": [{"name": "Help center", "purpose": "Answers", "access": "REST API"}],
-  "models": [{"model": "gemini-2.5-flash", "usedBy": ["root_agent"], "reason": "Why"}],
-  "risks": ["Main risk and how to mitigate it"],
-  "nextSteps": ["First concrete step"],
-  "codeSkeleton": "Optional short Python skeleton using google.adk"
-}
-```
-
-Rules: `kind` for agents is one of llm, sequential, parallel, loop, custom; for tools one
-of builtin, function, mcp, openapi, agent, other. At least one agent. Keep strings short.
-The JSON must be valid (no comments, no trailing commas). The block is shown to the user
-as a panel, so do not repeat the whole blueprint in prose.
-"""
-
-prompt_v2 = prompt_v1 + BLUEPRINT_INSTRUCTION
-
-
 # v3: the builder builds. It designs with nuvel's ADK skills, then generates a
 # complete project on nuvel's production skeleton and hands it over as a zip.
 # Assembled per turn (see build_prompt_v3) so the date and the current
@@ -252,8 +216,8 @@ invent ADK APIs; the package is `google.adk`.
    unless the agent mostly writes code) and choose only from what it returns. For
    REASONING_MODEL take the best-scoring `top` model that fits the budget; for
    FAST_MODEL a cheap model with a good score from `top` or `popular`. State each
-   choice with its score and price, crediting the `source`. End with the
-   blueprint (below) and ask whether to build it.
+   choice with its score and price, crediting the `source`. Then summarise the
+   design in a few lines and ask whether to build it.
 3. **Build**, only after the user agrees:
    a. `scaffold_agent` with a kebab-case name, a one-line description and the
       chosen options.
@@ -263,7 +227,9 @@ invent ADK APIs; the package is `google.adk`.
    e. `package_agent`. It validates once more and saves `<name>.zip` to the chat.
 4. **Hand over.** In a few lines: what the agent does, what is in the zip, the
    environment variables to set, how to run it locally and deploy it, and good
-   next steps. The code is in the zip; do not paste it into the chat.
+   next steps. The code is in the zip; do not paste it into the chat. Under the
+   zip the user can email themselves a permanent link; mention it in one line.
+   Do not ask for their email in the chat.
 After a hand-over, apply follow-up changes to the same project (no new scaffold),
 validate, and package again.
 
@@ -337,13 +303,12 @@ model budget is small: suggest a few focused test messages.
 
 
 def build_prompt_v3(state, sandbox: bool = False, preview: bool = False) -> str:
-    """The v3 prompt for one turn: date, workflow, sandbox, preview, blueprint, project."""
+    """The v3 prompt for one turn: date, workflow, sandbox, preview and the current project."""
     prompt = PROMPT_V3.format(date=get_current_date())
     if sandbox:
         prompt += SANDBOX_INSTRUCTION
     if preview:
         prompt += PREVIEW_INSTRUCTION
-    prompt += BLUEPRINT_INSTRUCTION
     name = state.get("current_agent_name")
     package = state.get("current_agent_package")
     if name and package:

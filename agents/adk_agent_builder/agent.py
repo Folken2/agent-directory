@@ -29,7 +29,6 @@ from nuvel.callbacks.path_guard import path_guard
 from nuvel.guardrails.exfil_guard import exfil_guard
 
 from . import sandbox
-from .callbacks.blueprint_document import capture_blueprint
 from .config.llm import FAST_MODEL
 from .nuvel_plugins import builder_plugins
 from .prompt.prompt import build_prompt_v3
@@ -128,7 +127,6 @@ root_agent = Agent(
     instruction=_instruction,
     tools=_build_tools(),
     before_tool_callback=[path_guard, exfil_guard],
-    after_model_callback=capture_blueprint,
 )
 
 # The App carries nuvel's plugins for the builder only. The server's own
