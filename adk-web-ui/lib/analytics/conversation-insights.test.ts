@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import {
   BUILDER_APP,
   agentHealth,
-  blueprintArchitecture,
-  blueprintInsights,
+  buildInsights,
   buildHighlights,
   builderFunnel,
   conversationOutcome,
@@ -35,20 +34,21 @@ function conv(over: Partial<ConversationRow> = {}): ConversationRow {
     outputTokens: 0,
     prompts: ['hello there'],
     firstReplyMs: 1000,
-    hasBlueprint: false,
-    saved: false,
+    hasBuild: false,
+    emailed: false,
+    helpRequested: false,
     ...over,
   };
 }
 
 describe('conversationOutcome', () => {
-  it('ranks saved over blueprint over error over turn counts', () => {
-    assert.equal(conversationOutcome({ saved: true, hasBlueprint: true, errors: 1, userTurns: 1 }), 'saved');
-    assert.equal(conversationOutcome({ saved: false, hasBlueprint: true, errors: 1, userTurns: 1 }), 'blueprint');
-    assert.equal(conversationOutcome({ saved: false, hasBlueprint: false, errors: 2, userTurns: 5 }), 'error');
-    assert.equal(conversationOutcome({ saved: false, hasBlueprint: false, errors: 0, userTurns: 1 }), 'one-and-done');
-    assert.equal(conversationOutcome({ saved: false, hasBlueprint: false, errors: 0, userTurns: 2 }), 'short');
-    assert.equal(conversationOutcome({ saved: false, hasBlueprint: false, errors: 0, userTurns: 3 }), 'engaged');
+  it('ranks emailed over zip over error over turn counts', () => {
+    assert.equal(conversationOutcome({ emailed: true, hasBuild: true, errors: 1, userTurns: 1 }), 'emailed');
+    assert.equal(conversationOutcome({ emailed: false, hasBuild: true, errors: 1, userTurns: 1 }), 'zip');
+    assert.equal(conversationOutcome({ emailed: false, hasBuild: false, errors: 2, userTurns: 5 }), 'error');
+    assert.equal(conversationOutcome({ emailed: false, hasBuild: false, errors: 0, userTurns: 1 }), 'one-and-done');
+    assert.equal(conversationOutcome({ emailed: false, hasBuild: false, errors: 0, userTurns: 2 }), 'short');
+    assert.equal(conversationOutcome({ emailed: false, hasBuild: false, errors: 0, userTurns: 3 }), 'engaged');
   });
 });
 
@@ -155,19 +155,22 @@ describe('agentHealth', () => {
 });
 
 describe('builderFunnel', () => {
-  it('counts only builder conversations, with step and overall rates', () => {
+  it('counts only builder conversations: started, continued, zip, emailed, help', () => {
     const rows = [
       conv({ appName: BUILDER_APP, userTurns: 1 }),
       conv({ appName: BUILDER_APP, userTurns: 3 }),
-      conv({ appName: BUILDER_APP, userTurns: 4, hasBlueprint: true }),
-      conv({ appName: BUILDER_APP, userTurns: 5, hasBlueprint: true, saved: true }),
-      conv({ appName: 'other', userTurns: 9, hasBlueprint: true }),
+      conv({ appName: BUILDER_APP, userTurns: 4, hasBuild: true }),
+      conv({ appName: BUILDER_APP, userTurns: 5, hasBuild: true, emailed: true, helpRequested: true }),
+      conv({ appName: 'other', userTurns: 9, hasBuild: true, emailed: true }),
     ];
     const f = builderFunnel(rows);
-    assert.deepEqual(f.map((s) => s.count), [4, 3, 2, 1]);
-    assert.deepEqual(f.map((s) => s.ofFirst), [100, 75, 50, 25]);
+    assert.deepEqual(f.map((s) => s.id), ['started', 'continued', 'zip', 'emailed', 'help']);
+    assert.deepEqual(f.map((s) => s.label), ['Started a design', 'Answered a follow-up', 'Got a zip', 'Emailed it', 'Asked for help']);
+    assert.deepEqual(f.map((s) => s.count), [4, 3, 2, 1, 1]);
+    assert.deepEqual(f.map((s) => s.ofFirst), [100, 75, 50, 25, 25]);
     assert.equal(f[2].ofPrevious, 66.7);
     assert.equal(f[3].ofPrevious, 50);
+    assert.equal(f[4].ofPrevious, 100);
   });
 });
 
@@ -190,63 +193,55 @@ describe('demandInsights', () => {
   });
 });
 
-describe('blueprints', () => {
-  const doc = (agents: unknown[], tools: unknown[] = [], extra: object = {}) => ({ name: 'X', goal: 'G', agents, tools, ...extra });
+describe('buildInsights', () => {
+  const record = (over: object) => ({ sessionId: 's', userId: 'a_1', updatedAt: '', emailed: false, updates: false, help: false, build: {}, ...over });
 
-  it('classifies architecture from agent kinds', () => {
-    assert.equal(blueprintArchitecture(doc([{ kind: 'llm' }])), 'single');
-    assert.equal(blueprintArchitecture(doc([{ kind: 'sequential' }, { kind: 'llm' }])), 'sequential');
-    assert.equal(blueprintArchitecture(doc([{ kind: 'loop' }, { kind: 'llm' }])), 'loop');
-    assert.equal(blueprintArchitecture(doc([{ kind: 'llm' }, { kind: 'llm' }])), 'routed');
-    assert.equal(blueprintArchitecture(null), 'single');
-  });
-
-  it('counts tools and kinds once per blueprint and lists recent ones first', () => {
-    const records = [
-      {
+  it('counts emails, opt-ins, options, models and tools, newest first', () => {
+    const b = buildInsights([
+      record({
         sessionId: 's1',
-        userId: 'a_1',
         updatedAt: '2026-10-01T00:00:00Z',
-        saved: true,
-        doc: doc([{ kind: 'llm' }], [
-          { name: 'Gmail_Read', kind: 'mcp' },
-          { name: 'gmail_read', kind: 'mcp' },
-        ], { dataSources: [{ name: 'd' }], models: [{ model: 'gemini-2.5-flash' }] }),
-      },
-      {
+        emailed: true,
+        updates: true,
+        build: {
+          name: 'one',
+          options: { with_slack: true, with_eval: false },
+          models: { fast: 'm1', reasoning: 'm2' },
+          tools: ['Web_Search', 'web_search'],
+          skills: ['x'],
+          files: 10,
+        },
+      }),
+      record({
         sessionId: 's2',
-        userId: 'a_2',
         updatedAt: '2026-10-02T00:00:00Z',
-        saved: false,
-        doc: doc([{ kind: 'sequential' }, { kind: 'llm' }], [{ name: 'google_search', kind: 'builtin' }]),
-      },
-    ];
-    const b = blueprintInsights(records);
-    assert.equal(b.total, 2);
-    assert.equal(b.saved, 1);
-    assert.equal(b.avgAgents, 1.5);
-    assert.equal(b.withDataSources, 1);
-    assert.deepEqual(b.tools.map((t) => [t.label, t.count, t.share]), [
-      ['Gmail_Read', 1, 50],
-      ['google_search', 1, 50],
+        help: true,
+        build: { name: 'two', options: { with_slack: true, persona: true }, models: { fast: 'm1', reasoning: null }, tools: ['gmail'], files: 5 },
+      }),
     ]);
-    assert.deepEqual(b.toolKinds.map((t) => t.id).sort(), ['builtin', 'mcp']);
+    assert.deepEqual([b.total, b.emailed, b.updates, b.help], [2, 1, 1, 1]);
+    assert.deepEqual(b.options.map((o) => [o.label, o.count, o.share]), [['Slack', 2, 100], ['Persona', 1, 50]]);
+    assert.deepEqual(b.models.map((m) => [m.label, m.count]), [['m1', 2], ['m2', 1]]);
+    assert.deepEqual(b.tools.map((t) => [t.label, t.count, t.share]), [['gmail', 1, 50], ['Web_Search', 1, 50]]);
     assert.deepEqual(b.recent.map((r) => r.sessionId), ['s2', 's1']);
-    assert.equal(b.recent[0].architecture, 'Sequential pipeline');
+    assert.deepEqual(b.recent[0].options, ['Persona', 'Slack']);
+    assert.equal(b.recent[1].tools, 1);
+    assert.equal(b.recent[1].files, 10);
   });
 
-  it('survives malformed documents', () => {
-    const b = blueprintInsights([{ sessionId: 's', userId: 'u', updatedAt: '', saved: false, doc: { agents: 'nope', tools: 3 } }]);
+  it('survives malformed builds', () => {
+    const b = buildInsights([record({ build: { options: 'x', tools: 3, models: [] } })]);
     assert.equal(b.total, 1);
-    assert.equal(b.recent[0].name, 'Untitled design');
+    assert.equal(b.recent[0].name, 'Untitled build');
+    assert.deepEqual(b.options, []);
   });
 });
 
 describe('buildHighlights', () => {
   const builderRows = [
     ...Array.from({ length: 20 }, () => conv({ appName: BUILDER_APP, userTurns: 1 })),
-    ...Array.from({ length: 20 }, () => conv({ appName: BUILDER_APP, userTurns: 3, hasBlueprint: true })),
-    ...Array.from({ length: 2 }, () => conv({ appName: BUILDER_APP, userTurns: 3, hasBlueprint: true, saved: true })),
+    ...Array.from({ length: 20 }, () => conv({ appName: BUILDER_APP, userTurns: 3, hasBuild: true })),
+    ...Array.from({ length: 2 }, () => conv({ appName: BUILDER_APP, userTurns: 3, hasBuild: true, emailed: true })),
     ...Array.from({ length: 12 }, () => conv({ appName: 'slow', userTurns: 2, firstReplyMs: 30_000, errors: 1, prompts: ['x', 'it does not work'] })),
   ];
   const input = (rows: ConversationRow[]) => ({
@@ -257,7 +252,6 @@ describe('buildHighlights', () => {
       rows.map((r, i) => ({ ...r, prompts: [i % 2 ? 'Answer support tickets in Zendesk' : 'Necesito un agente para ventas'] })),
       () => false
     ),
-    blueprints: blueprintInsights([]),
     nameOf: (s: string) => s.toUpperCase(),
   });
 
@@ -265,7 +259,8 @@ describe('buildHighlights', () => {
     const h = buildHighlights(input(builderRows));
     const leak = h.find((x) => x.id === 'funnel-leak');
     assert.ok(leak);
-    assert.match(leak.title, /blueprints get saved/);
+    assert.match(leak.title, /zips get emailed/);
+    assert.match(leak.detail, /emailed build/);
     assert.equal(leak.tone, 'risk');
   });
 

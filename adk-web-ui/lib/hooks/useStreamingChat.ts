@@ -198,7 +198,7 @@ export function useStreamingChat(): UseStreamingChatResult {
           subAgentSteps: m.subAgentSteps,
           mapsCaptures: m.mapsCaptures,
           guideDocument: m.guideDocument,
-          blueprint: m.blueprint,
+          build: m.build,
         });
 
         const sessionId = toSessionId(conversation.id);

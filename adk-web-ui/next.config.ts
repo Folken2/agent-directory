@@ -38,6 +38,12 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
 ];
 
+// Build links carry a secret token: keep them out of referrers and search engines.
+const privateLinkHeaders = [
+  { key: 'Referrer-Policy', value: 'no-referrer' },
+  { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+];
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   output: 'standalone',
@@ -84,7 +90,12 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }];
+    return [
+      { source: '/:path*', headers: securityHeaders },
+      // Later entries override the same header key from earlier ones.
+      { source: '/builds/:path*', headers: privateLinkHeaders },
+      { source: '/api/builds/:path*', headers: privateLinkHeaders },
+    ];
   },
 };
 

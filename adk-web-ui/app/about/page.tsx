@@ -30,10 +30,10 @@ export default function AboutPage() {
           <p>
             Describe the agent you have in mind on the <Link href="/" className={proseLink}>Build</Link> page.
             The agent builder asks about your goal, then proposes the agents, tools and prompts, and explains
-            why. The design collects in a blueprint you can copy, download or save. When you agree, it builds
-            the agent on{' '}
+            why. When you agree, it builds the agent on{' '}
             <a href={NUVEL_URL} target="_blank" rel="noreferrer" className={proseLink}>nuvel</a>
-            {' '}and hands you a zip: server, plugins, guardrails, Dockerfile and tests included.
+            {' '}and hands you a zip: server, plugins, guardrails, Dockerfile and tests included. Download it
+            right away, or email yourself a permanent link to it.
           </p>
         </section>
         <section className="space-y-3">

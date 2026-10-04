@@ -9,7 +9,8 @@ import {
   ToolResponse,
 } from './types';
 import { parseGuideDocument } from './guide/parse';
-import { parseBlueprint } from './blueprint/parse';
+import { parseBuild } from './build/parse';
+import { BUILD_STATE_KEY } from './build/types';
 import { parsePreviewState, PREVIEW_STATE_KEY } from './preview/types';
 import { ChatApiError, errorFromResponse, friendlyMessage } from './api-error';
 
@@ -469,11 +470,11 @@ class ADKClient {
                   }
                 }
 
-                // The builder's blueprint (agents/adk_agent_builder/callbacks/blueprint_document.py).
-                const blueprintRaw = stateDelta?.['blueprint:document'];
-                if (blueprintRaw) {
-                  const blueprint = parseBlueprint(blueprintRaw);
-                  if (blueprint) yield { type: 'blueprint', blueprint, author: eventData.author };
+                // The builder packaged a project (package_agent writes state["builder:build"]).
+                const buildRaw = stateDelta?.[BUILD_STATE_KEY];
+                if (buildRaw) {
+                  const build = parseBuild(buildRaw);
+                  if (build) yield { type: 'build', build, author: eventData.author };
                 }
 
                 // The builder started or stopped a live preview (tools/sandbox_tools.py).

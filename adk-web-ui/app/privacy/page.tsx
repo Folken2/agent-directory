@@ -5,13 +5,13 @@ const ISSUES_URL = 'https://github.com/Folken2/agent-directory/issues';
 
 export const metadata: Metadata = {
   title: 'Privacy | ADK Agent Directory',
-  description: 'How Agent Directory handles visits, cookies, sign-in and saved blueprints.',
+  description: 'How Agent Directory handles visits, cookies, sign-in and builds you email yourself.',
   alternates: { canonical: '/privacy' },
 };
 
 export default function PrivacyPage() {
   return (
-    <ProsePage title="Privacy" lead="How Agent Directory handles visits, cookies, sign-in and saved blueprints.">
+    <ProsePage title="Privacy" lead="How Agent Directory handles visits, cookies, sign-in and builds you email yourself.">
       <ProseSection title="Essential visit counts">
         <p>
           We record anonymous pageviews (path, approximate country from the edge, and whether the request looks
@@ -36,16 +36,27 @@ export default function PrivacyPage() {
         </p>
       </ProseSection>
 
-      <ProseSection title="Saved blueprints" id="blueprints">
+      <ProseSection title="Builds you email yourself" id="builds">
         <p>
-          When you choose to save a blueprint from the agent builder, we store the blueprint, the email address
-          you enter, the time you gave consent, and, if you are signed in, your account id. We send the site
-          owner a notification with the same details so they can follow up with you about building the agent.
-          We use your email only for that follow-up, never for marketing lists or advertising, and we do not
-          sell or share it. Nothing is saved unless you tick the consent box.
+          Every agent the builder packages is recorded without personal data: its name, the options, models,
+          tools and skills it uses, and its size. We use these counts to improve the builder.
         </p>
         <p>
-          To have a saved blueprint and your email deleted, reply to the follow-up email or contact us as below.
+          When you choose &ldquo;Email me a permanent link&rdquo;, we store your email address, the zip and that
+          build summary so we can send you the link and serve the download, plus your account id if you are
+          signed in. They are kept until you delete the build. The email is sent through our email provider
+          (Resend). When an owner notification is configured, the site owner is told that you emailed a build,
+          including your email address and the build summary; if you tick &ldquo;I&apos;d like help
+          deploying it&rdquo;, they may get in touch about deploying it. We only send you the link email unless
+          you tick &ldquo;Send me updates about the builder and nuvel&rdquo;; then we store the time you agreed
+          and add your address to our updates list. We do not sell or share your email.
+        </p>
+        <p>
+          &ldquo;Delete this build&rdquo; on the link page removes your email address and the zip from the
+          stored build straight away, and the link stops working. It does not remove you from the updates list:
+          if you opted in to updates you stay on it until you unsubscribe with the link in an update email or
+          contact us as below. Blueprints saved with an earlier version of the builder are kept; to have one
+          deleted, contact us as below.
         </p>
       </ProseSection>
 

@@ -11,6 +11,7 @@ export type ApiErrorCode =
   | 'idle_timeout'
   | 'forbidden'
   | 'not_found'
+  | 'gone'
   | 'disabled'
   | 'internal';
 
@@ -22,6 +23,7 @@ export const API_ERROR_STATUS: Record<ApiErrorCode, number> = {
   idle_timeout: 504,
   forbidden: 403,
   not_found: 404,
+  gone: 410,
   disabled: 403,
   internal: 500,
 };
@@ -34,6 +36,7 @@ export const FRIENDLY_MESSAGES: Record<ApiErrorCode, string> = {
   idle_timeout: 'The response timed out. You can retry.',
   forbidden: "You don't have access to that.",
   not_found: "We couldn't find that.",
+  gone: 'That is no longer available.',
   disabled: 'This feature is turned off for now.',
   internal: 'Something went wrong on our side. Please try again.',
 };

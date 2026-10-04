@@ -7,7 +7,7 @@ import InlineArtifact from '../../InlineArtifact';
 import { MapsEmbed } from '../MapsEmbed';
 import { GuideAnswer } from '../guide/GuideAnswer';
 import { GuideMap } from '../guide/GuideMap';
-import BlueprintCard from '../../blueprint/BlueprintCard';
+import BuildCard from '../../build/BuildCard';
 
 export type RendererProps<T extends PayloadType> = {
   payload: Extract<MessagePayload, { type: T }>;
@@ -55,8 +55,8 @@ function GuideRenderer({ payload }: RendererProps<'guide'>) {
   );
 }
 
-function BlueprintRenderer({ payload }: RendererProps<'blueprint'>) {
-  return <BlueprintCard blueprint={payload.blueprint} />;
+function BuildRenderer({ payload }: RendererProps<'build'>) {
+  return <BuildCard build={payload.build} />;
 }
 
 /** One renderer per payload type; a new structured output adds an entry here. */
@@ -65,7 +65,7 @@ export const PAYLOAD_RENDERERS: { [K in PayloadType]: ComponentType<RendererProp
   artifact: ArtifactRenderer,
   maps: MapsRenderer,
   guide: GuideRenderer,
-  blueprint: BlueprintRenderer,
+  build: BuildRenderer,
 };
 
 export function PayloadList({

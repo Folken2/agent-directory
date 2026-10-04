@@ -138,7 +138,7 @@ export default function InsightsView({
 }) {
   const o = data.overview;
   const d = data.demand;
-  const b = data.blueprints;
+  const b = data.builds;
 
   if (!data.available) {
     return (
@@ -173,7 +173,7 @@ export default function InsightsView({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="Builder funnel" subtitle="Builder conversations, from first message to a saved blueprint">
+        <Panel title="Builder funnel" subtitle="Builder conversations, from first message to an emailed build">
           <Funnel steps={data.funnel} />
         </Panel>
         <Panel
@@ -189,42 +189,50 @@ export default function InsightsView({
           <RankedBars rows={shareRows(d.integrations).slice(0, 8)} color={BAR} empty="No integrations mentioned." />
         </Panel>
         <Panel
-          title="What they design"
-          subtitle={`${formatCount(b.total)} blueprints · ${b.avgAgents} agents on average · ${formatCount(b.withDataSources)} with data sources`}
+          title="What they build"
+          subtitle={`${formatCount(b.total)} builds · ${formatCount(b.emailed)} emailed · ${formatCount(b.help)} asked for help`}
         >
-          <RankedBars rows={shareRows(b.architectures)} color={BAR} empty="No blueprints in this range." />
+          <RankedBars rows={shareRows(b.options)} color={BAR} empty="No options used in this range." />
         </Panel>
-        <Panel title="Tools in blueprints" subtitle="Share of blueprints using each kind of tool">
-          <RankedBars rows={shareRows(b.toolKinds)} color={BAR} empty="No tools in blueprints." />
+        <Panel title="Models in builds" subtitle="Share of builds using each model">
+          <RankedBars rows={shareRows(b.models)} color={BAR} empty="No builds in this range." />
         </Panel>
       </div>
 
-      <Panel title="Latest blueprints" subtitle={`${formatCount(b.saved)} of ${formatCount(b.total)} saved with an email`}>
+      <Panel
+        title="Latest builds"
+        subtitle={`${formatCount(b.emailed)} of ${formatCount(b.total)} emailed · ${formatCount(b.updates)} opted in to updates`}
+      >
         {b.recent.length === 0 ? (
-          <p className="text-body-medium text-md-on-surface-variant">No blueprints in this range.</p>
+          <p className="text-body-medium text-md-on-surface-variant">No builds in this range.</p>
         ) : (
           <ul className="divide-y divide-md-outline/60 dark:divide-md-outline-variant">
-            {b.recent.map((bp) => (
-              <li key={bp.sessionId}>
+            {b.recent.map((build) => (
+              <li key={build.sessionId}>
                 <button
                   type="button"
-                  onClick={() => onOpenConversation('adk_agent_builder', bp.sessionId)}
+                  onClick={() => onOpenConversation('adk_agent_builder', build.sessionId)}
                   className="-mx-2 flex w-[calc(100%+1rem)] flex-col gap-1 rounded-[var(--md-shape-sm)] px-2 py-3 text-left transition-colors hover:bg-md-on-surface/4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary sm:flex-row sm:items-start sm:gap-6"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="truncate text-title-small text-md-on-surface">{bp.name}</span>
-                      {bp.saved ? (
+                      <span className="truncate text-title-small text-md-on-surface">{build.name}</span>
+                      {build.emailed ? (
                         <span className="shrink-0 rounded-full bg-md-primary-container px-2 py-0.5 text-label-medium text-md-on-primary-container">
-                          Saved
+                          Emailed
+                        </span>
+                      ) : null}
+                      {build.help ? (
+                        <span className="shrink-0 rounded-full bg-md-secondary-container px-2 py-0.5 text-label-medium text-md-on-secondary-container">
+                          Help
                         </span>
                       ) : null}
                     </span>
-                    <span className="mt-0.5 line-clamp-2 block text-body-medium text-md-on-surface-variant">{bp.goal}</span>
+                    <span className="mt-0.5 line-clamp-2 block text-body-medium text-md-on-surface-variant">{build.description}</span>
                   </span>
                   <span className="shrink-0 text-label-medium text-md-on-surface-variant sm:w-64 sm:text-right">
-                    {bp.architecture} · {bp.agents} {bp.agents === 1 ? 'agent' : 'agents'}
-                    {bp.tools.length > 0 ? <span className="block truncate">{bp.tools.join(', ')}</span> : null}
+                    {build.files} files · {build.tools} tools · {build.skills} skills
+                    {build.options.length > 0 ? <span className="block truncate">{build.options.join(', ')}</span> : null}
                   </span>
                 </button>
               </li>
@@ -233,15 +241,12 @@ export default function InsightsView({
         )}
       </Panel>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Top blueprint tools" subtitle="Tool names the builder proposed">
-          <RankedBars rows={shareRows(b.tools).slice(0, 8)} color={BAR} empty="No tools in blueprints." />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Panel title="Top build tools" subtitle="Tool modules in packaged builds">
+          <RankedBars rows={shareRows(b.tools).slice(0, 8)} color={BAR} empty="No tools in builds." />
         </Panel>
         <Panel title="Languages" subtitle="Of typed first messages">
           <RankedBars rows={shareRows(d.languages)} color={BAR} empty="No typed first messages." />
-        </Panel>
-        <Panel title="Models in blueprints" subtitle="Share of blueprints naming each model">
-          <RankedBars rows={shareRows(b.models)} color={BAR} empty="No models named." />
         </Panel>
       </div>
 

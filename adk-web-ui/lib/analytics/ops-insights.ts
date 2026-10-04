@@ -5,10 +5,10 @@
 
 import { BUILDER_EXAMPLE_PROMPTS } from '@/lib/builder';
 import { getCatalogAgent } from '@/lib/agent-catalog-client';
-import { fetchBuilderBlueprints, fetchConversations, fetchToolUsage } from './adk-events';
+import { fetchBuilderBuilds, fetchConversations, fetchToolUsage } from './adk-events';
 import {
   agentHealth,
-  blueprintInsights,
+  buildInsights,
   buildHighlights,
   builderFunnel,
   conversationOutcome,
@@ -30,9 +30,9 @@ function suggestionMatcher(): (text: string) => boolean {
 }
 
 export async function fetchOpsInsights(range: TimelineRange): Promise<OpsInsights> {
-  const [rows, blueprints, tools] = await Promise.all([
+  const [rows, builds, tools] = await Promise.all([
     fetchConversations(range),
-    fetchBuilderBlueprints(range),
+    fetchBuilderBuilds(range),
     fetchToolUsage(range),
   ]);
 
@@ -40,18 +40,18 @@ export async function fetchOpsInsights(range: TimelineRange): Promise<OpsInsight
   const funnel = builderFunnel(rows);
   const agents = agentHealth(rows);
   const demand = demandInsights(rows, suggestionMatcher());
-  const blueprintStats = blueprintInsights(blueprints);
+  const buildStats = buildInsights(builds);
   const nameOf = (slug: string) => getCatalogAgent(slug)?.displayName || slug;
 
   return {
     range,
-    available: rows.length > 0 || blueprints.length > 0,
-    highlights: buildHighlights({ overview, funnel, agents, demand, blueprints: blueprintStats, nameOf }),
+    available: rows.length > 0 || builds.length > 0,
+    highlights: buildHighlights({ overview, funnel, agents, demand, nameOf }),
     overview,
     funnel,
     agents,
     demand,
-    blueprints: blueprintStats,
+    builds: buildStats,
     tools,
     conversations: rows.slice(0, LIST_LIMIT).map((c) => ({
       appName: c.appName,
