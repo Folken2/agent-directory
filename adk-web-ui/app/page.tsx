@@ -19,8 +19,8 @@ export default function Home() {
             What agent do you want to build?
           </h1>
           <p className="mx-auto mb-10 mt-4 max-w-xl text-body-large text-md-on-surface-variant">
-            Describe it in a sentence. The agent builder designs it with you using Google&apos;s Agent
-            Development Kit: architecture, tools, prompts and code.
+            Describe it in a sentence. The agent builder designs it with you on Google&apos;s Agent
+            Development Kit, then builds it: a production-ready project you download and run.
           </p>
         </div>
         <BuilderHero />

@@ -9,7 +9,9 @@ import {
   ToolResponse,
 } from './types';
 import { parseGuideDocument } from './guide/parse';
-import { parseBlueprint } from './blueprint/parse';
+import { parseBuild } from './build/parse';
+import { BUILD_STATE_KEY } from './build/types';
+import { parsePreviewState, PREVIEW_STATE_KEY } from './preview/types';
 import { ChatApiError, errorFromResponse, friendlyMessage } from './api-error';
 
 const API_BASE_URL = '';
@@ -203,6 +205,11 @@ class ADKClient {
   private extractFunctionCalls(eventData: any): ToolCall[] {
     const functionCalls: ToolCall[] = [];
 
+    // google-adk 2.x streams a call's arguments in partial events
+    // (willContinue / partialArgs, no args) before the final event that
+    // carries the complete call. Only the final one is a tool call.
+    if (eventData?.partial === true) return functionCalls;
+
     // Check content.parts first (ADK structure)
     if (eventData.content && typeof eventData.content === 'object' && eventData.content.parts && Array.isArray(eventData.content.parts)) {
       for (const part of eventData.content.parts) {
@@ -287,20 +294,42 @@ class ADKClient {
     sessionId: string | undefined,
     signal?: AbortSignal
   ): AsyncGenerator<StreamChunk> {
-    try {
-      // The server creates the ADK session and derives the user id itself.
-      const actualSessionId =
-        sessionId || `session-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
-      const contentMessage = typeof message === 'string' ? { parts: [{ text: message }] } : message;
+    // The server creates the ADK session and derives the user id itself.
+    const actualSessionId =
+      sessionId || `session-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+    const contentMessage = typeof message === 'string' ? { parts: [{ text: message }] } : message;
+    yield* this.streamFrom(
+      '/api/run_sse',
+      { app_name: agentName, session_id: actualSessionId, new_message: contentMessage },
+      signal
+    );
+  }
 
-      const response = await fetch('/api/run_sse', {
+  /**
+   * Stream a message to the live preview of the agent the builder is
+   * building (the builder chat's `builderSessionId`). Same ADK event stream,
+   * relayed by /api/preview from the sandbox.
+   */
+  async *streamPreview(
+    builderSessionId: string,
+    previewSessionId: string,
+    text: string,
+    signal?: AbortSignal
+  ): AsyncGenerator<StreamChunk> {
+    yield* this.streamFrom(
+      `/api/preview?session_id=${encodeURIComponent(builderSessionId)}`,
+      { previewSessionId, text },
+      signal
+    );
+  }
+
+  /** POST `body` to a same-origin SSE route and parse the ADK event stream. */
+  private async *streamFrom(url: string, body: unknown, signal?: AbortSignal): AsyncGenerator<StreamChunk> {
+    try {
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          app_name: agentName,
-          session_id: actualSessionId,
-          new_message: contentMessage,
-        }),
+        body: JSON.stringify(body),
         signal,
       });
 
@@ -441,11 +470,18 @@ class ADKClient {
                   }
                 }
 
-                // The builder's blueprint (agents/adk_agent_builder/callbacks/blueprint_document.py).
-                const blueprintRaw = stateDelta?.['blueprint:document'];
-                if (blueprintRaw) {
-                  const blueprint = parseBlueprint(blueprintRaw);
-                  if (blueprint) yield { type: 'blueprint', blueprint, author: eventData.author };
+                // The builder packaged a project (package_agent writes state["builder:build"]).
+                const buildRaw = stateDelta?.[BUILD_STATE_KEY];
+                if (buildRaw) {
+                  const build = parseBuild(buildRaw);
+                  if (build) yield { type: 'build', build, author: eventData.author };
+                }
+
+                // The builder started or stopped a live preview (tools/sandbox_tools.py).
+                const previewRaw = stateDelta?.[PREVIEW_STATE_KEY];
+                if (previewRaw) {
+                  const preview = parsePreviewState(previewRaw);
+                  if (preview) yield { type: 'preview', preview, author: eventData.author };
                 }
 
                 // Handle Event object - check content.parts first (ADK structure)

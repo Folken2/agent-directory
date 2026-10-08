@@ -1,12 +1,23 @@
 """
-ADK Agent Builder - A specialist agent that helps users build ADK agents,
-grounded in a curated set of ADK skills shipped alongside the agent.
+ADK Agent Builder - designs agents with the user and builds them as complete,
+production-ready projects on nuvel (https://github.com/Folken2/nuvel).
+
+- Knowledge: nuvel's ADK skills, plus the official ADK docs over MCP.
+- Building: nuvel's scaffolder stamps the production skeleton into a
+  per-session workspace; the model writes the agent's prompt, tools and
+  skills; nuvel validates; the project is handed over as a zip artifact.
+- Running: with E2B_API_KEY set, the project is installed, imported and
+  tested in a per-session E2B sandbox (sandbox.py), never on this server.
+- Safety: nuvel's path_guard and exfil_guard on every tool call, and nuvel's
+  plugins on the app (see nuvel_plugins.py).
 """
 
 import logging
 import pathlib
 
+import nuvel.backends.adk
 from google.adk.agents import Agent
+from google.adk.apps import App
 from google.adk.skills import load_skill_from_dir
 from google.adk.tools.mcp_tool.mcp_session_manager import (
     StdioConnectionParams,
@@ -14,15 +25,19 @@ from google.adk.tools.mcp_tool.mcp_session_manager import (
 )
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.skill_toolset import SkillToolset
+from nuvel.callbacks.path_guard import path_guard
+from nuvel.guardrails.exfil_guard import exfil_guard
 
+from . import sandbox
 from .config.llm import FAST_MODEL
-from .config.utils import before_agent_callback_update_tools
-from .callbacks.blueprint_document import capture_blueprint
-from .prompt.prompt import prompt_v2
+from .nuvel_plugins import builder_plugins
+from .prompt.prompt import build_prompt_v3
+from .tools import get_tools
 
 logger = logging.getLogger(__name__)
 
-_SKILLS_DIR = pathlib.Path(__file__).parent / "skills"
+# nuvel's ADK knowledge skills ship inside the nuvel package.
+NUVEL_SKILLS_DIR = pathlib.Path(nuvel.backends.adk.__file__).parent / "skills"
 
 # Canonical llms.txt lives on adk.dev (HTTP 200, no redirect).
 # Do NOT use google.github.io/adk-docs/llms.txt — it 301-redirects and mcpdoc
@@ -66,12 +81,12 @@ def _build_adk_docs_mcp_toolset() -> McpToolset:
 
 
 def _build_skill_toolset() -> SkillToolset | None:
-    if not _SKILLS_DIR.is_dir():
-        logger.warning("Skills directory not found: %s", _SKILLS_DIR)
+    if not NUVEL_SKILLS_DIR.is_dir():
+        logger.warning("nuvel skills directory not found: %s", NUVEL_SKILLS_DIR)
         return None
 
     skills = []
-    for skill_dir in sorted(_SKILLS_DIR.iterdir()):
+    for skill_dir in sorted(NUVEL_SKILLS_DIR.iterdir()):
         if not (skill_dir.is_dir() and (skill_dir / "SKILL.md").exists()):
             continue
         try:
@@ -80,15 +95,15 @@ def _build_skill_toolset() -> SkillToolset | None:
             logger.warning("Failed to load skill %s: %s", skill_dir.name, e)
 
     if not skills:
-        logger.warning("No skills loaded from %s", _SKILLS_DIR)
+        logger.warning("No skills loaded from %s", NUVEL_SKILLS_DIR)
         return None
 
-    logger.info("Loaded %d ADK skill(s)", len(skills))
+    logger.info("Loaded %d nuvel ADK skill(s)", len(skills))
     return SkillToolset(skills=skills)
 
 
 def _build_tools():
-    tools = []
+    tools = get_tools()
     skill_toolset = _build_skill_toolset()
     if skill_toolset:
         tools.append(skill_toolset)
@@ -99,12 +114,21 @@ def _build_tools():
     return tools
 
 
+async def _instruction(ctx) -> str:
+    return LANGUAGE_INSTRUCTION + build_prompt_v3(
+        ctx.state, sandbox=sandbox.enabled(), preview=sandbox.preview_enabled()
+    )
+
+
 root_agent = Agent(
     model=FAST_MODEL,
     name="adk_agent_builder",
-    description="Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in a curated library of ADK skills.",
-    instruction=LANGUAGE_INSTRUCTION + prompt_v2,
+    description="Describe the agent you want and get a complete, production-ready Google ADK project built on nuvel: design, code, plugins, Dockerfile and tests, delivered as a zip.",
+    instruction=_instruction,
     tools=_build_tools(),
-    before_agent_callback=before_agent_callback_update_tools,
-    after_model_callback=capture_blueprint,
+    before_tool_callback=[path_guard, exfil_guard],
 )
+
+# The App carries nuvel's plugins for the builder only. The server's own
+# plugins (extra_plugins in run_adk.py) are appended after these.
+app = App(name="adk_agent_builder", root_agent=root_agent, plugins=builder_plugins())

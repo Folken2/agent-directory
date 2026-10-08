@@ -16,7 +16,7 @@ import { isAnalyticsDbAvailable } from './db-available';
 import { timelineRangeDays, type TimelineRange } from './timeline-range';
 import {
   BUILDER_APP,
-  type BlueprintRecord,
+  type BuildRecord,
   type ConversationRow,
   type ToolUsageRow,
   type TranscriptEntry,
@@ -26,7 +26,7 @@ export type AdkEventsSchema = 'v0' | 'v1';
 
 const SCHEMA_TTL_MS = 10 * 60 * 1000;
 let schemaCache: { value: AdkEventsSchema | null; at: number } | null = null;
-let submissionsCache: { value: boolean; at: number } | null = null;
+let buildSavesCache: { value: boolean; at: number } | null = null;
 
 /** Which ADK layout `events` uses, or null when there is no ADK store. */
 export async function detectAdkEventsSchema(): Promise<AdkEventsSchema | null> {
@@ -45,13 +45,13 @@ export async function detectAdkEventsSchema(): Promise<AdkEventsSchema | null> {
   return value;
 }
 
-async function hasSubmissionsTable(): Promise<boolean> {
-  if (submissionsCache && Date.now() - submissionsCache.at < SCHEMA_TTL_MS) return submissionsCache.value;
+async function hasBuildSavesTable(): Promise<boolean> {
+  if (buildSavesCache && Date.now() - buildSavesCache.at < SCHEMA_TTL_MS) return buildSavesCache.value;
   const rows = unwrapExecuteRows<{ exists: boolean }>(
-    await db.execute(sql`SELECT to_regclass('blueprint_submissions') IS NOT NULL AS exists`)
+    await db.execute(sql`SELECT to_regclass('build_saves') IS NOT NULL AS exists`)
   );
   const value = Boolean(rows[0]?.exists);
-  submissionsCache = { value, at: Date.now() };
+  buildSavesCache = { value, at: Date.now() };
   return value;
 }
 
@@ -109,8 +109,9 @@ type ConversationSqlRow = {
   output_tokens: unknown;
   prompts: unknown;
   first_reply_ms: unknown;
-  has_blueprint: boolean | null;
-  saved: boolean | null;
+  has_build: boolean | null;
+  emailed: boolean | null;
+  help_requested: boolean | null;
 };
 
 function iso(value: unknown): string {
@@ -142,13 +143,18 @@ function textArray(value: unknown): string[] {
 /**
  * One row per conversation with activity in the range, newest first: turn
  * counts, tool calls, errors, tokens, first-reply time, the user's messages,
- * and whether the builder produced (and the visitor saved) a blueprint.
+ * and whether the builder packaged a build, and whether it was emailed or help was asked for.
  */
 export async function fetchConversations(range: TimelineRange, limit = MAX_CONVERSATIONS): Promise<ConversationRow[]> {
   const schema = await detectAdkEventsSchema();
   if (!schema) return [];
-  const saved = (await hasSubmissionsTable())
-    ? sql`EXISTS (SELECT 1 FROM blueprint_submissions b WHERE b.session_id = c.session_id)`
+  // build_saves metadata only (never the zip).
+  const saves = await hasBuildSavesTable();
+  const emailed = saves
+    ? sql`EXISTS (SELECT 1 FROM build_saves b WHERE b.session_id = c.session_id AND b.email_sent_at IS NOT NULL)`
+    : sql`false`;
+  const helpRequested = saves
+    ? sql`EXISTS (SELECT 1 FROM build_saves b WHERE b.session_id = c.session_id AND b.help_requested)`
     : sql`false`;
 
   const rows = unwrapExecuteRows<ConversationSqlRow>(
@@ -191,8 +197,9 @@ export async function fetchConversations(range: TimelineRange, limit = MAX_CONVE
         c.input_tokens, c.output_tokens, c.prompts,
         CASE WHEN c.first_agent_at >= c.first_user_at
           THEN (EXTRACT(EPOCH FROM (c.first_agent_at - c.first_user_at)) * 1000)::bigint END AS first_reply_ms,
-        (s.state::jsonb ? 'blueprint:document') AS has_blueprint,
-        ${saved} AS saved
+        COALESCE(s.state::jsonb ? 'builder:build', false) AS has_build,
+        ${emailed} AS emailed,
+        ${helpRequested} AS help_requested
       FROM c
       LEFT JOIN sessions s ON s.app_name = c.app_name AND s.user_id = c.user_id AND s.id = c.session_id
       LEFT JOIN users u ON c.user_id = 'u_' || u.id::text
@@ -215,8 +222,9 @@ export async function fetchConversations(range: TimelineRange, limit = MAX_CONVE
     outputTokens: num(r.output_tokens),
     prompts: textArray(r.prompts),
     firstReplyMs: r.first_reply_ms === null || r.first_reply_ms === undefined ? null : num(r.first_reply_ms),
-    hasBlueprint: Boolean(r.has_blueprint),
-    saved: Boolean(r.saved),
+    hasBuild: Boolean(r.has_build),
+    emailed: Boolean(r.emailed),
+    helpRequested: Boolean(r.help_requested),
   }));
 }
 
@@ -240,18 +248,33 @@ export async function fetchToolUsage(range: TimelineRange): Promise<ToolUsageRow
     .map((r) => ({ agentSlug: String(r.app_name), tool: String(r.tool), calls: num(r.calls), conversations: num(r.conversations) }));
 }
 
-/** Builder sessions whose state holds a blueprint, updated in the range. */
-export async function fetchBuilderBlueprints(range: TimelineRange): Promise<BlueprintRecord[]> {
+/** Builder sessions whose state holds a packaged build, updated in the range. */
+export async function fetchBuilderBuilds(range: TimelineRange): Promise<BuildRecord[]> {
   const schema = await detectAdkEventsSchema();
   if (!schema) return [];
-  const saved = (await hasSubmissionsTable())
-    ? sql`EXISTS (SELECT 1 FROM blueprint_submissions b WHERE b.session_id = s.id)`
-    : sql`false`;
-  const rows = unwrapExecuteRows<{ id: string; user_id: string; update_time: unknown; saved: boolean; doc: unknown }>(
+  const saves = (await hasBuildSavesTable())
+    ? sql`LEFT JOIN LATERAL (
+        SELECT bool_or(b.email_sent_at IS NOT NULL) AS emailed,
+          bool_or(b.updates_consent_at IS NOT NULL) AS updates,
+          bool_or(b.help_requested) AS help
+        FROM build_saves b WHERE b.session_id = s.id
+      ) bs ON true`
+    : sql`LEFT JOIN LATERAL (SELECT false AS emailed, false AS updates, false AS help) bs ON true`;
+  const rows = unwrapExecuteRows<{
+    id: string;
+    user_id: string;
+    update_time: unknown;
+    emailed: boolean | null;
+    updates: boolean | null;
+    help: boolean | null;
+    build: unknown;
+  }>(
     await db.execute(sql`
-      SELECT s.id, s.user_id, s.update_time, ${saved} AS saved, s.state::jsonb->'blueprint:document' AS doc
+      SELECT s.id, s.user_id, s.update_time, s.state::jsonb->'builder:build' AS build,
+        bs.emailed, bs.updates, bs.help
       FROM sessions s
-      WHERE s.app_name = ${BUILDER_APP} AND s.state::jsonb ? 'blueprint:document'
+      ${saves}
+      WHERE s.app_name = ${BUILDER_APP} AND s.state::jsonb ? 'builder:build'
         ${sinceFilter(sql`s.update_time`, range)}
       ORDER BY s.update_time DESC
       LIMIT 1000
@@ -261,8 +284,10 @@ export async function fetchBuilderBlueprints(range: TimelineRange): Promise<Blue
     sessionId: String(r.id),
     userId: String(r.user_id),
     updatedAt: iso(r.update_time),
-    saved: Boolean(r.saved),
-    doc: typeof r.doc === 'string' ? safeJson(r.doc) : r.doc,
+    emailed: Boolean(r.emailed),
+    updates: Boolean(r.updates),
+    help: Boolean(r.help),
+    build: typeof r.build === 'string' ? safeJson(r.build) : r.build,
   }));
 }
 

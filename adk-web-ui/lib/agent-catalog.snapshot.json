@@ -4,49 +4,55 @@
     {
       "name": "adk_agent_builder",
       "displayName": "ADK Agent Builder",
-      "description": "Your guide to building agents with Google's Agent Development Kit. Get architecture advice, code examples, and best practices for single-agent and multi-agent systems — grounded in a curated library of ADK skills shipped with the agent.",
+      "description": "Describe the agent you want and get it built. The builder designs it with you on Google's Agent Development Kit, then generates a complete, production-ready project on nuvel (FastAPI server, plugin chain, guardrails, Dockerfile and tests) and hands it over as a zip.",
       "tools": [
-        "SkillToolset"
+        "scaffold_agent",
+        "write_file",
+        "validate_agent",
+        "package_agent",
+        "SkillToolset",
+        "ADK docs MCP"
       ],
       "tags": [
         "adk",
+        "nuvel",
         "agent-development",
+        "code-generation",
         "multi-agent",
-        "orchestration",
         "skills"
       ],
       "useCases": [
         {
           "title": "Build From Scratch",
-          "description": "Design and build ADK agents from scratch"
+          "description": "Turn a one-line idea into a complete ADK project you can download and run"
         },
         {
           "title": "Architecture Advice",
-          "description": "Choose the right agent architecture (LlmAgent, Sequential, Parallel, Loop)"
+          "description": "Choose between a single LlmAgent, a Workflow graph, or a multi-agent team"
         },
         {
-          "title": "Tool Integration",
-          "description": "Write function tools and integrate built-in or MCP tools"
+          "title": "Production Ready",
+          "description": "nuvel's skeleton: cost guard, tracing, guardrails, memory, Docker and Railway config"
         },
         {
-          "title": "Prompts & Callbacks",
-          "description": "Design system prompts and add callbacks / human-in-the-loop gates"
+          "title": "Tools & Integrations",
+          "description": "Function tools, MCP servers, Composio integrations, and Slack, Telegram or Teams gateways"
         },
         {
-          "title": "Streaming",
-          "description": "Build voice and video agents on the Gemini Live API"
+          "title": "Prompts & Skills",
+          "description": "System prompts, SOUL.md identity, and SKILL.md domain knowledge for your agent"
         },
         {
-          "title": "Skill Authoring",
-          "description": "Create SKILL.md knowledge for your own agents"
+          "title": "ADK Questions",
+          "description": "Grounded answers from nuvel's ADK skills and the official ADK docs"
         }
       ],
       "samplePrompts": [
-        "Build me a simple agent that searches the web and summarizes results.",
+        "Build me an agent that searches the web and writes a sourced one-page summary.",
+        "Build a Slack bot that triages support requests and drafts replies from our help center.",
+        "Design a multi-agent pipeline that researches, drafts and reviews a weekly newsletter, then build it.",
         "What's the best architecture for an agent that needs both code execution and web search?",
-        "How do I write a function tool that calls an external API and updates session state?",
-        "Show me how to add a human-in-the-loop approval step before a destructive action.",
-        "How should I structure a SKILL.md for my agent's domain knowledge?"
+        "How do I add a human-in-the-loop approval step before a destructive action?"
       ],
       "author": "Albert Folch",
       "category": "Code",

@@ -16,8 +16,8 @@ type Filter = 'all' | ConversationOutcome | 'friction';
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'All' },
-  { id: 'saved', label: OUTCOME_LABELS.saved },
-  { id: 'blueprint', label: OUTCOME_LABELS.blueprint },
+  { id: 'emailed', label: OUTCOME_LABELS.emailed },
+  { id: 'zip', label: OUTCOME_LABELS.zip },
   { id: 'friction', label: 'Friction' },
   { id: 'error', label: OUTCOME_LABELS.error },
   { id: 'one-and-done', label: OUTCOME_LABELS['one-and-done'] },
@@ -26,7 +26,7 @@ const FILTERS: { id: Filter; label: string }[] = [
 
 function OutcomeBadge({ outcome }: { outcome: ConversationOutcome }) {
   const tone =
-    outcome === 'saved' || outcome === 'blueprint'
+    outcome === 'emailed' || outcome === 'zip'
       ? 'bg-md-primary-container text-md-on-primary-container'
       : outcome === 'error'
         ? 'bg-md-error-container text-md-on-error-container'

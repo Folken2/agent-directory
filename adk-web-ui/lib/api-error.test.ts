@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  API_ERROR_STATUS,
   apiErrorBody,
   ChatApiError,
   errorFromResponse,
@@ -58,5 +59,13 @@ describe('errorFromResponse', () => {
     const err = await errorFromResponse(new Response('<html>bad gateway</html>', { status: 502 }));
     assert.equal(err.code, 'backend_unavailable');
     assert.equal(err.message, friendlyMessage('backend_unavailable'));
+  });
+});
+
+describe('gone', () => {
+  it('is a 410 code with friendly copy', () => {
+    assert.equal(isApiErrorCode('gone'), true);
+    assert.equal(API_ERROR_STATUS.gone, 410);
+    assert.match(friendlyMessage('gone'), /no longer available/);
   });
 });

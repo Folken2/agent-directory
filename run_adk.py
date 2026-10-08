@@ -8,6 +8,7 @@ Usage:
 """
 
 import os
+import sys
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import uvicorn
@@ -55,6 +56,7 @@ def main() -> None:
         extra_plugins=PLUGIN_QUALIFIED_NAMES,
     )
 
+    _mount_builder_preview(app, agents_dir)
     app.add_middleware(InternalTokenMiddleware, token=internal_token)
 
     if host == "::":
@@ -63,6 +65,23 @@ def main() -> None:
         uvicorn.Server(uvicorn.Config(app, host=host, port=port)).run(sockets=[sock])
     else:
         uvicorn.run(app, host=host, port=port)
+
+
+def _mount_builder_preview(app, agents_dir: str) -> None:
+    """The agent builder's preview proxy (agents/adk_agent_builder/preview_api.py).
+
+    Imported as `adk_agent_builder.*`, the module name ADK's agent loader uses,
+    so the proxy and the builder's tools share one sandbox registry.
+    """
+    path = os.path.abspath(agents_dir)
+    if path not in sys.path:
+        sys.path.insert(0, path)
+    try:
+        from adk_agent_builder.preview_api import router
+    except ImportError as exc:
+        print(f"[run_adk] Builder preview proxy not mounted: {exc}")
+        return
+    app.include_router(router)
 
 
 def _normalize_to_asyncpg_uri(uri: str) -> str:

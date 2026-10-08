@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Artifact } from '@/lib/types';
 import { useAppStore } from '@/lib/store';
 import { toSessionId } from '@/lib/ids';
-import { Download, Trash2, Save, FileText, ExternalLink, Image as ImageIcon, AlertCircle } from 'lucide-react';
+import { Download, Trash2, Save, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface InlineArtifactProps {
@@ -426,21 +426,23 @@ export default function InlineArtifact({ artifact }: InlineArtifactProps) {
     );
   }
 
-  // For non-image artifacts, show a file link with controls
+  // For non-image artifacts, show a download link with controls. Browsers
+  // block opening data: URLs in a new tab, so the link downloads the file
+  // (e.g. the zip of a project the agent builder generated).
   return (
     <div className="mt-3 p-3 bg-md-surface rounded-xl border border-md-outline shadow-sm group hover:border-md-primary/20 transition-colors">
       <div className="flex items-center justify-between gap-3">
         <a
           href={artifact.url}
-          target="_blank"
-          rel="noopener noreferrer"
+          download={artifact.name}
           className="flex items-center gap-3 text-sm font-medium text-md-on-surface hover:text-md-primary transition-colors flex-1 min-w-0"
+          title={`Download ${artifact.name}`}
         >
           <div className="p-2 bg-md-surface-container rounded-lg group-hover:bg-md-primary/10 group-hover:text-md-primary transition-colors">
             <FileText className="w-4 h-4" />
           </div>
           <span className="truncate">{artifact.name}</span>
-          <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity text-md-on-surface-variant" />
+          <Download className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-md-on-surface-variant" />
         </a>
         <div className="flex items-center gap-1">
           <button

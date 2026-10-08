@@ -3,17 +3,24 @@ name = "adk-samples"
 version = "0.1.0"
 description = "Repository of different ADK (Agent Development Kit) agents"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "google-adk[extensions]==1.32.0",
+    "google-adk[extensions,e2b]==2.10.0",
+    # DatabaseSessionService needs SQLAlchemy; ADK 2.x moved it to an extra.
+    "sqlalchemy>=2,<3",
+    # The builder's preview proxy and OpenRouter key calls.
+    "httpx>=0.27,<1",
+    # The agent builder builds on nuvel: its ADK skills, scaffolder, validator,
+    # plugins and guards. Pinned to a commit; nuvel needs google-adk>=2.
+    "nuvel-cli @ git+https://github.com/Folken2/nuvel@34d2ebc52a8f5d68b1635709777acbfdc876a09e",
     "opik",
     "exa-py",
     "pydantic>=2.0.0",
     "python-dotenv",
     "asyncpg",
     "greenlet>=3.0.0",
-    # Agents use the mcp 1.x API (FastMCP); 2.x renamed it.
-    "mcp>=1.0,<2",
+    # Agents use the mcp 1.x API (FastMCP); 2.x renamed it. ADK 2.10 needs >=1.24.
+    "mcp>=1.24,<2",
 ]
 
 [project.optional-dependencies]
@@ -36,14 +43,14 @@ dev-dependencies = [
 
 [tool.black]
 line-length = 100
-target-version = ['py310']
+target-version = ['py311']
 
 [tool.ruff]
 line-length = 100
-target-version = "py310"
+target-version = "py311"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
 

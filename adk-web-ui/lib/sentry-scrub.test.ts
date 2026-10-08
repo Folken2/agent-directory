@@ -103,13 +103,26 @@ describe('scrubSpan', () => {
   });
 });
 
-describe('blueprint save scrubbing', () => {
-  it('redacts blueprint limiter keys and email addresses', () => {
-    const out = redactUrl(`limit bp:a:${TOKEN} bp:u:user-1 for Someone.Name+tag@example.co.uk`);
+describe('build save scrubbing', () => {
+  const LINK_TOKEN = 'Ab3_-'.repeat(8) + 'xyz';
+
+  it('redacts build limiter keys and email addresses', () => {
+    const out = redactUrl(`limit bd:a:${TOKEN} bd:u:user-1 bd:ip:deadbeef for Someone.Name+tag@example.co.uk`);
     assert.ok(!out.includes(TOKEN));
     assert.ok(!out.includes('user-1'));
+    assert.ok(!out.includes('deadbeef'));
     assert.ok(!out.includes('example.co.uk'));
-    assert.match(out, /bp:\[redacted\]/);
+    assert.match(out, /bd:\[redacted\]/);
     assert.match(out, /\[email\]/);
+  });
+
+  it('redacts link tokens in page and API paths', () => {
+    assert.equal(redactUrl(`https://site.test/builds/${LINK_TOKEN}`), 'https://site.test/builds/[redacted]');
+    assert.equal(redactUrl(`GET /api/builds/${LINK_TOKEN}/zip`), 'GET /api/builds/[redacted]/zip');
+    assert.equal(redactUrl('POST /api/builds'), 'POST /api/builds');
+  });
+
+  it('still redacts legacy blueprint keys', () => {
+    assert.equal(redactUrl(`bp:a:${TOKEN}`), 'bp:[redacted]');
   });
 });

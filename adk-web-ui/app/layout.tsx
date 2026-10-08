@@ -38,7 +38,7 @@ export const viewport: Viewport = {
 
 const SITE_TITLE = "ADK Agent Directory | Design and try agents built with Google's Agent Development Kit";
 const SITE_DESCRIPTION =
-  "Describe the agent you want and an agent builder designs it with you using Google's Agent Development Kit (ADK). Try working example agents. Independent open-source project, not affiliated with Google.";
+  "Describe the agent you want and an agent builder designs and builds it with you on Google's Agent Development Kit (ADK). Try working example agents. Independent open-source project, not affiliated with Google.";
 
 export const metadata: Metadata = {
   title: SITE_TITLE,

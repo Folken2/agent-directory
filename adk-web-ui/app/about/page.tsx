@@ -7,6 +7,7 @@ import BuildCta from '@/components/story/BuildCta';
 
 const REPO_URL = 'https://github.com/Folken2/agent-directory';
 const ADK_URL = 'https://google.github.io/adk-docs/';
+const NUVEL_URL = 'https://github.com/Folken2/nuvel';
 
 export const metadata: Metadata = {
   title: 'About | ADK Agent Directory',
@@ -20,16 +21,19 @@ export default function AboutPage() {
     <Page>
       <PageHeader
         title="About"
-        description="Agent Directory helps you go from an idea to an agent design you can build, and shows working examples built with Google's Agent Development Kit (ADK)."
+        description="Agent Directory helps you go from an idea to a working agent, and shows examples built with Google's Agent Development Kit (ADK)."
       />
 
       <div className="grid gap-12 text-body-large text-md-on-surface-variant lg:grid-cols-3">
         <section className="space-y-3">
-          <h2 className="text-headline-small tracking-tight text-md-on-surface">Design with the builder</h2>
+          <h2 className="text-headline-small tracking-tight text-md-on-surface">Build with the builder</h2>
           <p>
             Describe the agent you have in mind on the <Link href="/" className={proseLink}>Build</Link> page.
             The agent builder asks about your goal, then proposes the agents, tools and prompts, and explains
-            why. The design collects in a blueprint you can copy, download or save.
+            why. When you agree, it builds the agent on{' '}
+            <a href={NUVEL_URL} target="_blank" rel="noreferrer" className={proseLink}>nuvel</a>
+            {' '}and hands you a zip: server, plugins, guardrails, Dockerfile and tests included. Download it
+            right away, or email yourself a permanent link to it.
           </p>
         </section>
         <section className="space-y-3">
