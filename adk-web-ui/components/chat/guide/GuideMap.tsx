@@ -11,6 +11,8 @@ import {
 } from '@vis.gl/react-google-maps';
 import type { GuidePlace } from '@/lib/guide/types';
 import { useDarkMode } from '@/lib/hooks/useDarkMode';
+import { embedQuery, embedSrc } from '@/lib/maps/embed';
+import { EmbedFrame, MAPS_EMBED_KEY } from '../MapsEmbed';
 
 const JS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_JS_KEY;
 
@@ -179,8 +181,21 @@ function GuideMapInner({ places, selectedPlaceId, onSelectPlace }: Props) {
   );
 }
 
+/**
+ * Without a Maps JavaScript API key, show the selected place in a Maps Embed
+ * iframe (NEXT_PUBLIC_GOOGLE_MAPS_EMBED_KEY) instead of no map: one place, no
+ * pins, but it follows the card the user selects.
+ */
+function GuideMapEmbedFallback({ places, selectedPlaceId }: Props) {
+  if (!MAPS_EMBED_KEY) return null;
+  const place = places.find((p) => p.id === selectedPlaceId) ?? places[0];
+  const q = place ? embedQuery(place) : null;
+  if (!place || !q) return null;
+  return <EmbedFrame src={embedSrc(MAPS_EMBED_KEY, q)} title={place.name || 'Google Maps'} />;
+}
+
 export function GuideMap(props: Props) {
-  if (!JS_KEY) return null;
+  if (!JS_KEY) return <GuideMapEmbedFallback {...props} />;
   return (
     <APIProvider apiKey={JS_KEY}>
       <GuideMapInner {...props} />
