@@ -28,7 +28,7 @@ uv sync --no-install-project
 # 2. Add API keys to .env
 OPENROUTER_API_KEY=your_key_here
 TAVILY_API_KEY=your_key_here
-FAST_MODEL=openrouter/google/gemini-3-flash-preview   # optional
+FAST_MODEL=openrouter/google/gemini-3.8-flash   # optional
 
 # 3. Run
 adk web
@@ -76,6 +76,6 @@ are filled automatically by ADK before each sub-agent runs. Optional fields
 In `agent.py`:
 
 - `max_iterations=3` — bump to 5 for harder questions, drop to 2 for speed
-- Switch any sub-agent's `model=FAST_MODEL` to `REASONING_MODEL` (Gemini 3 Pro)
+- Switch any sub-agent's `model=FAST_MODEL` to `REASONING_MODEL` (DeepSeek V4.1 Flash, medium reasoning)
   for higher-quality planning, criticism, or writing at the cost of latency
   and tokens. Planner and Critic benefit most from the upgrade.

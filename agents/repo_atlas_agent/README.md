@@ -26,7 +26,7 @@ uv sync --no-install-project
 # 2. Add API keys to .env
 OPENROUTER_API_KEY=your_key_here
 GITHUB_TOKEN=ghp_your_token_here   # OPTIONAL — raises GitHub rate limit from 60/hr to 5000/hr
-FAST_MODEL=openrouter/google/gemini-3-flash-preview   # optional
+FAST_MODEL=openrouter/google/gemini-3.8-flash   # optional
 
 # 3. Run
 adk web

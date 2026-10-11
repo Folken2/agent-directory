@@ -29,7 +29,7 @@ To learn more, check out the [ADK Documentation](https://github.com/google/adk) 
 
 ## Models and the LiteLLM Proxy
 
-Agents build their models with [`agents/model_factory.py`](./agents/model_factory.py): `make_model(app, tier)` for OpenRouter models (tiers `fast`, `reasoning`, `image`, overridable with `FAST_MODEL`, `REASONING_MODEL`, `IMAGE_MODEL`) and `make_gemini(app, model)` for agents that need native Gemini features (code execution, search and maps grounding).
+Agents build their models with [`agents/model_factory.py`](./agents/model_factory.py): `make_model(app, tier)` for OpenRouter models (tiers `fast` = Gemini 3.8 Flash, `reasoning` = DeepSeek V4.1 Flash, `image`; overridable with `FAST_MODEL`, `REASONING_MODEL`, `IMAGE_MODEL`, and the reasoning tier's effort with `REASONING_EFFORT`, default `medium`) and `make_gemini(app, model)` for agents that need native Gemini features (code execution, search and maps grounding).
 
 By default agents call OpenRouter and the Gemini API directly. To route every model call through a [LiteLLM proxy](https://docs.litellm.ai/docs/proxy/quick_start) and see usage per agent, set on the backend:
 
