@@ -21,4 +21,4 @@ import os
 
 from model_factory import make_gemini
 
-MODEL = make_gemini("data_analyst_agent", os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))
+MODEL = make_gemini("data_analyst_agent", os.getenv("GEMINI_MODEL", "gemini-3.8-flash"))
