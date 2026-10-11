@@ -10,6 +10,7 @@ uv sync --no-install-project
 
 # 2. Set up API keys in .env file
 OPENROUTER_API_KEY=your_key_here
+MERMAID_CHART_API_KEY=your_mermaid_chart_token  # Required, see below
 FAST_MODEL=openrouter/google/gemini-3-flash-preview  # Optional
 
 # 3. Run the web interface
@@ -19,7 +20,7 @@ adk web
 **Get API Keys:**
 
 - [OpenRouter](https://openrouter.ai/keys) - for the LLM
-- Mermaid Chart MCP - No API key required (public MCP server)
+- [Mermaid Chart](https://www.mermaidchart.com/) - log in, open **Settings → API Tokens**, generate a token and set it as `MERMAID_CHART_API_KEY`
 
 ## Usage
 
@@ -93,11 +94,16 @@ You are a helpful AI assistant...
 
 ## MCP Integration
 
-This agent uses the Mermaid Chart MCP server to access diagram creation capabilities. The MCP connection:
-- Connects to Mermaid Chart's public MCP endpoint
+This agent uses the Mermaid Chart MCP server (`https://mcp.mermaidchart.com/mcp`) to access diagram creation capabilities. The MCP connection:
+- Sends `Authorization: Bearer $MERMAID_CHART_API_KEY` on every request
 - Dynamically loads available tools at runtime
 - Provides diagram creation and management capabilities
-- No API key required (public server)
+
+### Authentication
+
+Since October 2026 the server rejects every unauthenticated request with HTTP 401, so `MERMAID_CHART_API_KEY` is required (it used to be a public server). The server also advertises OAuth 2.1, but that flow needs a user signing in through a browser, which a server-side agent can't do. A Mermaid Chart API token is the only option for this agent. Keep the token in your `.env` or deployment secrets, never in code.
+
+If the key is missing, invalid, or the server is unreachable, the agent answers with a short "can't create diagrams right now" message naming the cause. The model is not called, so it can't return an empty reply (`MODEL_RETURNED_NO_CONTENT`).
 
 ## Example Use Cases
 

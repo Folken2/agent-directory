@@ -3,10 +3,12 @@ Utility functions for the agent configuration.
 """
 
 import logging
-from typing import Any, TYPE_CHECKING
+import os
+from typing import Any, Optional, TYPE_CHECKING
 from datetime import datetime
 
 from google.adk.agents import Agent  # or LlmAgent, etc.
+from google.genai import types
 
 if TYPE_CHECKING:
     from google.adk.agents.callback_context import CallbackContext
@@ -189,7 +191,32 @@ async def render_tools_context_async(agent: Agent) -> str:
     return "\n".join(lines)
 
 
-async def before_agent_callback_update_tools(callback_context: "CallbackContext") -> None:
+def _tools_unavailable_reply() -> types.Content:
+    """
+    Reply shown to the user when no Mermaid MCP tools could be loaded.
+
+    Returning Content from a before_agent_callback ends the invocation with this
+    message, instead of letting the model run without tools (which made Gemini
+    return an empty reply, surfaced by ADK as MODEL_RETURNED_NO_CONTENT).
+    """
+    if os.getenv("MERMAID_CHART_API_KEY", "").strip():
+        reason = (
+            "Mermaid Chart rejected the connection or returned no tools. "
+            "(Operator: check that MERMAID_CHART_API_KEY holds a valid "
+            "Mermaid Chart API token.)"
+        )
+    else:
+        reason = (
+            "the connection to Mermaid Chart isn't configured. "
+            "(Operator: set MERMAID_CHART_API_KEY to a Mermaid Chart API token.)"
+        )
+    text = f"Sorry, I can't create diagrams right now: {reason}"
+    return types.Content(role="model", parts=[types.Part(text=text)])
+
+
+async def before_agent_callback_update_tools(
+    callback_context: "CallbackContext",
+) -> Optional[types.Content]:
     """
     Callback to dynamically update agent instruction with MCP tool descriptions at runtime.
 
@@ -200,6 +227,10 @@ async def before_agent_callback_update_tools(callback_context: "CallbackContext"
 
     Args:
         callback_context: The CallbackContext from ADK.
+
+    Returns:
+        None to let the agent run, or a Content reply that ends the turn when
+        no MCP tools could be loaded.
     """
     try:
         # Initialize state variables for error recovery if they don't exist
@@ -268,12 +299,16 @@ async def before_agent_callback_update_tools(callback_context: "CallbackContext"
                 logger.info(f"{'─'*60}")
                 logger.info(tools_section)
                 logger.info(f"{'─'*60}\n")
-            else:
-                logger.warning("  ⚠️  Only placeholder tools found at runtime, keeping existing instruction")
+                return None
+
+            logger.warning("  ⚠️  Only placeholder tools found at runtime")
         else:
             logger.warning("  ⚠️  No tools found in callback")
-            
+
     except Exception as e:
         logger.error(f"  ❌ Error in before_agent_callback: {e}")
         import traceback
         logger.debug(f"  Traceback: {traceback.format_exc()}")
+
+    logger.error("  ❌ No Mermaid MCP tools available; replying to the user instead of running the model")
+    return _tools_unavailable_reply()
