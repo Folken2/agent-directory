@@ -10,11 +10,15 @@ API feature (server-side sandboxed Python). LiteLlm/OpenRouter is a
 chat-completions proxy and does not expose Gemini's code execution
 endpoint, so a LiteLlm-wrapped model would silently lose the executor.
 
-The model must therefore be a string that ADK passes directly to the
-native Gemini client. Override via the GEMINI_MODEL env var if you
-need to bump versions; the default is the latest GA Flash.
+The model must therefore be native Gemini: make_gemini (agents/model_factory.py)
+returns the model name for ADK's Gemini client, or, behind the LiteLLM proxy,
+a Gemini client aimed at its pass-through, which keeps the executor. Override
+via the GEMINI_MODEL env var if you need to bump versions; the default is the
+latest GA Flash.
 """
 
 import os
 
-MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+from model_factory import make_gemini
+
+MODEL = make_gemini("data_analyst_agent", os.getenv("GEMINI_MODEL", "gemini-2.5-flash"))

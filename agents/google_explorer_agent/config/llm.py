@@ -1,3 +1,9 @@
-"""Model identifier shared by the coordinator and both specialists."""
+"""Model shared by the coordinator and both specialists.
 
-MODEL = "gemini-3-flash-preview"
+Native Gemini (make_gemini), not LiteLlm: google_search and
+google_maps_grounding are Gemini API features.
+"""
+
+from model_factory import make_gemini
+
+MODEL = make_gemini("google_explorer_agent", "gemini-3-flash-preview")
