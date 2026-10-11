@@ -4,11 +4,12 @@ Model construction shared by every agent in the directory.
 A module, not a package: ADK lists every directory in agents/ as an app, but
 not files, and it puts agents/ on sys.path, so agents import this directly.
 
-Without LITELLM_PROXY_URL, agents call providers directly: LiteLlm models go to
-OpenRouter and native Gemini models to the Gemini API. With it, every call goes
-through the LiteLLM proxy under the agent's own key, so the proxy reports usage
-per agent:
+By default agents call providers directly: LiteLlm models go to OpenRouter and
+native Gemini models to the Gemini API. With LITELLM_PROXY_ENABLED on, every call
+goes through the LiteLLM proxy under the agent's own key, so the proxy reports
+usage per agent:
 
+  LITELLM_PROXY_ENABLED  true/1/yes/on to use the proxy; anything else, direct
   LITELLM_PROXY_URL      proxy root, e.g. http://litellm.railway.internal:4000
   LITELLM_KEY_<APP>      the agent's virtual key, e.g. LITELLM_KEY_DEEP_RESEARCH_AGENT
   LITELLM_PROXY_API_KEY  shared key for agents without their own
@@ -98,7 +99,16 @@ class _ProxiedGemini(Gemini):
 
 
 def _proxy_url() -> str:
-    return os.getenv("LITELLM_PROXY_URL", "").strip().rstrip("/")
+    """The proxy root when LITELLM_PROXY_ENABLED is on, else "" (direct calls)."""
+    enabled = os.getenv("LITELLM_PROXY_ENABLED", "").strip().lower()
+    if enabled not in {"1", "true", "yes", "on"}:
+        return ""
+    url = os.getenv("LITELLM_PROXY_URL", "").strip().rstrip("/")
+    if not url:
+        raise RuntimeError(
+            "LITELLM_PROXY_ENABLED is on but LITELLM_PROXY_URL is not set"
+        )
+    return url
 
 
 def _proxy_key(app: str) -> str:
@@ -106,6 +116,6 @@ def _proxy_key(app: str) -> str:
     key = os.getenv(own) or os.getenv("LITELLM_PROXY_API_KEY")
     if not key:
         raise RuntimeError(
-            f"LITELLM_PROXY_URL is set but neither {own} nor LITELLM_PROXY_API_KEY is"
+            f"LITELLM_PROXY_ENABLED is on but neither {own} nor LITELLM_PROXY_API_KEY is set"
         )
     return key
