@@ -11,7 +11,7 @@ uv sync --no-install-project
 # 2. Set up API keys in .env file
 OPENROUTER_API_KEY=your_key_here
 EXA_API_KEY=your_key_here
-FAST_MODEL=openrouter/google/gemini-3-flash-preview  # Optional
+FAST_MODEL=openrouter/google/gemini-3.8-flash  # Optional
 
 # 3. Run the web interface
 adk web
@@ -58,7 +58,7 @@ exa_mcp_agent/
 
 ### Change LLM Model
 
-Set `FAST_MODEL` or `REASONING_MODEL` in `.env` (e.g. `FAST_MODEL=openrouter/google/gemini-3-flash-preview`).
+Set `FAST_MODEL` or `REASONING_MODEL` in `.env` (e.g. `FAST_MODEL=openrouter/google/gemini-3.8-flash`).
 The defaults and LiteLLM proxy routing live in [`agents/model_factory.py`](../model_factory.py).
 
 Then update `agent.py`:

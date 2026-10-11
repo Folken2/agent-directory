@@ -82,6 +82,7 @@ def clean_env(monkeypatch):
         "LITELLM_KEY_DATA_ANALYST_AGENT",
         "FAST_MODEL",
         "REASONING_MODEL",
+        "REASONING_EFFORT",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -103,16 +104,25 @@ def _ask(model, name):
 def test_direct_by_default():
     model = make_model("deep_research_agent")
     assert isinstance(model, LiteLlm)
-    assert model.model == "openrouter/google/gemini-3-flash-preview"
-    assert make_model("deep_research_agent", "reasoning").model == (
-        "openrouter/google/gemini-3-pro-preview"
-    )
+    assert model.model == "openrouter/google/gemini-3.8-flash"
+    reasoning = make_model("deep_research_agent", "reasoning")
+    assert reasoning.model == "openrouter/deepseek/deepseek-v4.1-flash"
+    assert reasoning._additional_args["extra_body"] == {
+        "reasoning": {"effort": "medium"}
+    }
+    assert "extra_body" not in model._additional_args
     assert make_gemini("data_analyst_agent", "gemini-2.5-flash") == "gemini-2.5-flash"
 
 
 def test_tier_env_override(monkeypatch):
     monkeypatch.setenv("FAST_MODEL", "openrouter/acme/fast")
     assert make_model("deep_research_agent").model == "openrouter/acme/fast"
+
+
+def test_reasoning_effort_env_override(monkeypatch):
+    monkeypatch.setenv("REASONING_EFFORT", "high")
+    model = make_model("deep_research_agent", "reasoning")
+    assert model._additional_args["extra_body"] == {"reasoning": {"effort": "high"}}
 
 
 def test_unknown_tier():
@@ -130,7 +140,11 @@ def test_proxied_litellm_uses_agent_key_and_tags(proxy, monkeypatch):
     assert call["path"].endswith("/chat/completions")
     assert call["headers"]["authorization"] == "Bearer sk-deep"
     # The proxy sees the original model name, which its model_list matches.
-    assert call["body"]["model"] == "openrouter/google/gemini-3-pro-preview"
+    assert call["body"]["model"] == "openrouter/deepseek/deepseek-v4.1-flash"
+    # OpenRouter's own field: LiteLLM rejects `reasoning_effort` for models
+    # missing from its price list.
+    assert call["body"]["reasoning"] == {"effort": "medium"}
+    assert "reasoning_effort" not in call["body"]
     assert call["body"]["metadata"]["tags"] == [
         "agent:deep_research_agent",
         "tier:reasoning",

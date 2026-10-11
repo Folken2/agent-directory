@@ -12,6 +12,8 @@ per agent:
   LITELLM_PROXY_URL      proxy root, e.g. http://litellm.railway.internal:4000
   LITELLM_KEY_<APP>      the agent's virtual key, e.g. LITELLM_KEY_DEEP_RESEARCH_AGENT
   LITELLM_PROXY_API_KEY  shared key for agents without their own
+
+The reasoning tier thinks at REASONING_EFFORT (low, medium or high; default medium).
 """
 
 import os
@@ -26,8 +28,8 @@ os.environ.setdefault("OR_SITE_URL", "https://agentdirectory.folch.ai")
 os.environ.setdefault("OR_APP_NAME", "Google ADK Directory")
 
 TIERS = {
-    "fast": ("FAST_MODEL", "openrouter/google/gemini-3-flash-preview"),
-    "reasoning": ("REASONING_MODEL", "openrouter/google/gemini-3-pro-preview"),
+    "fast": ("FAST_MODEL", "openrouter/google/gemini-3.8-flash"),
+    "reasoning": ("REASONING_MODEL", "openrouter/deepseek/deepseek-v4.1-flash"),
     "image": ("IMAGE_MODEL", "openrouter/google/gemini-2.5-flash-image"),
 }
 
@@ -40,16 +42,23 @@ def make_model(app: str, tier: str = "fast") -> LiteLlm:
         )
     env_var, default = TIERS[tier]
     model = os.getenv(env_var, default)
+    # OpenRouter's own reasoning field, not `reasoning_effort`, which LiteLLM
+    # rejects for models missing from its price list. Models that only switch
+    # reasoning on or off (e.g. DeepSeek) treat any effort as on.
+    body = {}
+    if tier == "reasoning":
+        body["reasoning"] = {"effort": os.getenv("REASONING_EFFORT", "medium")}
 
     proxy = _proxy_url()
     if not proxy:
-        return LiteLlm(model=model, app_name="adk-samples-directory")
+        options = {"extra_body": body} if body else {}
+        return LiteLlm(model=model, app_name="adk-samples-directory", **options)
     return LiteLlm(
         # The proxy receives `model` without the prefix and matches it in its model_list.
         model=f"litellm_proxy/{model}",
         api_base=proxy,
         api_key=_proxy_key(app),
-        extra_body={"metadata": {"tags": [f"agent:{app}", f"tier:{tier}"]}},
+        extra_body={"metadata": {"tags": [f"agent:{app}", f"tier:{tier}"]}, **body},
     )
 
 

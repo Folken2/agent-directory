@@ -33,7 +33,7 @@ uv sync --no-install-project
 OPENROUTER_API_KEY=your_key_here
 
 # Optional model overrides
-FAST_MODEL=openrouter/google/gemini-3-flash-preview
+FAST_MODEL=openrouter/google/gemini-3.8-flash
 IMAGE_MODEL=openrouter/google/gemini-2.5-flash-image
 
 # 3. Run

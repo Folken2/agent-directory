@@ -19,7 +19,7 @@ uv sync --no-install-project
 GOOGLE_API_KEY=your_key_here
 
 # Optional model override (must be a Gemini API model id — see "Model constraint" below)
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.8-flash
 
 # 3. Run
 adk web
@@ -53,7 +53,7 @@ sandboxed Python. LiteLlm is a chat-completions proxy and doesn't expose
 Gemini's code-execution endpoint, so wrapping the model would silently
 lose the executor.
 
-The model is therefore a string Gemini ID (default `gemini-2.5-flash`).
+The model is therefore a string Gemini ID (default `gemini-3.8-flash`).
 Override via `GEMINI_MODEL` env var, but keep it as a native Gemini ID
 — don't add an `openrouter/` prefix.
 

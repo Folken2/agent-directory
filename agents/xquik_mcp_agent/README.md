@@ -10,7 +10,7 @@ uv sync --no-install-project
 
 OPENROUTER_API_KEY=your_model_key_here
 XQUIK_API_KEY=your_xquik_api_key_here
-FAST_MODEL=openrouter/google/gemini-3-flash-preview
+FAST_MODEL=openrouter/google/gemini-3.8-flash
 ```
 
 ## Run
