@@ -27,6 +27,20 @@ This repository contains ADK sample agents for **Python**. Each agent is self-co
 
 To learn more, check out the [ADK Documentation](https://github.com/google/adk) and the [ADK Python repository](https://github.com/google/adk-python).
 
+## Models and the LiteLLM Proxy
+
+Agents build their models with [`agents/model_factory.py`](./agents/model_factory.py): `make_model(app, tier)` for OpenRouter models (tiers `fast`, `reasoning`, `image`, overridable with `FAST_MODEL`, `REASONING_MODEL`, `IMAGE_MODEL`) and `make_gemini(app, model)` for agents that need native Gemini features (code execution, search and maps grounding).
+
+By default agents call OpenRouter and the Gemini API directly. To route every model call through a [LiteLLM proxy](https://docs.litellm.ai/docs/proxy/quick_start) and see usage per agent, set on the backend:
+
+| Variable | Value |
+|----------|-------|
+| `LITELLM_PROXY_URL` | Proxy root, e.g. `http://${{LiteLLM.RAILWAY_PRIVATE_DOMAIN}}:4000` on Railway |
+| `LITELLM_KEY_<APP>` | A virtual key per agent, named after its directory, e.g. `LITELLM_KEY_DEEP_RESEARCH_AGENT` |
+| `LITELLM_PROXY_API_KEY` | Shared key for agents without their own |
+
+The proxy needs an `openrouter/*` wildcard in its `model_list` (with its own `OPENROUTER_API_KEY`) and `GEMINI_API_KEY` for the `/gemini` pass-through. Requests are also tagged `agent:<app>` and `tier:<tier>`. The image tool, the builder's model listing and its sandbox keys still call OpenRouter directly, so keep `OPENROUTER_API_KEY` on the backend.
+
 ## Server-Level Plugins
 
 The Agent Directory includes a **plugin system** that applies cross-cutting concerns to every agent run automatically. Plugins are registered at the server level in `run_adk.py` via ADK's `extra_plugins` mechanism — no changes needed in individual agents.

@@ -60,14 +60,8 @@ mermaid_mcp_agent/
 
 ### Change LLM Model
 
-Edit `config/llm.py`:
-
-```python
-FAST_MODEL = LiteLlm(
-    model="openrouter/google/gemini-3-flash-preview",  # Change model here
-    app_name="adk-samples-directory"
-)
-```
+Set `FAST_MODEL` or `REASONING_MODEL` in `.env` (e.g. `FAST_MODEL=openrouter/google/gemini-3-flash-preview`).
+The defaults and LiteLLM proxy routing live in [`agents/model_factory.py`](../model_factory.py).
 
 Then update `agent.py`:
 
