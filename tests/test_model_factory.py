@@ -69,6 +69,7 @@ def proxy(monkeypatch):
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     monkeypatch.setenv("LITELLM_PROXY_URL", f"http://127.0.0.1:{server.server_port}")
+    monkeypatch.setenv("LITELLM_PROXY_ENABLED", "true")
     yield seen
     server.shutdown()
 
@@ -77,6 +78,7 @@ def proxy(monkeypatch):
 def clean_env(monkeypatch):
     for var in (
         "LITELLM_PROXY_URL",
+        "LITELLM_PROXY_ENABLED",
         "LITELLM_PROXY_API_KEY",
         "LITELLM_KEY_DEEP_RESEARCH_AGENT",
         "LITELLM_KEY_DATA_ANALYST_AGENT",
@@ -157,6 +159,37 @@ def test_proxied_litellm_falls_back_to_shared_key(proxy, monkeypatch):
 
     assert _ask(model, model.model) == "pong"
     assert proxy[0]["headers"]["authorization"] == "Bearer sk-shared"
+
+
+@pytest.mark.parametrize("flag", [None, "false", "0", "no", ""])
+def test_flag_off_stays_direct_even_with_proxy_settings(monkeypatch, flag):
+    monkeypatch.setenv("LITELLM_PROXY_URL", "http://proxy.example:4000")
+    monkeypatch.setenv("LITELLM_PROXY_API_KEY", "sk-shared")
+    if flag is None:
+        monkeypatch.delenv("LITELLM_PROXY_ENABLED", raising=False)
+    else:
+        monkeypatch.setenv("LITELLM_PROXY_ENABLED", flag)
+    assert (
+        make_model("deep_research_agent").model == "openrouter/google/gemini-3.8-flash"
+    )
+    assert make_gemini("data_analyst_agent", "gemini-2.5-flash") == "gemini-2.5-flash"
+
+
+@pytest.mark.parametrize("flag", ["true", "True", "1", "yes", "on"])
+def test_flag_on_uses_proxy(monkeypatch, flag):
+    monkeypatch.setenv("LITELLM_PROXY_URL", "http://proxy.example:4000")
+    monkeypatch.setenv("LITELLM_PROXY_API_KEY", "sk-shared")
+    monkeypatch.setenv("LITELLM_PROXY_ENABLED", flag)
+    model = make_model("deep_research_agent")
+    assert model.model == "litellm_proxy/openrouter/google/gemini-3.8-flash"
+    assert isinstance(make_gemini("data_analyst_agent", "gemini-2.5-flash"), Gemini)
+
+
+def test_flag_on_without_url_fails_loudly(monkeypatch):
+    monkeypatch.setenv("LITELLM_PROXY_ENABLED", "true")
+    monkeypatch.setenv("LITELLM_PROXY_API_KEY", "sk-shared")
+    with pytest.raises(RuntimeError, match="LITELLM_PROXY_URL"):
+        make_model("deep_research_agent")
 
 
 def test_proxied_without_any_key_fails_loudly(proxy):

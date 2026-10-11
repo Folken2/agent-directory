@@ -35,7 +35,8 @@ By default agents call OpenRouter and the Gemini API directly. To route every mo
 
 | Variable | Value |
 |----------|-------|
-| `LITELLM_PROXY_URL` | Proxy root, e.g. `http://${{LiteLLM.RAILWAY_PRIVATE_DOMAIN}}:4000` on Railway |
+| `LITELLM_PROXY_ENABLED` | `true` to use the proxy; `false` or unset calls providers directly, even with the other variables set |
+| `LITELLM_PROXY_URL` | Proxy root, e.g. `https://<your-litellm>.up.railway.app` (or `http://${{LiteLLM.RAILWAY_PRIVATE_DOMAIN}}:4000` in the same Railway project) |
 | `LITELLM_KEY_<APP>` | A virtual key per agent, named after its directory, e.g. `LITELLM_KEY_DEEP_RESEARCH_AGENT` |
 | `LITELLM_PROXY_API_KEY` | Shared key for agents without their own |
 
