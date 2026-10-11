@@ -2,6 +2,8 @@
 Mermaid MCP Agent with Validation Feedback Loop
 """
 
+import os
+
 ## config imports
 from .config.llm import FAST_MODEL
 from .config.utils import before_agent_callback_update_tools
@@ -15,6 +17,15 @@ from .callbacks import after_tool_validation_callback
 from google.adk.agents import Agent
 from google.adk.tools.mcp_tool.mcp_session_manager import StreamableHTTPConnectionParams
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
+
+# Mermaid Chart's MCP server rejects unauthenticated requests (HTTP 401), so it
+# needs a Mermaid Chart API token (Settings -> API Tokens) as a Bearer header.
+MERMAID_CHART_API_KEY = os.getenv("MERMAID_CHART_API_KEY", "").strip()
+MERMAID_MCP_HEADERS = (
+    {"Authorization": f"Bearer {MERMAID_CHART_API_KEY}"}
+    if MERMAID_CHART_API_KEY
+    else {}
+)
 
 LANGUAGE_INSTRUCTION = (
     "Respond in whatever language the user writes in. Mirror their language "
@@ -31,6 +42,7 @@ root_agent = Agent(
         McpToolset(
             connection_params=StreamableHTTPConnectionParams(
                 url="https://mcp.mermaidchart.com/mcp",
+                headers=MERMAID_MCP_HEADERS,
             ),
         )
     ],
