@@ -8,6 +8,7 @@ from google.adk.models.google_llm import Gemini
 from google.adk.models.lite_llm import LiteLlm
 from google.adk.models.llm_request import LlmRequest
 from google.genai import types
+import model_factory
 from model_factory import make_gemini, make_model
 
 CHAT_REPLY = {
@@ -40,24 +41,25 @@ GEMINI_REPLY = {
 }
 
 
-@pytest.fixture
-def proxy(monkeypatch):
-    """A stand-in LiteLLM proxy that records each request it receives."""
+def _serve(status=200, body=None):
+    """A local HTTP server that records each POST and answers with `status`.
+    Replies with a chat completion or a Gemini response unless `body` is given."""
     seen = []
 
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self):
-            body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+            raw = self.rfile.read(int(self.headers.get("Content-Length", 0)))
             seen.append(
                 {
                     "path": self.path,
                     "headers": {k.lower(): v for k, v in self.headers.items()},
-                    "body": json.loads(body or b"{}"),
+                    "body": json.loads(raw or b"{}"),
                 }
             )
-            reply = GEMINI_REPLY if self.path.startswith("/gemini/") else CHAT_REPLY
+            gemini = "generateContent" in self.path
+            reply = body or (GEMINI_REPLY if gemini else CHAT_REPLY)
             data = json.dumps(reply).encode()
-            self.send_response(200)
+            self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
@@ -68,10 +70,47 @@ def proxy(monkeypatch):
 
     server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
+    return server, seen
+
+
+@pytest.fixture
+def proxy(monkeypatch):
+    """A stand-in LiteLLM proxy that records each request it receives."""
+    server, seen = _serve()
     monkeypatch.setenv("LITELLM_PROXY_URL", f"http://127.0.0.1:{server.server_port}")
     monkeypatch.setenv("LITELLM_PROXY_ENABLED", "true")
     yield seen
     server.shutdown()
+
+
+@pytest.fixture
+def provider(monkeypatch):
+    """Stand-ins for OpenRouter and the Gemini API, for direct calls."""
+    server, seen = _serve()
+    url = f"http://127.0.0.1:{server.server_port}"
+    monkeypatch.setenv("OPENROUTER_API_BASE", url)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-or-direct")
+    monkeypatch.setenv("GOOGLE_GEMINI_BASE_URL", url)
+    monkeypatch.setenv("GOOGLE_API_KEY", "real-gemini-key")
+    yield seen
+    server.shutdown()
+
+
+# What Railway's edge answers when a domain has no running deployment
+RAILWAY_NOT_FOUND = {
+    "status": "error",
+    "code": 404,
+    "message": "Application not found",
+    "request_id": "abc",
+}
+
+
+def _gateway(monkeypatch, status, body):
+    server, seen = _serve(status, body)
+    monkeypatch.setenv("LITELLM_PROXY_URL", f"http://127.0.0.1:{server.server_port}")
+    monkeypatch.setenv("LITELLM_PROXY_ENABLED", "true")
+    monkeypatch.setenv("LITELLM_PROXY_API_KEY", "sk-shared")
+    return server, seen
 
 
 @pytest.fixture(autouse=True)
@@ -85,8 +124,11 @@ def clean_env(monkeypatch):
         "FAST_MODEL",
         "REASONING_MODEL",
         "REASONING_EFFORT",
+        "OPENROUTER_API_BASE",
+        "GOOGLE_GEMINI_BASE_URL",
     ):
         monkeypatch.delenv(var, raising=False)
+    monkeypatch.setattr(model_factory, "_gateway_down_until", 0.0)
 
 
 def _ask(model, name):
@@ -210,3 +252,67 @@ def test_proxied_gemini_goes_through_passthrough(proxy, monkeypatch):
     )
     # The agent's proxy key, never the real Gemini key from the environment.
     assert call["headers"]["x-goog-api-key"] == "sk-analyst"
+
+
+@pytest.mark.parametrize("status, body", [(404, RAILWAY_NOT_FOUND), (503, {})])
+def test_litellm_goes_direct_when_gateway_is_down(monkeypatch, provider, status, body):
+    server, gateway = _gateway(monkeypatch, status, body)
+    model = make_model("deep_research_agent", "reasoning")
+
+    assert _ask(model, model.model) == "pong"
+    assert gateway  # tried the gateway first
+    (call,) = provider
+    assert call["headers"]["authorization"] == "Bearer sk-or-direct"
+    assert call["body"]["model"] == "deepseek/deepseek-v4.1-flash"
+    assert call["body"]["reasoning"] == {"effort": "medium"}
+    assert "metadata" not in call["body"]  # proxy-only tags stay off OpenRouter
+    server.shutdown()
+
+
+def test_litellm_goes_direct_when_gateway_is_unreachable(monkeypatch, provider):
+    server, _ = _gateway(monkeypatch, 200, None)
+    server.shutdown()
+    server.server_close()  # nothing listens on the port any more
+    model = make_model("deep_research_agent")
+
+    assert _ask(model, model.model) == "pong"
+    assert len(provider) == 1
+
+
+def test_gemini_goes_direct_when_gateway_is_down(monkeypatch, provider):
+    server, gateway = _gateway(monkeypatch, 404, RAILWAY_NOT_FOUND)
+    model = make_gemini("data_analyst_agent", "gemini-2.5-flash")
+
+    assert _ask(model, "gemini-2.5-flash") == "pong"
+    assert gateway
+    (call,) = provider
+    assert ":generateContent" in call["path"]
+    assert call["headers"]["x-goog-api-key"] == "real-gemini-key"
+    server.shutdown()
+
+
+def test_down_gateway_is_skipped_for_a_while(monkeypatch, provider):
+    server, gateway = _gateway(monkeypatch, 404, RAILWAY_NOT_FOUND)
+    model = make_model("deep_research_agent")
+
+    _ask(model, model.model)
+    _ask(model, model.model)
+    assert len(gateway) == 1  # the second call didn't wait on the gateway
+    assert len(provider) == 2
+
+    monkeypatch.setattr(model_factory, "_gateway_down_until", 0.0)
+    _ask(model, model.model)
+    assert len(gateway) == 2  # retried once the pause is over
+    server.shutdown()
+
+
+@pytest.mark.parametrize("status", [401, 429])
+def test_gateway_refusals_are_not_bypassed(monkeypatch, provider, status):
+    """Bad keys and spent budgets are the gateway doing its job, not an outage."""
+    server, _ = _gateway(monkeypatch, status, {"error": {"message": "no"}})
+    model = make_model("deep_research_agent")
+
+    with pytest.raises(Exception):
+        _ask(model, model.model)
+    assert provider == []
+    server.shutdown()
