@@ -7,7 +7,8 @@ not files, and it puts agents/ on sys.path, so agents import this directly.
 By default agents call providers directly: LiteLlm models go to OpenRouter and
 native Gemini models to the Gemini API. With LITELLM_PROXY_ENABLED on, every call
 goes through the LiteLLM proxy under the agent's own key, so the proxy reports
-usage per agent:
+usage per agent. If the proxy is down, calls go direct instead (see
+_GatewayFallback), so a gateway outage never stops the agents:
 
   LITELLM_PROXY_ENABLED  true/1/yes/on to use the proxy; anything else, direct
   LITELLM_PROXY_URL      proxy root, e.g. http://litellm.railway.internal:4000
@@ -17,12 +18,29 @@ usage per agent:
 The reasoning tier thinks at REASONING_EFFORT (low, medium or high; default medium).
 """
 
+import copy
+import logging
 import os
+import time
 from functools import cached_property
+from typing import AsyncGenerator
 
+import aiohttp
+import httpx
+import openai
+from google.adk.models.base_llm import BaseLlm
 from google.adk.models.google_llm import Gemini
 from google.adk.models.lite_llm import LiteLlm
-from google.genai import Client, types
+from google.adk.models.llm_request import LlmRequest
+from google.adk.models.llm_response import LlmResponse
+from google.genai import Client, errors, types
+from pydantic import Field
+
+logger = logging.getLogger(__name__)
+
+# After the proxy fails, how long calls skip it and go direct
+GATEWAY_RETRY_SECONDS = 60
+_gateway_down_until = 0.0
 
 # OpenRouter app attribution (direct calls; the proxy sets its own)
 os.environ.setdefault("OR_SITE_URL", "https://agentdirectory.folch.ai")
@@ -50,16 +68,18 @@ def make_model(app: str, tier: str = "fast") -> LiteLlm:
     if tier == "reasoning":
         body["reasoning"] = {"effort": os.getenv("REASONING_EFFORT", "medium")}
 
+    options = {"extra_body": body} if body else {}
+    direct = LiteLlm(model=model, app_name="adk-samples-directory", **options)
     proxy = _proxy_url()
     if not proxy:
-        options = {"extra_body": body} if body else {}
-        return LiteLlm(model=model, app_name="adk-samples-directory", **options)
-    return LiteLlm(
+        return direct
+    return _ProxiedLiteLlm(
         # The proxy receives `model` without the prefix and matches it in its model_list.
         model=f"litellm_proxy/{model}",
         api_base=proxy,
         api_key=_proxy_key(app),
         extra_body={"metadata": {"tags": [f"agent:{app}", f"tier:{tier}"]}, **body},
+        direct=direct,
     )
 
 
@@ -75,14 +95,83 @@ def make_gemini(app: str, model: str) -> str | Gemini:
     if not proxy:
         return model
     return _ProxiedGemini(
-        model=model, base_url=f"{proxy}/gemini", proxy_api_key=_proxy_key(app)
+        model=model,
+        base_url=f"{proxy}/gemini",
+        proxy_api_key=_proxy_key(app),
+        direct=Gemini(model=model),
     )
 
 
-class _ProxiedGemini(Gemini):
+class _GatewayFallback:
+    """Sends a request through the proxy, or straight to the provider (`direct`)
+    when the proxy is unreachable, and skips the proxy for GATEWAY_RETRY_SECONDS
+    after that. Refusals (bad key, spent budget) still raise: that is the proxy
+    working."""
+
+    async def generate_content_async(
+        self, llm_request: LlmRequest, stream: bool = False
+    ) -> AsyncGenerator[LlmResponse, None]:
+        global _gateway_down_until
+        if time.monotonic() >= _gateway_down_until:
+            # Models edit the request they send; keep the original for `direct`.
+            attempt = llm_request.model_copy(
+                update={
+                    "contents": copy.deepcopy(llm_request.contents),
+                    "config": llm_request.config.model_copy(deep=True),
+                }
+            )
+            started = False
+            try:
+                async for response in super().generate_content_async(attempt, stream):
+                    started = True
+                    yield response
+                return
+            except Exception as e:
+                if started or not _gateway_unavailable(e):
+                    raise
+                logger.warning(
+                    "LiteLLM proxy unavailable (%s); calling the provider directly "
+                    "for the next %ss",
+                    e,
+                    GATEWAY_RETRY_SECONDS,
+                )
+                _gateway_down_until = time.monotonic() + GATEWAY_RETRY_SECONDS
+        # ADK names the agent's model in the request (litellm_proxy/... here),
+        # and LiteLlm calls the request's model over its own.
+        llm_request.model = self.direct.model
+        async for response in self.direct.generate_content_async(llm_request, stream):
+            yield response
+
+
+def _gateway_unavailable(e: Exception) -> bool:
+    """Whether `e` means the proxy could not be reached or served nothing, as
+    opposed to answering with a refusal."""
+    # LiteLLM re-raises connection failures as InternalServerError, so look
+    # down the chain for the original.
+    cause = e
+    while cause is not None:
+        if isinstance(
+            cause,
+            (openai.APIConnectionError, httpx.TransportError, aiohttp.ClientConnectionError),
+        ):
+            return True
+        cause = cause.__cause__ or cause.__context__
+    status = getattr(e, "status_code", None) or getattr(e, "code", None)
+    if status in (502, 503, 504):
+        return True
+    # Railway's edge, when the proxy service has no running deployment
+    return status == 404 and "Application not found" in str(e)
+
+
+class _ProxiedLiteLlm(_GatewayFallback, LiteLlm):
+    direct: BaseLlm = Field(exclude=True)
+
+
+class _ProxiedGemini(_GatewayFallback, Gemini):
     """Gemini that authenticates with a proxy key instead of GOOGLE_API_KEY."""
 
     proxy_api_key: str
+    direct: BaseLlm = Field(exclude=True)
 
     @cached_property
     def api_client(self) -> Client:
