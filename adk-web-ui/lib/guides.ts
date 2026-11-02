@@ -124,3 +124,43 @@ export function guideHeadings(body: string): GuideHeading[] {
   }
   return headings;
 }
+
+/**
+ * Rewrite root-relative Markdown links (`](/agents/x)`) and in-page anchors
+ * (`](#step)`) to absolute URLs, so the text still works pasted elsewhere.
+ * Code fences are left alone.
+ */
+export function absolutizeLinks(markdown: string, baseUrl: string, pagePath: string): string {
+  let inFence = false;
+  return markdown
+    .split('\n')
+    .map((line) => {
+      if (line.startsWith('```')) inFence = !inFence;
+      if (inFence || line.startsWith('```')) return line;
+      return line
+        .replace(/\]\(\/(?!\/)/g, `](${baseUrl}/`)
+        .replace(/\]\(#/g, `](${baseUrl}${pagePath}#`);
+    })
+    .join('\n');
+}
+
+/**
+ * The guide as standalone Markdown, for the "Copy page" button and the
+ * /guides/<slug>.md route: one source (the guide file), two renderings.
+ */
+export function guideMarkdown(guide: Guide, baseUrl: string, author: string): string {
+  const path = guidePath(guide.slug);
+  const dates = guide.updated && guide.updated !== guide.published
+    ? `Published ${guide.published}, updated ${guide.updated}`
+    : `Published ${guide.published}`;
+  return [
+    `# ${guide.title}`,
+    `> ${guide.description}`,
+    `Source: ${baseUrl}${path}  \nBy ${author}. ${dates}.`,
+    absolutizeLinks(guide.body, baseUrl, path),
+  ].join('\n\n') + '\n';
+}
+
+export function guideMarkdownPath(slug: string): string {
+  return `${guidePath(slug)}.md`;
+}

@@ -5,7 +5,8 @@ import BuildCta from '@/components/story/BuildCta';
 import GuideBody from '@/components/guides/GuideBody';
 import TryItLive from '@/components/guides/TryItLive';
 import ContactCta from '@/components/guides/ContactCta';
-import { getGuide, guideHeadings, guidePath, loadGuides } from '@/lib/guides';
+import CopyPageButton from '@/components/guides/CopyPageButton';
+import { getGuide, guideHeadings, guideMarkdown, guideMarkdownPath, guidePath, loadGuides } from '@/lib/guides';
 import { guideJsonLd, jsonLdScript, SITE_NAME, SITE_OWNER, siteUrl } from '@/lib/seo';
 
 type Params = Promise<{ slug: string }>;
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     description: guide.description,
     keywords: guide.keywords,
     authors: [{ name: SITE_OWNER }],
-    alternates: { canonical: url },
+    alternates: { canonical: url, types: { 'text/markdown': guideMarkdownPath(guide.slug) } },
     openGraph: {
       type: 'article',
       url,
@@ -81,6 +82,13 @@ export default async function GuidePage({ params }: { params: Params }) {
                 </>
               ) : null}
             </p>
+            <div className="mt-5">
+              <CopyPageButton
+                markdown={guideMarkdown(guide, siteUrl(), SITE_OWNER)}
+                slug={guide.slug}
+                markdownHref={guideMarkdownPath(guide.slug)}
+              />
+            </div>
           </>
         }
       />

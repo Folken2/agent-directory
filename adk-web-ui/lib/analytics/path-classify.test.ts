@@ -49,6 +49,7 @@ describe('isKnownRoute', () => {
     assert.equal(isKnownRoute('/agents/foo/bar'), false);
     assert.equal(isKnownRoute('/guides/adk-mcp-toolset'), true);
     assert.equal(isKnownRoute('/guides/adk-mcp-toolset/x'), false);
+    assert.equal(isKnownRoute('/guides/adk-mcp-toolset.md'), true);
   });
 });
 

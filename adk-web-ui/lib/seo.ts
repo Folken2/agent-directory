@@ -7,7 +7,7 @@
 
 import type { MetadataRoute } from 'next';
 import type { CatalogAgent } from './agent-catalog';
-import { guidePath, type GuideMeta } from './guides';
+import { guideMarkdownPath, guidePath, type GuideMeta } from './guides';
 
 export const SITE_NAME = 'ADK Agent Directory';
 /** Author of the guides and the person behind /contact. */
@@ -176,6 +176,40 @@ export function contactJsonLd(baseUrl: string, sameAs: string[]) {
       ...(sameAs.length ? { sameAs } : {}),
     },
   };
+}
+
+/**
+ * /llms.txt (llmstxt.org): a Markdown map of the site for coding agents.
+ * Guides link to their .md copies, which agents can fetch as plain text.
+ */
+export function buildLlmsTxt(
+  agents: Array<{ name: string; displayName?: string; description?: string }>,
+  guides: GuideMeta[],
+  baseUrl: string
+): string {
+  const oneLine = (text = '') => text.replace(/\s+/g, ' ').trim();
+  const item = (label: string, url: string, note?: string) =>
+    `- [${label}](${url})${note ? `: ${oneLine(note)}` : ''}`;
+  return [
+    `# ${SITE_NAME}`,
+    "> Working example agents built with Google's Agent Development Kit (ADK), how-to guides that explain them, and an agent builder. Independent open-source project, not affiliated with Google.",
+    [
+      '## Guides',
+      ...guides.map((guide) => item(guide.title, `${baseUrl}${guideMarkdownPath(guide.slug)}`, guide.description)),
+    ].join('\n'),
+    [
+      '## Example agents',
+      ...agents.map((agent) => item(agent.displayName || agent.name, `${baseUrl}${agentPath(agent.name)}`, agent.description)),
+    ].join('\n'),
+    [
+      '## Optional',
+      item('Agent builder', `${baseUrl}/`, 'Describe an agent and get a runnable ADK project'),
+      item('Chat with an agent', `${baseUrl}/chat?agent=<name>`, 'Opens any example agent above by its name; no account needed'),
+      item('Agent catalog (JSON)', `${baseUrl}/api/agents`, 'Every agent with its description, tools, tags and sample prompts'),
+      item('About', `${baseUrl}/about`),
+      item('Contact', `${baseUrl}/contact`, `${SITE_OWNER}, consulting on ADK agents in production`),
+    ].join('\n'),
+  ].join('\n\n') + '\n';
 }
 
 /** Serialize JSON-LD for a <script> tag; escapes `<` so content can't close the tag. */

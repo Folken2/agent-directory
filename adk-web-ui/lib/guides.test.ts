@@ -1,7 +1,15 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { getCatalogAgent } from './agent-catalog.ts';
-import { guideHeadings, guidesForAgent, loadGuides, parseGuide } from './guides.ts';
+import {
+  absolutizeLinks,
+  guideHeadings,
+  guideMarkdown,
+  guideMarkdownPath,
+  guidesForAgent,
+  loadGuides,
+  parseGuide,
+} from './guides.ts';
 
 const SOURCE = `---
 title: How to do a thing
@@ -70,6 +78,52 @@ describe('content/guides', () => {
   it('links the MCP agents back to the MCP guide', () => {
     for (const name of ['exa_mcp_agent', 'mermaid_mcp_agent', 'xquik_mcp_agent']) {
       assert.deepEqual(guidesForAgent(name, guides).map((guide) => guide.slug), ['adk-mcp-toolset']);
+    }
+  });
+});
+
+describe('guideMarkdown', () => {
+  const BASE = 'https://agentdirectory.folch.ai';
+
+  it('makes root-relative links and anchors absolute, outside code fences only', () => {
+    const md = [
+      'See [Exa](/agents/exa_mcp_agent) and [below](#common-errors), [ADK](https://adk.dev/x).',
+      '```markdown',
+      '[keep](/relative)',
+      '```',
+      'And [contact](/contact).',
+    ].join('\n');
+    assert.equal(
+      absolutizeLinks(md, BASE, '/guides/g'),
+      [
+        `See [Exa](${BASE}/agents/exa_mcp_agent) and [below](${BASE}/guides/g#common-errors), [ADK](https://adk.dev/x).`,
+        '```markdown',
+        '[keep](/relative)',
+        '```',
+        `And [contact](${BASE}/contact).`,
+      ].join('\n')
+    );
+  });
+
+  it('leaves protocol-relative links alone', () => {
+    assert.equal(absolutizeLinks('[x](//cdn.test/a)', BASE, '/guides/g'), '[x](//cdn.test/a)');
+  });
+
+  it('starts with the title, description and source URL, then the body', () => {
+    const md = guideMarkdown(parseGuide('thing', SOURCE), BASE, 'Ada');
+    assert.ok(md.startsWith('# How to do a thing\n\n> Learn it.\n\n'));
+    assert.ok(md.includes(`Source: ${BASE}/guides/thing`));
+    assert.ok(md.includes('By Ada. Published 2026-11-02.'));
+    assert.ok(md.includes('## Second step'));
+    assert.ok(!md.includes('seoTitle'), 'frontmatter must not leak into the copy');
+  });
+
+  it('turns every link in the real guides absolute', () => {
+    for (const guide of loadGuides()) {
+      const md = guideMarkdown(guide, BASE, 'Ada');
+      const outsideFences = md.split(/```[\s\S]*?```/).join('');
+      assert.ok(!/\]\((\/|#)/.test(outsideFences), `${guide.slug} still has a relative link`);
+      assert.equal(guideMarkdownPath(guide.slug), `/guides/${guide.slug}.md`);
     }
   });
 });

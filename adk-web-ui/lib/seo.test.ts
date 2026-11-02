@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadOfflineCatalog } from './agent-catalog.ts';
 import { loadGuides, type GuideMeta } from './guides.ts';
-import { agentJsonLd, buildSitemap, contactJsonLd, examplesJsonLd, guideJsonLd, jsonLdScript } from './seo.ts';
+import { agentJsonLd, buildLlmsTxt, buildSitemap, contactJsonLd, examplesJsonLd, guideJsonLd, jsonLdScript } from './seo.ts';
 
 const GUIDE: GuideMeta = {
   slug: 'adk-mcp-toolset',
@@ -107,5 +107,19 @@ describe('JSON-LD', () => {
 
   it('escapes < so a description cannot close the script tag', () => {
     assert.ok(!jsonLdScript({ description: '</script><b>' }).includes('</script>'));
+  });
+});
+
+describe('buildLlmsTxt', () => {
+  it('lists guides by their .md URL and agents by their page', () => {
+    const txt = buildLlmsTxt(
+      [{ name: 'trip_planner', displayName: 'Trip Planner', description: 'Plans\n trips' }],
+      [GUIDE],
+      BASE
+    );
+    assert.ok(txt.startsWith('# ADK Agent Directory\n\n> '));
+    assert.ok(txt.includes(`- [How to connect an MCP server](${BASE}/guides/adk-mcp-toolset.md): Connect one.`));
+    assert.ok(txt.includes(`- [Trip Planner](${BASE}/agents/trip_planner): Plans trips`));
+    assert.ok(txt.includes(`(${BASE}/contact)`));
   });
 });
