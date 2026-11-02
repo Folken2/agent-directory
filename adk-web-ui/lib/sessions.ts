@@ -21,7 +21,7 @@
 
 import { db } from './drizzle/db';
 import { agentRunEvents } from './drizzle/schema';
-import { sql, and, eq, ne, inArray, desc } from 'drizzle-orm';
+import { sql, and, eq, inArray, desc } from 'drizzle-orm';
 import { asSessionId, type SessionId } from './ids';
 import { deletableAdkSessions } from './identity';
 
@@ -330,7 +330,8 @@ async function sharedLegacySessions(
       and(
         eq(agentRunEvents.userId, 'default-user'),
         inArray(agentRunEvents.sessionId, legacyIds),
-        ne(agentRunEvents.rateLimitIdentifier, authedUserId)
+        // A run with no identifier is someone we can't rule out, so it counts.
+        sql`${agentRunEvents.rateLimitIdentifier} IS DISTINCT FROM ${authedUserId}`
       )
     );
   return new Set(others.map((r) => `${r.sessionId}|${r.appName}`));
