@@ -72,6 +72,31 @@ export async function adkUserIdForSession(
   return derived;
 }
 
+/** One ADK session a signed-in user's runs point at (from agent_run_events). */
+export type AdkSessionKey = { sessionId: string; appName: string; adkUserId: string };
+
+/**
+ * The sessions a signed-in user may delete, out of the keys their runs point
+ * at. Same trust rule as {@link adkUserIdForSession}: only their own `u_` id
+ * or the legacy 'default-user' sentinel; any other stored id is ignored, so a
+ * planted run row can't aim a delete at someone else's session. Deduplicated,
+ * since every run of a session writes its own row.
+ */
+export function deletableAdkSessions(userId: string, keys: AdkSessionKey[]): AdkSessionKey[] {
+  const own = defaultAdkUserId({ kind: 'user', userId });
+  const seen = new Set<string>();
+  const out: AdkSessionKey[] = [];
+  for (const key of keys) {
+    if (!key.sessionId || !key.appName) continue;
+    if (key.adkUserId !== own && key.adkUserId !== 'default-user') continue;
+    const id = `${key.sessionId}|${key.appName}|${key.adkUserId}`;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(key);
+  }
+  return out;
+}
+
 export function anonCookieHeader(token: string, secure: boolean): string {
   return `${ANON_COOKIE_NAME}=${token}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; HttpOnly; SameSite=Lax${secure ? '; Secure' : ''}`;
 }

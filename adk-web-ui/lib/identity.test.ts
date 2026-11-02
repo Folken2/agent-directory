@@ -5,6 +5,7 @@ import {
   ANON_COOKIE_NAME,
   applyIdentityCookie,
   defaultAdkUserId,
+  deletableAdkSessions,
   identityKey,
   resolveIdentityWith,
   type IdentityDeps,
@@ -100,5 +101,32 @@ describe('ADK user ids', () => {
   it('ignores a legacy lookup pointing at someone else\'s ADK id', async () => {
     const planted = async () => 'u_someone-else';
     assert.equal(await adkUserIdForSession(user, 'session-planted', planted), 'u_user-1');
+  });
+});
+
+describe('deletableAdkSessions', () => {
+  const key = (adkUserId: string, sessionId = 'session-1', appName = 'agent') => ({
+    sessionId,
+    appName,
+    adkUserId,
+  });
+
+  it("keeps the user's own u_ sessions and legacy default-user ones", () => {
+    const keys = [key('u_user-1', 'session-1'), key('default-user', 'session-2')];
+    assert.deepEqual(deletableAdkSessions('user-1', keys), keys);
+  });
+
+  it("drops sessions stored under another user's or an anonymous id", () => {
+    const keys = [key('u_user-2'), key(`a_${TOKEN}`), key('u_user-1x'), key('user-1')];
+    assert.deepEqual(deletableAdkSessions('user-1', keys), []);
+  });
+
+  it('dedupes rows from repeated runs of the same session', () => {
+    const keys = [key('u_user-1'), key('u_user-1'), key('u_user-1', 'session-1', 'other-agent')];
+    assert.deepEqual(deletableAdkSessions('user-1', keys), [key('u_user-1'), key('u_user-1', 'session-1', 'other-agent')]);
+  });
+
+  it('skips rows missing a session id or app name', () => {
+    assert.deepEqual(deletableAdkSessions('user-1', [key('u_user-1', ''), key('u_user-1', 'session-1', '')]), []);
   });
 });
