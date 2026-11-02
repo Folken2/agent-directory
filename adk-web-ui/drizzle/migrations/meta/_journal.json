@@ -57,6 +57,13 @@
       "when": 1791100000000,
       "tag": "0015_build_saves",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793600000000,
+      "tag": "0016_analytics_daily",
+      "breakpoints": true
     }
   ]
 }

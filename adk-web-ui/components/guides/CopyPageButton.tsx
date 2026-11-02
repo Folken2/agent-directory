@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Check, Copy, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { buttonVariants } from '@/components/ui/button';
-import { trackGtagEvent } from '@/lib/analytics/track-engagement';
+import { trackFunnelEvent } from '@/lib/analytics/track-engagement';
 
 /**
  * Copies the guide as Markdown, for pasting into a coding agent. The text is
@@ -26,7 +26,7 @@ export default function CopyPageButton({
     try {
       await navigator.clipboard.writeText(markdown);
       setState('copied');
-      trackGtagEvent('copy_page', { guide_slug: slug });
+      trackFunnelEvent('copy_page', { guide_slug: slug });
     } catch {
       setState('failed');
     }

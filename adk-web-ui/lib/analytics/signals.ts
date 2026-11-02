@@ -4,7 +4,6 @@
  */
 
 import type { AgentUsageRow, MissingPathRow, PageUsageRow, TrafficQuality } from './ops-types';
-import type { PromptThemes } from './ops-types';
 
 export type SignalSeverity = 'high' | 'medium' | 'info';
 
@@ -49,7 +48,6 @@ export type SignalsInput = {
   pages: readonly PageUsageRow[];
   missing: readonly MissingPathRow[];
   quality: TrafficQuality;
-  themes: PromptThemes;
   /** ISO timestamp of earliest page_view; null if none. */
   pageViewsSince: string | null;
 };
@@ -255,45 +253,6 @@ export function buildMissingPageSignals(
   ];
 }
 
-export function buildDemandThemeSignals(themes: PromptThemes): OpsSignal[] {
-  const top = [...themes.bigrams, ...themes.unigrams]
-    .sort((a, b) => b.prompts - a.prompts || a.term.localeCompare(b.term))
-    .slice(0, 8);
-
-  if (top.length === 0 || themes.distinctOrganicPrompts < 2) {
-    return [
-      {
-        id: 'demand-themes',
-        severity: 'info',
-        title: 'Not enough organic prompts to rank demand themes',
-        evidence:
-          themes.totalPrompts === 0
-            ? 'No user prompts in this range.'
-            : `${themes.totalPrompts} prompts (${themes.samplePrompts} catalog samples, ${themes.distinctOrganicPrompts} distinct organic).`,
-        suggestedAction:
-          'Wait for more organic usage, or widen the timeline range.',
-        coverageBasis: 'ADK events author=user; sample prompts from the catalog are excluded.',
-      },
-    ];
-  }
-
-  const evidence = top
-    .map((t) => `"${t.term}" ×${t.prompts}`)
-    .join(', ');
-
-  return [
-    {
-      id: 'demand-themes',
-      severity: 'info',
-      title: `Top demand themes from ${themes.distinctOrganicPrompts} organic prompts`,
-      evidence,
-      suggestedAction:
-        'Consider new agents or sample prompts that match recurring themes; deprecate agents that never appear.',
-      coverageBasis: `Sample clicks excluded (${themes.samplePrompts}). Frequency over distinct texts, not raw repeats.`,
-    },
-  ];
-}
-
 export function buildTrafficQualitySignals(
   quality: TrafficQuality,
   scannerShareWarn: number
@@ -375,7 +334,6 @@ export function buildOpsSignals(input: SignalsInput): OpsSignal[] {
       t.minMissingVisitors,
       t.minMissingHits
     ),
-    ...buildDemandThemeSignals(input.themes),
     ...buildTrafficQualitySignals(input.quality, t.scannerShareWarn),
   ];
 }

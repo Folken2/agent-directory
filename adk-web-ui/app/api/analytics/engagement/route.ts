@@ -6,83 +6,86 @@ import {
   parseConsent,
 } from '@/lib/analytics/consent';
 import {
-  recordEngagement,
-  type EngagementEventType,
-} from '@/lib/analytics/record-engagement';
+  MAX_BODY_BYTES,
+  isConsentOnlyEvent,
+  parseEngagementBody,
+} from '@/lib/analytics/engagement-input';
+import { extractClientIp, hashIp } from '@/lib/analytics/hash-ip';
+import { recordEngagement } from '@/lib/analytics/record-engagement';
 import {
   VISITOR_COOKIE_NAME,
+  createVisitorId,
   isValidVisitorId,
 } from '@/lib/analytics/visitor-cookie';
+import { envInt } from '@/lib/env-int';
+import { dbCounterStore } from '@/lib/limits/db-store';
+import { reserveBuckets } from '@/lib/limits/limiter';
 
 export const runtime = 'nodejs';
 
-const ALLOWED: EngagementEventType[] = [
-  'agent_open',
-  'message_sent',
-  'tool_call',
-  'heartbeat',
-];
-
-type Body = {
-  eventType?: string;
-  agentSlug?: string | null;
-  path?: string;
-  sessionKey?: string | null;
-  durationMs?: number | null;
-  metadata?: Record<string, unknown> | null;
-};
+function skipped(reason: string) {
+  return NextResponse.json({ ok: true, recorded: false, reason });
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const consent = parseConsent(request.cookies.get(CONSENT_COOKIE_NAME)?.value);
-    if (!hasAnalyticsConsent(consent)) {
-      return NextResponse.json({
-        ok: true,
-        recorded: false,
-        reason: 'no_consent',
-      });
+    const text = await request.text();
+    if (text.length > MAX_BODY_BYTES) {
+      return NextResponse.json({ ok: false, error: 'too_large' }, { status: 413 });
     }
-
-    const visitorId = request.cookies.get(VISITOR_COOKIE_NAME)?.value;
-    if (!isValidVisitorId(visitorId)) {
-      return NextResponse.json({
-        ok: true,
-        recorded: false,
-        reason: 'no_visitor',
-      });
-    }
-
-    let body: Body;
+    let raw: unknown;
     try {
-      body = (await request.json()) as Body;
+      raw = JSON.parse(text);
     } catch {
       return NextResponse.json({ ok: false, error: 'invalid_json' }, { status: 400 });
     }
 
-    const eventType = body.eventType as EngagementEventType;
-    if (!ALLOWED.includes(eventType)) {
-      return NextResponse.json({ ok: false, error: 'invalid_event' }, { status: 400 });
+    let referer = '/';
+    try {
+      const ref = request.headers.get('referer');
+      if (ref) referer = new URL(ref).pathname;
+    } catch {
+      // keep '/'
+    }
+    const parsed = parseEngagementBody(raw, referer);
+    if (!parsed.ok) {
+      return NextResponse.json({ ok: false, error: parsed.error }, { status: 400 });
+    }
+    const body = parsed.value;
+
+    const consent = parseConsent(request.cookies.get(CONSENT_COOKIE_NAME)?.value);
+    const analyticsOk = hasAnalyticsConsent(consent);
+    if (!analyticsOk && isConsentOnlyEvent(body.eventType)) return skipped('no_consent');
+
+    let visitorId: string;
+    if (analyticsOk) {
+      const cookieId = request.cookies.get(VISITOR_COOKIE_NAME)?.value;
+      if (!isValidVisitorId(cookieId)) return skipped('no_visitor');
+      visitorId = cookieId!;
+    } else {
+      // Cookieless funnel click — ephemeral id, like an essential-only pageview.
+      visitorId = createVisitorId();
+    }
+
+    const ipHash = hashIp(extractClientIp(request.headers));
+    if (ipHash) {
+      const quota = await reserveBuckets(
+        [{ key: `ev:ip:${ipHash}`, limit: envInt('ENGAGEMENT_IP_DAILY_LIMIT', 2000) }],
+        { store: dbCounterStore }
+      );
+      if (!quota.ok) return skipped(quota.reason);
     }
 
     let userId: string | null = null;
-    try {
-      const session = await auth();
-      userId = session?.user?.id ?? null;
-    } catch {
-      // optional
+    if (analyticsOk) {
+      try {
+        userId = (await auth())?.user?.id ?? null;
+      } catch {
+        // optional
+      }
     }
 
-    const result = await recordEngagement({
-      visitorId: visitorId!,
-      userId,
-      agentSlug: body.agentSlug ?? null,
-      eventType,
-      path: body.path || request.headers.get('referer') || '/',
-      sessionKey: body.sessionKey ?? null,
-      durationMs: body.durationMs ?? null,
-      metadata: body.metadata ?? null,
-    });
-
+    const result = await recordEngagement({ ...body, visitorId, userId });
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     console.error('[analytics] engagement route error', error);

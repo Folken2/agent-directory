@@ -11,3 +11,4 @@ export * from './engagement-events';
 
 export * from './blueprint-submissions';
 export * from './build-saves';
+export * from './analytics-daily';

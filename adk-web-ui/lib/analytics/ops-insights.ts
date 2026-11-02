@@ -16,7 +16,7 @@ import {
   frictionReasons,
   summarizeConversations,
 } from './conversation-insights';
-import { catalogSamplePromptTexts, normalizePromptText } from './prompt-themes';
+import { catalogSamplePromptTexts, normalizePromptText } from './prompts';
 import type { OpsInsights } from './ops-types';
 import type { TimelineRange } from './timeline-range';
 

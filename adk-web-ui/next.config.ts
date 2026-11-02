@@ -118,6 +118,7 @@ const nextConfig: NextConfig = {
       { source: '/chat', headers: appPageHeaders },
       { source: '/me/:path*', headers: appPageHeaders },
       { source: '/settings/:path*', headers: appPageHeaders },
+      { source: '/analytics/:path*', headers: appPageHeaders },
       { source: '/builds/:path*', headers: privateLinkHeaders },
       { source: '/api/builds/:path*', headers: privateLinkHeaders },
     ];

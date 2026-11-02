@@ -2,11 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import type { AgentUsageRow, PageUsageRow, TrafficQuality } from './ops-types';
-import type { PromptThemes } from './ops-types';
 import {
   SIGNAL_THRESHOLDS,
   buildDeadAgentSignals,
-  buildDemandThemeSignals,
   buildHighFrictionSignals,
   buildInterestWithoutUseSignals,
   buildMissingPageSignals,
@@ -149,48 +147,6 @@ describe('buildMissingPageSignals', () => {
   });
 });
 
-describe('buildDemandThemeSignals', () => {
-  it('explains thin organic coverage', () => {
-    const themes: PromptThemes = {
-      unigrams: [],
-      bigrams: [],
-      totalPrompts: 3,
-      samplePrompts: 3,
-      organicPrompts: 0,
-      distinctOrganicPrompts: 0,
-    };
-    const signals = buildDemandThemeSignals(themes);
-    assert.equal(signals.length, 1);
-    assert.match(signals[0].title, /Not enough/);
-  });
-
-  it('lists top themes when organic volume exists', () => {
-    const themes: PromptThemes = {
-      unigrams: [
-        {
-          term: 'invoice',
-          prompts: 4,
-          agents: [{ agentSlug: 'a', prompts: 4 }],
-        },
-      ],
-      bigrams: [
-        {
-          term: 'pdf extract',
-          prompts: 5,
-          agents: [{ agentSlug: 'a', prompts: 5 }],
-        },
-      ],
-      totalPrompts: 20,
-      samplePrompts: 2,
-      organicPrompts: 18,
-      distinctOrganicPrompts: 10,
-    };
-    const signals = buildDemandThemeSignals(themes);
-    assert.match(signals[0].evidence, /pdf extract/);
-    assert.match(signals[0].evidence, /invoice/);
-  });
-});
-
 describe('buildTrafficQualitySignals', () => {
   it('warns when scanners dominate', () => {
     const quality: TrafficQuality = {
@@ -245,20 +201,6 @@ describe('buildOpsSignals', () => {
         humanPageViews: 70,
         scannerViews: 10,
       },
-      themes: {
-        unigrams: [
-          {
-            term: 'resume',
-            prompts: 3,
-            agents: [{ agentSlug: 'x', prompts: 3 }],
-          },
-        ],
-        bigrams: [],
-        totalPrompts: 10,
-        samplePrompts: 1,
-        organicPrompts: 9,
-        distinctOrganicPrompts: 5,
-      },
       pageViewsSince: '2026-07-01T00:00:00Z',
     });
 
@@ -267,7 +209,6 @@ describe('buildOpsSignals', () => {
     assert.ok(ids.includes('high-friction'));
     assert.ok(ids.includes('dead-pages'));
     assert.ok(ids.includes('missing-pages'));
-    assert.ok(ids.includes('demand-themes'));
     assert.ok(ids.includes('traffic-quality'));
     assert.ok(signals.every((s) => s.coverageBasis.length > 0));
     assert.equal(SIGNAL_THRESHOLDS.deadAgentDays, 90);

@@ -10,7 +10,6 @@ import { panelClass } from '@/components/ui/card';
 import { PageHeader } from '@/components/layout/Page';
 import DashboardSkeleton from './DashboardSkeleton';
 import AnalyticsAgentCard from '@/components/analytics/AnalyticsAgentCard';
-import BrandMark from '@/components/analytics/BrandMark';
 import RangeTabs from './RangeTabs';
 import StatTile from './StatTile';
 import TrafficChart from './TrafficChart';
@@ -19,7 +18,7 @@ import { formatCompact } from './format';
 
 const PEOPLE = 'var(--chart-people)';
 const CRAWLERS = 'var(--chart-crawlers)';
-const MAX_COMPANIES = 6;
+const MAX_CRAWLERS = 8;
 
 /** Agent pages read better with the catalog's display name than the slug. */
 function pageName(path: string, fallback: string): string {
@@ -72,8 +71,9 @@ export default function AnalyticsDashboard() {
   }
 
   const timeline = stats.timeline ?? [];
-  const companies = stats.botCompanies ?? [];
-  const aiCompanies = companies.filter((c) => c.ai).length;
+  const crawlers = stats.byBot ?? [];
+  const aiCrawlers = crawlers.filter((c) => c.category === 'ai').length;
+  const crawlerShare = (n: number) => (stats.bots > 0 ? Math.round((n / stats.bots) * 1000) / 10 : 0);
   const visits = stats.visits ?? stats.humans;
 
   return (
@@ -93,8 +93,8 @@ export default function AnalyticsDashboard() {
             trend={timeline.map((d) => d.humans)}
             trendColor={PEOPLE}
           />
-          <StatTile label="People" hint="approx., by IP" value={stats.peopleApprox ?? 0} previous={prev?.peopleApprox} periodLabel={periodLabel} />
-          <StatTile label="Returning visitors" value={stats.returning ?? 0} previous={prev?.returning} periodLabel={periodLabel} />
+          <StatTile label="People" hint="approx., distinct IPs per day" value={stats.peopleApprox ?? 0} previous={prev?.peopleApprox} periodLabel={periodLabel} />
+          <StatTile label="Returning visitors" hint="consented only, seen on 2+ days" value={stats.returning ?? 0} previous={prev?.returning} periodLabel={periodLabel} />
           <StatTile
             label="Crawler hits"
             value={stats.bots}
@@ -154,31 +154,23 @@ export default function AnalyticsDashboard() {
             />
           </Panel>
           <Panel
-            title="Crawlers by company"
-            subtitle={`${formatCompact(stats.bots)} hits${aiCompanies ? ` · ${aiCompanies} AI ${aiCompanies === 1 ? 'company' : 'companies'}` : ''}`}
+            title="Crawlers"
+            subtitle={`${formatCompact(stats.bots)} hits${aiCrawlers ? ` · ${aiCrawlers} AI ${aiCrawlers === 1 ? 'crawler' : 'crawlers'}` : ''}`}
           >
             <RankedBars
               color={CRAWLERS}
               empty="No crawlers in this period."
-              rows={companies.slice(0, MAX_COMPANIES).map((c) => ({
-                id: c.id,
+              rows={crawlers.slice(0, MAX_CRAWLERS).map((c) => ({
+                id: c.botName,
                 count: c.count,
-                share: c.share,
-                label: (
-                  <>
-                    <BrandMark id={c.id} name={c.name} color={c.color} domain={c.domain} size={20} />
-                    <span className="truncate">{c.name}</span>
-                  </>
-                ),
-                meta: c.agents
-                  .slice(0, 3)
-                  .map((a) => `${a.botName} · ${a.purposeLabel}`)
-                  .join('  ·  '),
+                share: crawlerShare(c.count),
+                label: <span className="truncate">{c.botName}</span>,
+                meta: c.category === 'other' ? undefined : c.category === 'ai' ? 'AI' : c.category,
               }))}
             />
-            {companies.length > MAX_COMPANIES ? (
+            {crawlers.length > MAX_CRAWLERS ? (
               <p className="mt-4 text-label-medium text-md-on-surface-variant">
-                +{companies.length - MAX_COMPANIES} smaller {companies.length - MAX_COMPANIES === 1 ? 'operator' : 'operators'}
+                +{crawlers.length - MAX_CRAWLERS} more
               </p>
             ) : null}
           </Panel>

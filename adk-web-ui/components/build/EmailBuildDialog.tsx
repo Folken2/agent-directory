@@ -8,6 +8,7 @@ import type { Build } from '@/lib/build/types';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { trackFunnelEvent } from '@/lib/analytics/track-engagement';
 
 type Status =
   | { kind: 'idle' }
@@ -59,6 +60,7 @@ export default function EmailBuildDialog({
         return;
       }
       const data = (json.data ?? {}) as Record<string, unknown>;
+      trackFunnelEvent('build_emailed', { help, updates });
       setStatus({
         kind: 'done',
         email: effectiveEmail,

@@ -10,7 +10,9 @@
  *   - `page_views` — traffic, classified through `path-classify` because ~36% of
  *     apparently-human views are credential scanners spoofing browser UAs.
  *     Signed-in hits stamp `user_id` with `users.id`.
- *   - `engagement_events` is deliberately unused: consent-gated and near-empty.
+ *   - `engagement_events` — only for the goal funnel: funnel clicks are recorded
+ *     for every visitor (cookieless without consent), each carrying the
+ *     visit's landing page.
  *
  * Path classification and visit sessionization run in TypeScript rather than SQL
  * because the rules are richer than SQL patterns express cleanly. Path
@@ -25,13 +27,14 @@ import { unwrapExecuteRows } from '@/lib/drizzle/unwrap-rows';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 import { classifyPath, normalizePath } from './path-classify';
-import { fetchPromptThemes } from './prompt-themes';
+import { buildGoalFunnel, type FunnelEvent, type GoalFunnel } from './funnel';
+import { FUNNEL_EVENTS } from './engagement-input';
 import { buildOpsSignals } from './signals';
 import {
   pageJourneyStats,
   sessionizeVisits,
-  type PageJourneyStat,
   type RawPageView,
+  type Visit,
 } from './visit-journeys';
 import { timelineRangeDays, type TimelineRange } from './timeline-range';
 import { toSignedInUserRow, type SignedInUserSqlRow } from './signed-in-users';
@@ -53,8 +56,12 @@ export type {
   TrafficQuality,
 } from './ops-types';
 
-/** Ceiling on rows pulled for sessionization. ~1.6k today. */
-const RAW_VIEW_LIMIT = 50_000;
+/**
+ * Ceiling on rows pulled for sessionization (~1.6k today). Raw rows are kept
+ * 90 days, so this only bites if traffic grows a lot; the newest rows win.
+ */
+const RAW_VIEW_LIMIT = 20_000;
+const FUNNEL_EVENT_LIMIT = 20_000;
 
 const TERMINAL_RUN_FILTER = sql`status in ('completed', 'error')`;
 
@@ -62,6 +69,8 @@ export type OpsPageData = {
   pages: PageUsageRow[];
   missing: MissingPathRow[];
   quality: TrafficQuality;
+  /** Sessionized human visits, reused by the goal funnel. */
+  visits: Visit[];
 };
 
 function sinceIso(range: TimelineRange): string | null {
@@ -325,7 +334,7 @@ async function fetchPathTotals(range: TimelineRange): Promise<PathTotalRow[]> {
   }));
 }
 
-async function fetchJourneyStats(range: TimelineRange): Promise<PageJourneyStat[]> {
+async function fetchVisits(range: TimelineRange): Promise<Visit[]> {
   const since = sinceIso(range);
   const rows = unwrapExecuteRows<{ hashed_ip: string; path: string; created_at: string }>(
     await db.execute(sql`
@@ -350,7 +359,7 @@ async function fetchJourneyStats(range: TimelineRange): Promise<PageJourneyStat[
     views.push({ hashedIp: row.hashed_ip, path, at });
   }
 
-  return pageJourneyStats(sessionizeVisits(views));
+  return sessionizeVisits(views);
 }
 
 /**
@@ -372,15 +381,17 @@ export async function fetchPageUsage(range: TimelineRange): Promise<OpsPageData>
         spoofedScannerViews: 0,
         botPageViews: 0,
       },
+      visits: [],
     };
   }
 
   await ensurePageViewsSchema();
 
-  const [totals, journeys] = await Promise.all([
+  const [totals, visits] = await Promise.all([
     fetchPathTotals(range),
-    fetchJourneyStats(range),
+    fetchVisits(range),
   ]);
+  const journeys = pageJourneyStats(visits);
   const journeyByPath = new Map(journeys.map((j) => [j.path, j]));
 
   const quality: TrafficQuality = {
@@ -432,7 +443,52 @@ export async function fetchPageUsage(range: TimelineRange): Promise<OpsPageData>
     pages: pages.sort((a, b) => b.humanViews - a.humanViews),
     missing: missing.sort((a, b) => b.visitors - a.visitors || b.hits - a.hits),
     quality,
+    visits,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Goal funnel
+// ---------------------------------------------------------------------------
+
+/** Funnel step events in range, with the landing page and visit key they carry. */
+async function fetchFunnelEvents(range: TimelineRange): Promise<FunnelEvent[]> {
+  const since = sinceIso(range);
+  const rows = unwrapExecuteRows<{ id: string; event_type: string; path: string; metadata: string | null }>(
+    await db.execute(sql`
+      SELECT id, event_type, path, metadata
+      FROM engagement_events
+      WHERE (event_type IN (${sql.join(FUNNEL_EVENTS.map((e) => sql`${e}`), sql`, `)})
+          OR event_type ~ '^contact_[a-z]+$')
+        ${since ? sql`AND created_at >= ${since}` : sql``}
+      ORDER BY created_at DESC
+      LIMIT ${FUNNEL_EVENT_LIMIT}
+    `)
+  );
+  return rows.map((r) => {
+    let meta: Record<string, unknown> = {};
+    try {
+      meta = r.metadata ? (JSON.parse(r.metadata) as Record<string, unknown>) : {};
+    } catch {
+      // malformed metadata: no landing, count the event on its own
+    }
+    return {
+      eventType: r.event_type,
+      path: normalizePath(r.path),
+      landing: typeof meta.landing === 'string' ? normalizePath(meta.landing) : null,
+      visit: typeof meta.visit === 'string' ? meta.visit : String(r.id),
+    };
+  });
+}
+
+/** Landing page → chat → builder → emailed → contact, from raw rows (≤ 90 days). */
+export async function fetchGoalFunnel(range: TimelineRange, pageData: OpsPageData): Promise<GoalFunnel> {
+  const events = isAnalyticsDbAvailable() ? await fetchFunnelEvents(range) : [];
+  return buildGoalFunnel({
+    visitLandings: pageData.visits.map((v) => v.paths[0]),
+    events,
+    pageViews: new Map(pageData.pages.map((p) => [p.path, p.humanViews])),
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -448,15 +504,15 @@ export async function fetchOpsDashboard(
   range: TimelineRange
 ): Promise<OpsDashboardSnapshot> {
   const catalogSlugs = listCatalogAgentSlugs();
-  const [agents, agentsAll, users, pageData, themes, pageViewsSince] =
+  const [agents, agentsAll, users, pageData, pageViewsSince] =
     await Promise.all([
       fetchAgentUsage(range),
       fetchAgentUsage('all'),
       fetchSignedInUsers(range),
       fetchPageUsage(range),
-      fetchPromptThemes(range),
       fetchPageViewsSince(),
     ]);
+  const funnel = await fetchGoalFunnel(range, pageData);
 
   const signals = buildOpsSignals({
     catalogSlugs,
@@ -464,7 +520,6 @@ export async function fetchOpsDashboard(
     pages: pageData.pages,
     missing: pageData.missing,
     quality: pageData.quality,
-    themes,
     pageViewsSince,
   });
 
@@ -475,7 +530,7 @@ export async function fetchOpsDashboard(
     pages: pageData.pages,
     missing: pageData.missing,
     quality: pageData.quality,
-    themes,
+    funnel,
     pageViewsSince,
     signals,
     catalogSlugs,

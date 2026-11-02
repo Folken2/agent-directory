@@ -84,6 +84,11 @@ const BOT_RULES: BotRule[] = [
   { name: 'Vercel', category: 'monitoring', patterns: ['vercel-favicon', 'Vercel Edge Functions'] },
 ];
 
+/** Catalogue category for a stored bot name; 'other' when unknown. */
+export function botCategoryForName(name: string): BotCategory {
+  return BOT_RULES.find((r) => r.name === name)?.category ?? 'other';
+}
+
 const GENERIC_BOT_PATTERN =
   /\b(bot|crawler|spider|crawl|slurp|fetcher|preview|monitor|headless|phantomjs|selenium)\b/i;
 

@@ -18,6 +18,18 @@ describe('hashIp', () => {
   it('changes with salt', () => {
     assert.notEqual(hashIp('1.2.3.4', 'a'), hashIp('1.2.3.4', 'b'));
   });
+
+  it('is stable within one UTC day', () => {
+    const morning = new Date('2026-11-02T00:00:01Z');
+    const night = new Date('2026-11-02T23:59:59Z');
+    assert.equal(hashIp('1.2.3.4', 'salt', morning), hashIp('1.2.3.4', 'salt', night));
+  });
+
+  it('rotates at UTC midnight', () => {
+    const today = new Date('2026-11-02T23:59:59Z');
+    const tomorrow = new Date('2026-11-03T00:00:00Z');
+    assert.notEqual(hashIp('1.2.3.4', 'salt', today), hashIp('1.2.3.4', 'salt', tomorrow));
+  });
 });
 
 describe('extractClientIp', () => {

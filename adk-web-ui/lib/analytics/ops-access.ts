@@ -1,17 +1,22 @@
 /**
- * Who may open `/analytics/ops`.
- * Comma-separated emails in `ANALYTICS_OPS_EMAILS` (default: folkenai21@gmail.com).
+ * Who may open `/analytics` and `/analytics/ops`.
+ * Comma-separated emails in `ANALYTICS_OPS_EMAILS`. Unset or empty means
+ * nobody: the dashboards fail closed rather than fall back to a baked-in owner.
  */
-const DEFAULT_OPS_EMAILS = 'folkenai21@gmail.com';
+let warned = false;
 
 export function analyticsOpsEmails(
   envValue: string | undefined = process.env.ANALYTICS_OPS_EMAILS
 ): string[] {
-  const raw = (envValue?.trim() ? envValue : DEFAULT_OPS_EMAILS).trim();
-  return raw
+  const emails = (envValue ?? '')
     .split(',')
     .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
+    .filter((e) => e.includes('@'));
+  if (emails.length === 0 && !warned && process.env.NODE_ENV === 'production') {
+    warned = true;
+    console.warn('[analytics] ANALYTICS_OPS_EMAILS is not set; /analytics is closed to everyone');
+  }
+  return emails;
 }
 
 export function isAnalyticsOpsEmail(

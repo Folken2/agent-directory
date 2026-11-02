@@ -6,6 +6,7 @@ import {
   hasAnalyticsConsent,
   parseConsent,
 } from '@/lib/analytics/consent';
+import { signForwardedClient } from '@/lib/analytics/internal-ingest';
 import { shouldTrackServerRequest } from '@/lib/analytics/should-track';
 import {
   VISITOR_COOKIE_NAME,
@@ -59,16 +60,20 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
 
   if (track) {
     const origin = ingestOrigin(request);
-    const clientIp = extractClientIp(request.headers);
+    // Geo and IP travel in signed headers: Vercel overwrites the forwarded and
+    // geo headers on the self-fetch with its own egress values.
+    const client = {
+      ip: extractClientIp(request.headers),
+      country: request.headers.get('x-vercel-ip-country'),
+      region: request.headers.get('x-vercel-ip-country-region'),
+      city: request.headers.get('x-vercel-ip-city'),
+    };
     const payload = {
       path: pathname,
       query: search || null,
       referrer: request.headers.get('referer'),
       source: 'server' as const,
       visitorId,
-      country: request.headers.get('x-vercel-ip-country'),
-      region: request.headers.get('x-vercel-ip-country-region'),
-      city: request.headers.get('x-vercel-ip-city'),
       language: request.headers.get('accept-language'),
     };
 
@@ -77,22 +82,22 @@ export function middleware(request: NextRequest, event: NextFetchEvent) {
       cookieParts.push(`${VISITOR_COOKIE_NAME}=${visitorId}`);
     }
 
-    const ingest = fetch(`${origin}/api/analytics/pageview`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'user-agent': userAgent || 'middleware',
-        'x-forwarded-for': clientIp || '',
-        'x-real-ip': clientIp || '',
-        'x-vercel-ip-country': payload.country || '',
-        'x-vercel-ip-country-region': payload.region || '',
-        'x-vercel-ip-city': payload.city || '',
-        cookie: cookieParts.join('; '),
-      },
-      body: JSON.stringify(payload),
-    }).catch((err) => {
-      console.error('[analytics] middleware ingest failed', err);
-    });
+    const ingest = signForwardedClient(client)
+      .then((signed) =>
+        fetch(`${origin}/api/analytics/pageview`, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'user-agent': userAgent || 'middleware',
+            ...signed,
+            cookie: cookieParts.join('; '),
+          },
+          body: JSON.stringify(payload),
+        })
+      )
+      .catch((err) => {
+        console.error('[analytics] middleware ingest failed', err);
+      });
 
     event.waitUntil(ingest);
   }

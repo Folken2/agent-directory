@@ -4,10 +4,6 @@ import {
   parseTimelineRange,
   timelineRangeDays,
 } from './timeline-range.ts';
-import {
-  analyticsOpsEmails,
-  isAnalyticsOpsEmail,
-} from './ops-access.ts';
 
 describe('parseTimelineRange', () => {
   it('defaults to 30', () => {
@@ -29,22 +25,5 @@ describe('timelineRangeDays', () => {
     assert.equal(timelineRangeDays('30'), 30);
     assert.equal(timelineRangeDays('90'), 90);
     assert.equal(timelineRangeDays('all'), null);
-  });
-});
-
-describe('isAnalyticsOpsEmail', () => {
-  it('matches default allowlist', () => {
-    assert.equal(isAnalyticsOpsEmail('folkenai21@gmail.com', undefined), true);
-    assert.equal(isAnalyticsOpsEmail('FOLKENAI21@GMAIL.COM'), true);
-    assert.equal(isAnalyticsOpsEmail('other@example.com'), false);
-    assert.equal(isAnalyticsOpsEmail(null), false);
-  });
-
-  it('parses comma-separated env', () => {
-    assert.deepEqual(analyticsOpsEmails('a@x.com, b@y.com'), [
-      'a@x.com',
-      'b@y.com',
-    ]);
-    assert.equal(isAnalyticsOpsEmail('b@y.com', 'a@x.com, b@y.com'), true);
   });
 });

@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { isPrivatePath } from '@/lib/analytics/should-track';
 import { readClientConsent, applyGtagConsent } from '@/lib/analytics/consent-client';
-import { trackGtagEvent } from '@/lib/analytics/track-engagement';
+import { isFunnelEvent } from '@/lib/analytics/engagement-input';
+import { trackFunnelEvent, trackGtagEvent } from '@/lib/analytics/track-engagement';
 
 const MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -29,13 +30,16 @@ export default function GoogleAnalytics() {
   }, [isPrivate]);
 
   // Server-rendered links can't take onClick, so they opt in with
-  // data-ga-event="name" (+ optional data-ga-agent) and one listener reports them.
+  // data-ga-event="name" (+ optional data-ga-agent) and one listener reports
+  // them: to GA4 when loaded, and funnel steps to first-party analytics always.
   useEffect(() => {
-    if (!MEASUREMENT_ID) return;
     const onClick = (event: MouseEvent) => {
       const target = (event.target as Element | null)?.closest<HTMLElement>('[data-ga-event]');
-      if (!target?.dataset.gaEvent) return;
-      trackGtagEvent(target.dataset.gaEvent, { agent_slug: target.dataset.gaAgent });
+      const name = target?.dataset.gaEvent;
+      if (!name) return;
+      const params = { agent_slug: target.dataset.gaAgent };
+      if (isFunnelEvent(name)) trackFunnelEvent(name, params);
+      else trackGtagEvent(name, params);
     };
     document.addEventListener('click', onClick, { capture: true });
     return () => document.removeEventListener('click', onClick, { capture: true });
