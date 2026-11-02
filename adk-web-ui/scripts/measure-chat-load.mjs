@@ -3,10 +3,14 @@
 //
 //   node scripts/measure-chat-load.mjs [baseUrl] [runs] [agent ...]
 //   PROFILE=mobile node scripts/measure-chat-load.mjs   (4x CPU, ~9 Mbps / 150 ms RTT)
+//   API_ORIGIN=https://agentdirectory.folch.ai node scripts/measure-chat-load.mjs http://localhost:3000
+//     serves pages and JS from a local build but sends /api/* GETs to API_ORIGIN, so two
+//     local builds can be compared against the real backend.
 //
 // Each run uses a fresh browser context (cold HTTP cache, no cookies), so the
 // numbers are a first visit. Reported per agent as the median of the runs:
-//   fcp       first contentful paint
+//   fp        first paint (the skeleton)
+//   fcp       first contentful paint (first text or image)
 //   composer  chat textarea present and enabled (the user can type and send)
 //   agent     agent name rendered in the chat header
 //   js        bytes of JavaScript transferred
@@ -17,6 +21,7 @@ const [baseUrl = 'https://agentdirectory.folch.ai', runsArg = '5', ...agentArgs]
 const runs = Number(runsArg);
 const agents = agentArgs.length ? agentArgs : ['exa_mcp_agent', 'reddit_scout_agent'];
 const mobile = process.env.PROFILE === 'mobile';
+const apiOrigin = process.env.API_ORIGIN;
 
 const median = (xs) => {
   const s = xs.filter((x) => x != null).sort((a, b) => a - b);
@@ -39,6 +44,16 @@ async function measureOnce(browser, agent) {
     });
   }
 
+  if (apiOrigin) {
+    await page.route('**/api/**', async (route) => {
+      const url = new URL(route.request().url());
+      // Don't record measurement visits in the real analytics.
+      if (route.request().method() !== 'GET') return route.fulfill({ status: 204 });
+      const response = await route.fetch({ url: apiOrigin + url.pathname + url.search });
+      await route.fulfill({ response });
+    });
+  }
+
   const t0 = Date.now();
   const api = {};
   let jsBytes = 0;
@@ -56,29 +71,30 @@ async function measureOnce(browser, agent) {
     }
   });
 
+  // Checked every frame in the page, so the times are paint-accurate (Playwright's
+  // own selector polling adds up to a few hundred ms under CPU throttling).
+  await page.addInitScript(() => {
+    window.__ready = {};
+    const tick = () => {
+      const ta = document.querySelector('textarea');
+      if (!window.__ready.composer && ta && !ta.disabled) window.__ready.composer = performance.now();
+      const h = document.querySelector('header button[aria-label^="Agent:"]');
+      if (!window.__ready.agent && h && !h.getAttribute('aria-label').includes('Loading')) window.__ready.agent = performance.now();
+      if (!(window.__ready.composer && window.__ready.agent) && performance.now() < 60000) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
   await page.goto(`${baseUrl}/chat?agent=${encodeURIComponent(agent)}`, { waitUntil: 'commit' });
-  const composer = page
-    .waitForSelector('textarea:not([disabled])', { timeout: 60000 })
-    .then(() => Date.now() - t0)
-    .catch(() => null);
-  const header = page
-    .waitForFunction(
-      () => {
-        const el = document.querySelector('header button[aria-label^="Agent:"]');
-        return el && !el.getAttribute('aria-label').includes('Loading');
-      },
-      null,
-      { timeout: 60000 },
-    )
-    .then(() => Date.now() - t0)
-    .catch(() => null);
-  const [composerMs, agentMs] = await Promise.all([composer, header]);
+  await page
+    .waitForFunction(() => window.__ready?.composer && window.__ready?.agent, null, { timeout: 60000, polling: 100 })
+    .catch(() => {});
+  const { composer: composerMs = null, agent: agentMs = null } = await page.evaluate(() => window.__ready ?? {});
   await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
-  const fcp = await page.evaluate(
-    () => performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? null,
+  const [fp, fcp] = await page.evaluate(() =>
+    ['first-paint', 'first-contentful-paint'].map((n) => performance.getEntriesByName(n)[0]?.startTime ?? null),
   );
   await context.close();
-  return { fcp, composer: composerMs, agent: agentMs, js: jsBytes, api };
+  return { fp, fcp, composer: composerMs, agent: agentMs, js: jsBytes, api };
 }
 
 const browser = await chromium.launch();
@@ -96,7 +112,7 @@ for (const agent of agents) {
     })
     .join(', ');
   console.log(
-    `${agent}: fcp=${median(results.map((r) => r.fcp))}ms composer=${median(results.map((r) => r.composer))}ms ` +
+    `${agent}: fp=${median(results.map((r) => r.fp))}ms fcp=${median(results.map((r) => r.fcp))}ms composer=${median(results.map((r) => r.composer))}ms ` +
       `agent=${median(results.map((r) => r.agent))}ms js=${Math.round(median(results.map((r) => r.js)) / 1024)}KB`,
   );
   console.log(`  raw composer: ${results.map((r) => r.composer).join(', ')}`);
