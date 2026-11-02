@@ -1,8 +1,11 @@
 import type { TimelineRange } from './timeline-range';
-import type { BotAgentStat, BotCompanyStat } from './bot-companies';
+import type { BotCategory } from './bots';
 import type { RankedStat } from './dashboard-math';
 
-export type { TimelineRange, BotAgentStat, BotCompanyStat, RankedStat };
+export type { TimelineRange, RankedStat };
+
+/** One crawler by name, most active first. */
+export type BotStat = { botName: string; category: BotCategory; count: number };
 
 /** Headline counts for one period. */
 export type PeriodTotals = { visits: number; peopleApprox: number; returning: number; bots: number };
@@ -38,11 +41,16 @@ export type PageviewStats = {
    * Same meaning as `humans` after the people-count fix.
    */
   visits: number;
-  /** Distinct `hashed_ip` among human page views — IP-based estimate, not people. */
+  /**
+   * Distinct `hashed_ip` among human page views, summed per UTC day (the hash
+   * key rotates daily, so one person on three days counts three times).
+   * Raw rows only: days already rolled up are not included.
+   */
   peopleApprox: number;
   /**
-   * Distinct `visitor_id` with more than one human page view — the consented /
-   * persistent `ad_vid` subset (ephemeral one-shot IDs never qualify).
+   * Consented visitors only: distinct `ad_vid` seen on two or more UTC days in
+   * the window. Without consent every hit gets a fresh id, so those visitors
+   * can never count as returning.
    */
   returning: number;
   /** Same counts for the preceding window of equal length; null for all-time. */
@@ -55,10 +63,8 @@ export type PageviewStats = {
   devices?: RankedStat[];
   /** Human visits only, top countries by volume. */
   topCountries: CountryStat[];
-  /** Crawlers rolled up to the company that operates them. */
-  botCompanies: BotCompanyStat[];
-  /** Individual crawler user agents, most active first. */
-  byBot: BotAgentStat[];
+  /** Individual crawlers, most active first. */
+  byBot: BotStat[];
   /** Consent-gated active use — empty until users Accept analytics. */
   topAgents: AgentEngagementStat[];
   /** Daily series for the requested timeline range. */

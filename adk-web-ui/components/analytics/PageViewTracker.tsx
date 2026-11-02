@@ -2,32 +2,38 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { hasAnalyticsConsent } from '@/lib/analytics/consent';
+import { readClientConsent } from '@/lib/analytics/consent-client';
+import { pageviewBeacon } from '@/lib/analytics/pageview-beacon';
+import { noteVisitPage } from '@/lib/analytics/visit-context';
 
 /**
  * Client beacon for App Router soft navigations (RSC fetches are ignored by middleware).
- * Server middleware covers full document loads + most bots.
+ * Server middleware covers full document loads + most bots, so the first
+ * render after a load is skipped. User id, IP and geo are derived on the server.
  */
 export default function PageViewTracker() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { data: session } = useSession();
   const lastKey = useRef<string | null>(null);
 
   useEffect(() => {
     if (!pathname) return;
 
+    noteVisitPage(pathname, hasAnalyticsConsent(readClientConsent()));
+
     const query = searchParams?.toString() || '';
-    const key = `${pathname}?${query}`;
-    if (lastKey.current === key) return;
-    lastKey.current = key;
+    const previous = lastKey.current;
+    const { send, nextKey } = pageviewBeacon(previous, `${pathname}?${query}`);
+    lastKey.current = nextKey;
+    if (!send || previous === null) return;
 
     const body = JSON.stringify({
       path: pathname,
       query: query ? `?${query}` : null,
-      referrer: typeof document !== 'undefined' ? document.referrer || null : null,
-      source: 'client',
-      userId: session?.user?.id ?? null,
+      // A soft navigation comes from our previous page, not document.referrer
+      // (that still names the site that started the visit).
+      referrer: `${window.location.origin}${previous.replace(/\?$/, '')}`,
       language:
         typeof navigator !== 'undefined' ? navigator.language || null : null,
     });
@@ -52,7 +58,7 @@ export default function PageViewTracker() {
     }).catch(() => {
       // analytics must never break UX
     });
-  }, [pathname, searchParams, session?.user?.id]);
+  }, [pathname, searchParams]);
 
   return null;
 }

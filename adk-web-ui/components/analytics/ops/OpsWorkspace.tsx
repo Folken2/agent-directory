@@ -121,7 +121,8 @@ export default function OpsWorkspace() {
       </div>
 
       <p className="mt-10 text-body-small text-md-on-surface-variant">
-        Topics, integrations and friction are keyword matches over message text; nothing is sent to a model.{' '}
+        Topics, integrations and friction are keyword matches over message text; nothing is sent to a model.
+        Message content is limited to the last 30 days whatever the range.{' '}
         <Link href="/privacy" className="text-md-primary hover:underline">
           Privacy notice
         </Link>

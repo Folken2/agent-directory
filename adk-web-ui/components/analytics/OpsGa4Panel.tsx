@@ -67,6 +67,9 @@ export default function OpsGa4Panel({ range }: { range: TimelineRange }) {
     };
   }, [range]);
 
+  // Hidden until GA4 is configured; Search Console covers acquisition meanwhile.
+  if (!loaded || !report?.configured) return null;
+
   return (
     <section className="rounded-2xl border border-md-outline/40 bg-md-surface px-5 py-6 sm:px-7 space-y-4">
       <div>
@@ -76,29 +79,14 @@ export default function OpsGa4Panel({ range }: { range: TimelineRange }) {
         </p>
       </div>
 
-      {!loaded && (
-        <p className="text-body-small text-md-on-surface-variant">Loading…</p>
-      )}
-
-      {loaded && report && !report.configured && (
-        <p className="text-body-small text-md-on-surface-variant">
-          {report.setupHint ??
-            'GA4 is not configured. Add GA4_PROPERTY_ID and GA4_SERVICE_ACCOUNT_JSON.'}
-        </p>
-      )}
-
-      {loaded && report?.configured && (
-        <>
-          <div className="grid sm:grid-cols-3 gap-6">
-            <DimTable title="Channel group" rows={report.channelGroup} />
-            <DimTable title="Device" rows={report.deviceCategory} />
-            <DimTable title="New vs returning" rows={report.newVsReturning} />
-          </div>
-          <p className="text-label-small text-md-on-surface-variant/70">
-            {report.disclaimer}
-          </p>
-        </>
-      )}
+      <div className="grid sm:grid-cols-3 gap-6">
+        <DimTable title="Channel group" rows={report.channelGroup} />
+        <DimTable title="Device" rows={report.deviceCategory} />
+        <DimTable title="New vs returning" rows={report.newVsReturning} />
+      </div>
+      <p className="text-label-small text-md-on-surface-variant/70">
+        {report.disclaimer}
+      </p>
     </section>
   );
 }

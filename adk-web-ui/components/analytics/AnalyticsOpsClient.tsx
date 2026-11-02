@@ -5,12 +5,14 @@ import type { OpsDashboardSnapshot } from '@/lib/analytics/ops-types';
 import type { TimelineRange } from '@/lib/analytics/timeline-range';
 import OpsSignals from '@/components/analytics/OpsSignals';
 import OpsExplorer from '@/components/analytics/OpsExplorer';
+import OpsFunnelPanel from '@/components/analytics/OpsFunnelPanel';
 import OpsGa4Panel from '@/components/analytics/OpsGa4Panel';
+import OpsSearchConsolePanel from '@/components/analytics/OpsSearchConsolePanel';
 import { ListSkeleton } from '@/components/layout/PageSkeletons';
 
 type Loaded = { range: TimelineRange; data: OpsDashboardSnapshot | null; error: 'not_found' | 'unavailable' | null };
 
-/** Signals, the Explorer tables and GA4, for the range the ops page picked. */
+/** Signals, the goal funnel, the Explorer tables, Search Console and (when configured) GA4. */
 export default function AnalyticsOpsClient({ range }: { range: TimelineRange }) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
 
@@ -46,6 +48,7 @@ export default function AnalyticsOpsClient({ range }: { range: TimelineRange }) 
   return (
     <div className={loaded.range !== range ? 'space-y-10 opacity-60 transition-opacity' : 'space-y-10'}>
       <OpsSignals signals={data.signals} />
+      <OpsFunnelPanel funnel={data.funnel} />
       <OpsExplorer
         range={range}
         agents={data.agents}
@@ -53,8 +56,8 @@ export default function AnalyticsOpsClient({ range }: { range: TimelineRange }) 
         pages={data.pages}
         missing={data.missing}
         quality={data.quality}
-        themes={data.themes}
       />
+      <OpsSearchConsolePanel />
       <OpsGa4Panel range={range} />
     </div>
   );

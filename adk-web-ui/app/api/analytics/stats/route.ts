@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { isAnalyticsOpsEmail } from '@/lib/analytics/ops-access';
 import { emptyPageviewStats, getPageviewStats } from '@/lib/analytics/stats';
 import { parseTimelineRange } from '@/lib/analytics/timeline-range';
 
@@ -7,6 +9,11 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  const session = await auth();
+  if (!isAnalyticsOpsEmail(session?.user?.email)) {
+    return NextResponse.json({ ok: false }, { status: 404 });
+  }
+
   const range = parseTimelineRange(request.nextUrl.searchParams.get('range'));
   try {
     const stats = (await getPageviewStats(range)) ?? emptyPageviewStats(range);

@@ -6,8 +6,6 @@ import type {
   AgentUsageRow,
   MissingPathRow,
   PageUsageRow,
-  PromptTheme,
-  PromptThemes,
   SignedInUserRow,
   TrafficQuality,
 } from '@/lib/analytics/ops-types';
@@ -29,7 +27,6 @@ type Props = {
   pages: PageUsageRow[];
   missing: MissingPathRow[];
   quality: TrafficQuality;
-  themes: PromptThemes;
 };
 
 function formatCount(n: number): string {
@@ -40,31 +37,6 @@ function pct(n: number): string {
   return `${Math.round(n * 100)}%`;
 }
 
-function ThemeList({ themes }: { themes: PromptTheme[] }) {
-  if (themes.length === 0) {
-    return (
-      <p className="text-body-small text-md-on-surface-variant">
-        No themes above the minimum threshold.
-      </p>
-    );
-  }
-  return (
-    <ul className="space-y-2">
-      {themes.map((t) => (
-        <li
-          key={t.term}
-          className="flex items-baseline justify-between gap-4 text-sm"
-        >
-          <span className="text-md-on-surface font-medium">&ldquo;{t.term}&rdquo;</span>
-          <span className="text-md-on-surface-variant tabular-nums shrink-0">
-            {t.prompts} prompts · {t.agents.map((a) => a.agentSlug).slice(0, 3).join(', ')}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export default function OpsExplorer({
   range,
   onRangeChange,
@@ -73,10 +45,8 @@ export default function OpsExplorer({
   pages,
   missing,
   quality,
-  themes,
 }: Props) {
   const [tab, setTab] = useState<Tab>('users');
-  const [rawMode, setRawMode] = useState(false);
   const [rawPrompts, setRawPrompts] = useState<RawPrompt[]>([]);
   const [rawTotal, setRawTotal] = useState(0);
   const [rawLoading, setRawLoading] = useState(false);
@@ -102,10 +72,10 @@ export default function OpsExplorer({
   }, [range]);
 
   useEffect(() => {
-    if (rawMode && tab === 'prompts') {
+    if (tab === 'prompts') {
       void loadRaw();
     }
-  }, [rawMode, tab, loadRaw]);
+  }, [tab, loadRaw]);
 
   const agentCols: OpsTableColumn<AgentUsageRow>[] = useMemo(
     () => [
@@ -379,50 +349,7 @@ export default function OpsExplorer({
 
       {tab === 'prompts' && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setRawMode(false)}
-              className={`text-label-small px-2.5 py-1 rounded-md ${
-                !rawMode
-                  ? 'bg-md-surface-container text-md-on-surface'
-                  : 'text-md-on-surface-variant'
-              }`}
-            >
-              Themes
-            </button>
-            <button
-              type="button"
-              onClick={() => setRawMode(true)}
-              className={`text-label-small px-2.5 py-1 rounded-md ${
-                rawMode
-                  ? 'bg-md-surface-container text-md-on-surface'
-                  : 'text-md-on-surface-variant'
-              }`}
-            >
-              Raw text
-            </button>
-          </div>
-          {!rawMode ? (
-            <div className="grid md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-label-medium text-md-on-surface mb-3">
-                  Bigrams
-                </h3>
-                <ThemeList themes={themes.bigrams} />
-              </div>
-              <div>
-                <h3 className="text-label-medium text-md-on-surface mb-3">
-                  Unigrams
-                </h3>
-                <ThemeList themes={themes.unigrams} />
-              </div>
-              <p className="md:col-span-2 text-label-small text-md-on-surface-variant">
-                {themes.distinctOrganicPrompts} distinct organic ·{' '}
-                {themes.samplePrompts} catalog samples excluded
-              </p>
-            </div>
-          ) : rawLoading ? (
+          {rawLoading ? (
             <p className="text-body-small text-md-on-surface-variant">Loading…</p>
           ) : (
             <div className="space-y-2">

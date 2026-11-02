@@ -1,6 +1,7 @@
 /** Shared client fetch for live visit stats (bypass browser HTTP cache). */
 import type { PageviewStats } from '@/lib/analytics/stats-types';
 import type { TimelineRange } from '@/lib/analytics/timeline-range';
+import { botCategoryForName } from './bots';
 import demoStats30 from './demo-stats-30.json';
 
 export type StatsResponse = { ok?: boolean; stats?: PageviewStats };
@@ -12,7 +13,16 @@ function isDemoMode(): boolean {
 }
 
 function demoStats(range: TimelineRange): PageviewStats {
-  const base = (demoStats30 as StatsResponse).stats!;
+  // The snapshot predates the crawler list without the company catalogue.
+  const raw = (demoStats30 as unknown as StatsResponse).stats!;
+  const base: PageviewStats = {
+    ...raw,
+    byBot: (raw.byBot ?? []).map((b) => ({
+      botName: b.botName,
+      count: b.count,
+      category: botCategoryForName(b.botName),
+    })),
+  };
   const timeline = base.timeline ?? [];
   if (range === '30') {
     return { ...base, timelineRange: '30' };

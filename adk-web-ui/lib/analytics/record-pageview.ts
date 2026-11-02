@@ -1,4 +1,3 @@
-import { revalidateTag } from 'next/cache';
 import { and, eq, gte } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { pageViews, type NewPageView } from '@/lib/drizzle/schema/page-views';
@@ -6,16 +5,14 @@ import { identifyBot } from './bots';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 import { extractClientIp, hashIp } from './hash-ip';
-import { resolveGeo } from './geo';
+import { resolveGeo, type Geo } from './geo';
 import { parseUserAgent } from './parse-ua';
+import { bustStatsCache } from './stats-cache';
 import {
   extractUtm,
   sanitizeQuery,
   shouldTrackPath,
 } from './should-track';
-
-/** Must match the tag on `getPageviewStats` in stats.ts. */
-const PAGEVIEW_STATS_TAG = 'pageview-stats';
 
 const DEDUPE_WINDOW_MS = 5_000;
 
@@ -28,9 +25,14 @@ export type PageviewInput = {
   userAgent?: string | null;
   language?: string | null;
   source: 'server' | 'client';
-  country?: string | null;
-  region?: string | null;
-  city?: string | null;
+  /**
+   * Visitor IP and geo, derived on the server (never from the request body).
+   * Omit to read them from `headers`.
+   */
+  clientIp?: string | null;
+  geo?: Geo | null;
+  /** Analytics consent: only then are user_id and city stored. */
+  consented?: boolean;
   headers?: Headers;
   force?: boolean;
 };
@@ -38,6 +40,14 @@ export type PageviewInput = {
 function truncate(value: string | null | undefined, max: number): string | null {
   if (!value) return null;
   return value.length > max ? value.slice(0, max) : value;
+}
+
+function safeDecode(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
 }
 
 export async function recordPageview(input: PageviewInput): Promise<{
@@ -77,16 +87,14 @@ export async function recordPageview(input: PageviewInput): Promise<{
   const query = sanitizeQuery(input.query ?? '');
   const utm = extractUtm(input.query ?? query);
 
-  const ip = headers ? extractClientIp(headers) : null;
-  const geo =
-    input.country || input.region || input.city
-      ? { country: input.country ?? null, region: input.region ?? null, city: input.city ?? null }
-      : headers
-        ? await resolveGeo(headers, ip)
-        : { country: null, region: null, city: null };
+  const ip = input.clientIp !== undefined ? input.clientIp : headers ? extractClientIp(headers) : null;
+  const geo: Geo =
+    input.geo ??
+    (headers ? await resolveGeo(headers, ip) : { country: null, region: null, city: null });
   const country = geo.country;
   const region = geo.region;
-  const city = geo.city;
+  // City is finer than "approximate location": consented visitors only.
+  const city = input.consented ? geo.city : null;
 
   const hashedIp = hashIp(ip);
 
@@ -96,10 +104,10 @@ export async function recordPageview(input: PageviewInput): Promise<{
     referrer: truncate(input.referrer, 2048),
     country: truncate(country, 8),
     region: truncate(region, 64),
-    city: truncate(city ? decodeURIComponent(city) : null, 128),
+    city: truncate(city ? safeDecode(city) : null, 128),
     hashedIp,
     visitorId: input.visitorId,
-    userId: input.userId ?? null,
+    userId: input.consented ? (input.userId ?? null) : null,
     userAgent,
     isBot: bot.isBot,
     botName: bot.botName,
@@ -139,12 +147,7 @@ export async function recordPageview(input: PageviewInput): Promise<{
     }
 
     const inserted = await db.insert(pageViews).values(row).returning({ id: pageViews.id });
-    // Bust the stats cache so homepage pill /analytics show the new visit.
-    try {
-      revalidateTag(PAGEVIEW_STATS_TAG, 'max');
-    } catch (error) {
-      console.warn('[analytics] stats cache revalidate failed', error);
-    }
+    if (!bot.isBot) bustStatsCache();
     return { recorded: true, id: inserted[0]?.id };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);

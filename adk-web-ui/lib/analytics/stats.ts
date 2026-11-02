@@ -2,16 +2,11 @@ import { unstable_cache } from 'next/cache';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { engagementEvents } from '@/lib/drizzle/schema/engagement-events';
-import {
-  rollUpBotCompanies,
-  toBotAgentStat,
-  type BotAgentStat,
-  type BotCompanyStat,
-} from './bot-companies';
 import { countryFlag, countryName } from './countries';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
-import { resolveStoredBotName } from './bots';
+import { botCategoryForName, resolveStoredBotName } from './bots';
+import { countReturningVisitors } from './returning';
 import { isPageView, normalizePath } from './path-classify';
 import { unwrapExecuteRows } from '@/lib/drizzle/unwrap-rows';
 import {
@@ -21,6 +16,7 @@ import {
 import {
   formatActiveLabel,
   type AgentEngagementStat,
+  type BotStat,
   type CountryStat,
   type PageviewStats,
   type PeriodTotals,
@@ -39,8 +35,7 @@ export const TOP_SOURCES = 6;
 export type { TimelineRange };
 export type {
   AgentEngagementStat,
-  BotAgentStat,
-  BotCompanyStat,
+  BotStat,
   CountryStat,
   PageviewStats,
   TimelineDay,
@@ -59,7 +54,6 @@ const EMPTY: PageviewStats = {
   topPages: [],
   topSources: [],
   devices: [],
-  botCompanies: [],
   byBot: [],
   topAgents: [],
   timeline: [],
@@ -119,9 +113,23 @@ function fillTimeline(
 /** Half-open [from, to) window in ISO strings; null bounds are open. */
 type Window = { from: string | null; to: string | null };
 
+/**
+ * All-time never scans raw rows further back than this. The retention job
+ * keeps raw rows to 90 days and older days live in `page_view_daily`; this
+ * only matters if the job has not run.
+ */
+const ALL_TIME_RAW_DAYS = 400;
+/** Row caps for the grouped queries: far above today's volume, a ceiling if it grows. */
+const GROUP_LIMIT = 20_000;
+
 function windowFor(range: TimelineRange, now = new Date()): { current: Window; previous: Window | null } {
   const days = timelineRangeDays(range);
-  if (days === null) return { current: { from: null, to: null }, previous: null };
+  if (days === null) {
+    const floor = new Date(now);
+    floor.setUTCHours(0, 0, 0, 0);
+    floor.setUTCDate(floor.getUTCDate() - ALL_TIME_RAW_DAYS);
+    return { current: { from: floor.toISOString(), to: null }, previous: null };
+  }
   const start = new Date(now);
   start.setUTCHours(0, 0, 0, 0);
   start.setUTCDate(start.getUTCDate() - (days - 1));
@@ -144,6 +152,32 @@ function whereIn(w: Window, extra?: ReturnType<typeof sql>) {
 
 const HUMAN = sql`coalesce(is_bot, false) = false`;
 
+/**
+ * Same window over the daily roll-ups. Rolled-up days are deleted from the raw
+ * tables, so the two never overlap and can be summed. All-time has no floor
+ * here: the roll-up is small.
+ */
+function rollupWhere(range: TimelineRange, w: Window, extra?: ReturnType<typeof sql>) {
+  const parts = [
+    w.from && timelineRangeDays(range) !== null ? sql`day >= ${w.from.slice(0, 10)}::date` : null,
+    w.to ? sql`day < ${w.to.slice(0, 10)}::date` : null,
+    extra ?? null,
+  ].filter((p): p is ReturnType<typeof sql> => p !== null);
+  return parts.length ? sql`WHERE ${sql.join(parts, sql` AND `)}` : sql``;
+}
+
+let rollupTableCache: { value: boolean; at: number } | null = null;
+
+/** Whether migration 0016 has been applied; queries skip the roll-up until it is. */
+async function hasRollupTables(): Promise<boolean> {
+  if (rollupTableCache && Date.now() - rollupTableCache.at < 10 * 60 * 1000) return rollupTableCache.value;
+  const rows = unwrapExecuteRows<{ exists: boolean }>(
+    await db.execute(sql`SELECT to_regclass('page_view_daily') IS NOT NULL AS exists`)
+  );
+  rollupTableCache = { value: Boolean(rows[0]?.exists), at: Date.now() };
+  return rollupTableCache.value;
+}
+
 /** Hosts whose referrers count as internal navigation, not a traffic source. */
 function ownHosts(): string[] {
   const hosts = ['localhost', '127.0.0.1'];
@@ -159,7 +193,7 @@ function ownHosts(): string[] {
 }
 
 /** Headline counts for one window (used for the current and the previous period). */
-async function windowTotals(w: Window): Promise<PeriodTotals> {
+async function windowTotals(range: TimelineRange, w: Window, rollups: boolean): Promise<PeriodTotals> {
   const pathRows = unwrapExecuteRows<{ path: string; humans: number; bots: number }>(
     await db.execute(sql`
       SELECT path,
@@ -167,40 +201,57 @@ async function windowTotals(w: Window): Promise<PeriodTotals> {
         count(*) FILTER (WHERE is_bot = true)::int AS bots
       FROM page_views ${whereIn(w)}
       GROUP BY path
+      LIMIT ${GROUP_LIMIT}
     `)
   );
+  const rolledRows = rollups
+    ? unwrapExecuteRows<{ path: string; humans: number; bots: number }>(
+        await db.execute(sql`
+          SELECT path,
+            coalesce(sum(views) FILTER (WHERE NOT is_bot), 0)::int AS humans,
+            coalesce(sum(views) FILTER (WHERE is_bot), 0)::int AS bots
+          FROM page_view_daily ${rollupWhere(range, w)}
+          GROUP BY path
+          LIMIT ${GROUP_LIMIT}
+        `)
+      )
+    : [];
   let visits = 0;
   let crawls = 0;
-  for (const row of pathRows) {
+  for (const row of [...pathRows, ...rolledRows]) {
     crawls += Number(row.bots);
     if (isPageView(normalizePath(row.path))) visits += Number(row.humans);
   }
 
-  // Distinct hashed_ip on real pages only (IP-based people estimate).
-  const ipRows = unwrapExecuteRows<{ hashed_ip: string; path: string }>(
+  // Distinct hashed_ip per UTC day on real pages (the hash key rotates daily).
+  const ipRows = unwrapExecuteRows<{ day: string; hashed_ip: string; path: string }>(
     await db.execute(sql`
-      SELECT DISTINCT hashed_ip, path FROM page_views
+      SELECT DISTINCT to_char((created_at AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD') AS day, hashed_ip, path
+      FROM page_views
       ${whereIn(w, sql`${HUMAN} AND hashed_ip IS NOT NULL`)}
+      LIMIT ${GROUP_LIMIT}
     `)
   );
   const people = new Set<string>();
-  for (const row of ipRows) if (isPageView(row.path)) people.add(row.hashed_ip);
+  for (const row of ipRows) if (isPageView(row.path)) people.add(`${row.day}|${row.hashed_ip}`);
 
-  // Returning = persistent visitor_id with >1 human page view in the window.
-  const visitorRows = unwrapExecuteRows<{ visitor_id: string; path: string; hits: number }>(
+  // Returning = consented visitor seen on 2+ distinct days. Only ids with more
+  // than one row can qualify, which drops every cookieless one-shot id in SQL.
+  const visitorDays = unwrapExecuteRows<{ visitor_id: string; day: string }>(
     await db.execute(sql`
-      SELECT visitor_id, path, count(*)::int AS hits FROM page_views
-      ${whereIn(w, HUMAN)}
-      GROUP BY visitor_id, path
+      SELECT visitor_id, to_char((created_at AT TIME ZONE 'UTC')::date, 'YYYY-MM-DD') AS day
+      FROM page_views
+      ${whereIn(w, sql`${HUMAN} AND visitor_id IN (
+        SELECT visitor_id FROM page_views ${whereIn(w, HUMAN)}
+        GROUP BY visitor_id HAVING count(DISTINCT (created_at AT TIME ZONE 'UTC')::date) >= 2
+      )`)}
+      GROUP BY 1, 2
+      LIMIT ${GROUP_LIMIT}
     `)
   );
-  const hitsByVisitor = new Map<string, number>();
-  for (const row of visitorRows) {
-    if (!isPageView(row.path)) continue;
-    hitsByVisitor.set(row.visitor_id, (hitsByVisitor.get(row.visitor_id) ?? 0) + Number(row.hits));
-  }
-  let returning = 0;
-  for (const hits of hitsByVisitor.values()) if (hits > 1) returning++;
+  const returning = countReturningVisitors(
+    visitorDays.map((r) => ({ visitorId: r.visitor_id, day: String(r.day) }))
+  );
 
   return { visits, peopleApprox: people.size, returning, bots: crawls };
 }
@@ -213,10 +264,11 @@ async function fetchPageviewStatsUncached(
   try {
     await ensurePageViewsSchema();
     const { current, previous } = windowFor(range);
+    const rollups = await hasRollupTables();
 
     const [totals, previousTotals] = await Promise.all([
-      windowTotals(current),
-      previous ? windowTotals(previous) : Promise.resolve(null),
+      windowTotals(range, current, rollups),
+      previous ? windowTotals(range, previous, rollups) : Promise.resolve(null),
     ]);
 
     // Human breakdowns in one pass: path × country × device × referrer host.
@@ -237,8 +289,23 @@ async function fetchPageviewStatsUncached(
         FROM page_views
         ${whereIn(current, HUMAN)}
         GROUP BY 1, 2, 3, 4
+        LIMIT ${GROUP_LIMIT}
       `)
     );
+    if (rollups) {
+      humanRows.push(
+        ...unwrapExecuteRows<(typeof humanRows)[number]>(
+          await db.execute(sql`
+            SELECT path, coalesce(nullif(country, ''), 'ZZ') AS country,
+              coalesce(nullif(device_type, ''), 'unknown') AS device,
+              nullif(ref_host, '') AS ref_host, sum(views)::int AS hits
+            FROM page_view_daily ${rollupWhere(range, current, sql`NOT is_bot`)}
+            GROUP BY 1, 2, 3, 4
+            LIMIT ${GROUP_LIMIT}
+          `)
+        )
+      );
+    }
 
     const countryCounts = new Map<string, number>();
     const pageCounts = new Map<string, number>();
@@ -280,6 +347,18 @@ async function fetchPageviewStatsUncached(
       const name = resolveStoredBotName(row.bot_name, row.user_agent);
       botCounts.set(name, (botCounts.get(name) ?? 0) + Number(row.count));
     }
+    if (rollups) {
+      const rolledBots = unwrapExecuteRows<{ bot_name: string; count: number }>(
+        await db.execute(sql`
+          SELECT coalesce(nullif(bot_name, ''), 'UnknownBot') AS bot_name, sum(views)::int AS count
+          FROM page_view_daily ${rollupWhere(range, current, sql`is_bot`)}
+          GROUP BY 1 ORDER BY 2 DESC LIMIT 500
+        `)
+      );
+      for (const row of rolledBots) {
+        botCounts.set(row.bot_name, (botCounts.get(row.bot_name) ?? 0) + Number(row.count));
+      }
+    }
     const byBotSorted = [...botCounts.entries()]
       .sort((a, b) => b[1] - a[1])
       .slice(0, 100);
@@ -303,8 +382,24 @@ async function fetchPageviewStatsUncached(
         ${whereIn(current)}
         GROUP BY (created_at AT TIME ZONE 'UTC')::date, path
         ORDER BY (created_at AT TIME ZONE 'UTC')::date ASC
+        LIMIT ${GROUP_LIMIT}
       `)
     );
+    if (rollups) {
+      byDayRaw.push(
+        ...unwrapExecuteRows<(typeof byDayRaw)[number]>(
+          await db.execute(sql`
+            SELECT to_char(day, 'YYYY-MM-DD') AS day, path,
+              sum(views)::int AS total,
+              coalesce(sum(views) FILTER (WHERE NOT is_bot), 0)::int AS humans,
+              coalesce(sum(views) FILTER (WHERE is_bot), 0)::int AS bots
+            FROM page_view_daily ${rollupWhere(range, current)}
+            GROUP BY day, path
+            LIMIT ${GROUP_LIMIT}
+          `)
+        )
+      );
+    }
 
     // Daily human visits count real pages only; crawls count every bot hit,
     // matching the crawler total.
@@ -345,9 +440,11 @@ async function fetchPageviewStatsUncached(
       timeline = fillTimeline(buildTimelineBetween(days[0], today), byDayMap);
     }
 
-    const agents: BotAgentStat[] = byBotSorted.map(([botName, count]) =>
-      toBotAgentStat(botName, count)
-    );
+    const agents: BotStat[] = byBotSorted.map(([botName, count]) => ({
+      botName,
+      category: botCategoryForName(botName),
+      count,
+    }));
 
     const visits = totals.visits;
     const topCountries = [...countryCounts.entries()]
@@ -382,7 +479,6 @@ async function fetchPageviewStatsUncached(
         [...deviceCounts.entries()].map(([id, count]) => ({ id, label: deviceLabel(id), count })),
         4,
       ),
-      botCompanies: rollUpBotCompanies(agents, botTotal),
       byBot: agents,
       topAgents: topAgentRows
         .map((r) => ({
@@ -407,13 +503,13 @@ function deviceLabel(id: string): string {
 
 const getCachedPageviewStats = unstable_cache(
   async (range: TimelineRange) => fetchPageviewStatsUncached(range),
-  ['pageview-stats-v9'],
+  ['pageview-stats-v10'],
   { revalidate: 15, tags: ['pageview-stats'] }
 );
 
 /**
- * Short TTL plus `revalidateTag('pageview-stats')` on each recorded visit.
- * Keeps the homepage pill / analytics page from serving a minute-old total.
+ * Short TTL plus a debounced `revalidateTag('pageview-stats')` after human
+ * hits (lib/analytics/stats-cache.ts).
  * Every figure is scoped to `range`; `previous` holds the same counts for the
  * preceding window of equal length (null for all-time).
  */

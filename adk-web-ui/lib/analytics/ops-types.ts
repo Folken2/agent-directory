@@ -3,6 +3,7 @@
  */
 
 import type { TimelineRange } from './timeline-range';
+import type { GoalFunnel } from './funnel';
 import type { OpsSignal } from './signals';
 import type {
   AgentHealthRow,
@@ -61,21 +62,6 @@ export type TrafficQuality = {
   botPageViews: number;
 };
 
-export type PromptTheme = {
-  term: string;
-  prompts: number;
-  agents: { agentSlug: string; prompts: number }[];
-};
-
-export type PromptThemes = {
-  totalPrompts: number;
-  samplePrompts: number;
-  organicPrompts: number;
-  distinctOrganicPrompts: number;
-  unigrams: PromptTheme[];
-  bigrams: PromptTheme[];
-};
-
 /** Google-signed-in account plus usage in the selected ops range. */
 export type SignedInUserRow = {
   id: string;
@@ -100,7 +86,7 @@ export type OpsDashboardSnapshot = {
   pages: PageUsageRow[];
   missing: MissingPathRow[];
   quality: TrafficQuality;
-  themes: PromptThemes;
+  funnel: GoalFunnel;
   pageViewsSince: string | null;
   signals: OpsSignal[];
   catalogSlugs: string[];

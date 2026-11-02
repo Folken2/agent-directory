@@ -1,14 +1,11 @@
-import { revalidateTag } from 'next/cache';
 import { db } from '@/lib/drizzle/db';
 import { engagementEvents, type NewEngagementEvent } from '@/lib/drizzle/schema/engagement-events';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensureEngagementSchema } from './ensure-schema';
+import type { EngagementEventType } from './engagement-input';
+import { bustStatsCache } from './stats-cache';
 
-export type EngagementEventType =
-  | 'agent_open'
-  | 'message_sent'
-  | 'tool_call'
-  | 'heartbeat';
+export type { EngagementEventType } from './engagement-input';
 
 export type EngagementInput = {
   visitorId: string;
@@ -57,11 +54,8 @@ export async function recordEngagement(input: EngagementInput): Promise<{
       .insert(engagementEvents)
       .values(row)
       .returning({ id: engagementEvents.id });
-    try {
-      revalidateTag('pageview-stats', 'max');
-    } catch {
-      // ignore cache bust failures
-    }
+    // Heartbeats arrive every 30 s per open tab; they must not churn the cache.
+    if (input.eventType !== 'heartbeat') bustStatsCache();
     return { recorded: true, id: inserted[0]?.id };
   } catch (error) {
     console.error('[analytics] failed to record engagement', error);
