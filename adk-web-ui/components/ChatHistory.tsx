@@ -6,7 +6,8 @@ import { useSession } from 'next-auth/react';
 import { useAppStore } from '@/lib/store';
 import { newConversationId, toConversationId } from '@/lib/ids';
 import { ChatConversation } from '@/lib/types';
-import { Plus, MessageSquare, Loader2 } from 'lucide-react';
+import { Plus, MessageSquare, Loader2, Trash2 } from 'lucide-react';
+import { DeleteChatsDialog, type DeleteTarget } from '@/components/DeleteChats';
 import { cn } from '@/lib/utils';
 import type { ChatSessionSummary } from '@/lib/sessions';
 
@@ -42,6 +43,9 @@ export default function ChatHistory() {
 
   const [dbSessions, setDbSessions] = useState<ChatSessionSummary[]>([]);
   const [loadingDb, setLoadingDb] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<DeleteTarget | null>(null);
+  // Bumped after "Delete all" so the list is re-read: the server may keep some.
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Per-agent DB sessions for authenticated users. Filtered server-side, so
   // there's no cross-agent leakage and the list survives page refreshes.
@@ -67,7 +71,7 @@ export default function ChatHistory() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthed, selectedAgent?.name, currentConversation?.id]);
+  }, [isAuthed, selectedAgent?.name, currentConversation?.id, reloadKey]);
 
   const handleNewChat = () => {
     if (!selectedAgent) return;
@@ -80,6 +84,20 @@ export default function ChatHistory() {
       updatedAt: new Date(),
     };
     setCurrentConversation(newConv);
+  };
+
+  const handleDeleted = (target: DeleteTarget) => {
+    const deletedActive =
+      target === 'all'
+        ? dbSessions.some((s) => currentConversation?.id === toConversationId(s.sessionId))
+        : currentConversation?.id === toConversationId(target);
+    if (target === 'all') setReloadKey((k) => k + 1);
+    else setDbSessions((prev) => prev.filter((s) => s.sessionId !== target));
+    setPendingDelete(null);
+    if (deletedActive && selectedAgent) {
+      router.replace(`/chat?agent=${encodeURIComponent(selectedAgent.name)}`);
+      handleNewChat();
+    }
   };
 
   // Anonymous users see only the currently active chat — there's no history
@@ -133,36 +151,53 @@ export default function ChatHistory() {
                 {dbSessions.map((s) => {
                   const isActive = currentConversation?.id === toConversationId(s.sessionId);
                   return (
-                    <button
-                      key={s.sessionId}
-                      onClick={() =>
-                        router.push(
-                          `/chat?agent=${encodeURIComponent(s.agentSlug)}&session=${encodeURIComponent(s.sessionId)}`,
-                        )
-                      }
-                      className={cn(
-                        'group w-full px-3 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2',
-                        isActive
-                          ? 'bg-md-surface-container text-md-on-surface'
-                          : 'hover:bg-md-surface-container/60 text-md-on-surface-variant hover:text-md-on-surface',
-                      )}
-                    >
-                      <span className="flex-1 text-[13px] leading-snug truncate">
-                        {truncate(s.firstMessage)}
-                      </span>
-                      <span
+                    <div key={s.sessionId} className="group relative">
+                      <button
+                        onClick={() =>
+                          router.push(
+                            `/chat?agent=${encodeURIComponent(s.agentSlug)}&session=${encodeURIComponent(s.sessionId)}`,
+                          )
+                        }
                         className={cn(
-                          'shrink-0 text-[10px] tabular-nums transition-opacity',
+                          'w-full pl-3 pr-10 py-2.5 text-left rounded-lg transition-colors flex items-baseline gap-2',
                           isActive
-                            ? 'text-md-on-surface-variant'
-                            : 'text-md-on-surface-variant/60 opacity-0 group-hover:opacity-100',
+                            ? 'bg-md-surface-container text-md-on-surface'
+                            : 'hover:bg-md-surface-container/60 text-md-on-surface-variant hover:text-md-on-surface',
                         )}
                       >
-                        {formatRelative(new Date(s.lastActivityAt))}
-                      </span>
-                    </button>
+                        <span className="flex-1 text-[13px] leading-snug truncate">
+                          {truncate(s.firstMessage)}
+                        </span>
+                        <span
+                          className={cn(
+                            'shrink-0 text-[10px] tabular-nums transition-opacity',
+                            isActive
+                              ? 'text-md-on-surface-variant'
+                              : 'text-md-on-surface-variant/60 opacity-0 group-hover:opacity-100',
+                          )}
+                        >
+                          {formatRelative(new Date(s.lastActivityAt))}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Delete chat: ${truncate(s.firstMessage)}`}
+                        title="Delete chat"
+                        onClick={() => setPendingDelete(s.sessionId)}
+                        className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center rounded-full text-md-on-surface-variant opacity-0 transition-opacity hover:bg-md-on-surface/8 hover:text-md-error focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary group-hover:opacity-100 [@media(hover:none)]:opacity-100"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   );
                 })}
+                <button
+                  type="button"
+                  onClick={() => setPendingDelete('all')}
+                  className="mt-3 w-full px-3 py-2 text-left rounded-lg text-[12px] text-md-on-surface-variant hover:text-md-error hover:bg-md-surface-container/60 transition-colors"
+                >
+                  Delete all chats
+                </button>
               </div>
             )}
           </>
@@ -196,6 +231,12 @@ export default function ChatHistory() {
           </>
         )}
       </div>
+
+      <DeleteChatsDialog
+        target={pendingDelete}
+        onClose={() => setPendingDelete(null)}
+        onDeleted={handleDeleted}
+      />
     </div>
   );
 }

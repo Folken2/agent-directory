@@ -9,6 +9,7 @@ import { panelClass } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { Page, PageHeader } from '@/components/layout/Page';
 import AgentLogo from '@/components/agent/AgentLogo';
+import { DeleteAllChatsButton, DeleteChatButton } from '@/components/DeleteChats';
 
 export const dynamic = 'force-dynamic';
 
@@ -97,7 +98,11 @@ export default async function MySessionsPage() {
 
   return (
     <Page>
-      <PageHeader title="Chat history" description={historySummary(sessions, uniqueSlugs.length)} />
+      <PageHeader
+        title="Chat history"
+        description={historySummary(sessions, uniqueSlugs.length)}
+        actions={sessions.length > 0 ? <DeleteAllChatsButton /> : undefined}
+      />
       <div className="max-w-3xl">
         {sessions.length === 0 ? (
           <EmptyState />
@@ -194,25 +199,32 @@ function SessionRow({
   const preview = truncate(session.firstMessage);
 
   return (
-    <Link
-      href={`/chat?agent=${encodeURIComponent(session.agentSlug)}&session=${encodeURIComponent(session.sessionId)}`}
-      className="flex gap-4 px-5 py-4 transition-colors hover:bg-md-on-surface/4 focus-visible:bg-md-on-surface/8 focus-visible:outline-none"
-    >
-      <AgentLogo src={meta?.logo} name={displayName} size="sm" />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="truncate text-title-small text-md-on-surface">{displayName}</span>
-          <span className="shrink-0 text-label-medium tabular-nums text-md-on-surface-variant">
-            {relativeTime(session.lastActivityAt)}
-          </span>
+    <div className="relative">
+      <Link
+        href={`/chat?agent=${encodeURIComponent(session.agentSlug)}&session=${encodeURIComponent(session.sessionId)}`}
+        className="flex gap-4 py-4 pl-5 pr-16 transition-colors hover:bg-md-on-surface/4 focus-visible:bg-md-on-surface/8 focus-visible:outline-none"
+      >
+        <AgentLogo src={meta?.logo} name={displayName} size="sm" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="truncate text-title-small text-md-on-surface">{displayName}</span>
+            <span className="shrink-0 text-label-medium tabular-nums text-md-on-surface-variant">
+              {relativeTime(session.lastActivityAt)}
+            </span>
+          </div>
+          <p className="mt-0.5 line-clamp-1 text-body-medium text-md-on-surface-variant">
+            {preview || 'No text'}
+          </p>
+          <p className="mt-1 text-label-medium text-md-on-surface-variant">
+            {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
+          </p>
         </div>
-        <p className="mt-0.5 line-clamp-1 text-body-medium text-md-on-surface-variant">
-          {preview || 'No text'}
-        </p>
-        <p className="mt-1 text-label-medium text-md-on-surface-variant">
-          {session.messageCount} {session.messageCount === 1 ? 'message' : 'messages'}
-        </p>
-      </div>
-    </Link>
+      </Link>
+      <DeleteChatButton
+        sessionId={session.sessionId}
+        label={preview || displayName}
+        className="absolute right-3 top-1/2 -translate-y-1/2"
+      />
+    </div>
   );
 }

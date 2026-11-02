@@ -56,9 +56,10 @@ export default function PrivacyPage() {
         </p>
         <p>
           If you are signed in, your conversations are your chat history and are kept until you delete them.
-          There is no delete button yet; we will add one. Until then, ask us to delete your history through
-          the{' '}
-          <Link href="/contact" className={proseLink}>contact page</Link>.
+          To delete a conversation, select the bin icon next to it on your{' '}
+          <Link href="/me/sessions" className={proseLink}>chat history</Link> page or in the chat sidebar. Delete
+          all chats removes your whole history. Deleted conversations are removed straight away and cannot be
+          restored.
         </p>
         <p>
           The site owner can read messages from the last 30 days to fix agents and improve the directory. Older

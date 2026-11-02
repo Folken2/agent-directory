@@ -23,8 +23,11 @@ import { db } from './drizzle/db';
 import { agentRunEvents } from './drizzle/schema';
 import { sql, and, eq, inArray, desc } from 'drizzle-orm';
 import { asSessionId, type SessionId } from './ids';
+import { deletableAdkSessions } from './identity';
 
 const TERMINAL_STATUSES = ['completed', 'error'] as const;
+/** Sessions per DELETE statement, to keep the bind-parameter count small. */
+const DELETE_CHUNK = 200;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -154,14 +157,16 @@ export async function listSessionsForUser(
     });
   }
 
-  return summaries.map((r) => {
+  // Runs whose events are gone (the user deleted the chat) have no preview row.
+  return summaries.flatMap((r) => {
     const preview = previewByKey.get(`${r.sessionId}|${r.agentSlug}|${r.adkUserId}`);
+    if (!preview) return [];
     return {
       sessionId: asSessionId(r.sessionId),
       agentSlug: r.agentSlug,
       adkUserId: r.adkUserId,
-      firstMessage: preview?.firstMessage ?? null,
-      messageCount: preview?.messageCount ?? 0,
+      firstMessage: preview.firstMessage,
+      messageCount: preview.messageCount,
       startedAt: new Date(r.startedAt).toISOString(),
       lastActivityAt: new Date(r.lastActivityAt).toISOString(),
     };
@@ -256,6 +261,80 @@ export async function findOwnedAdkUserId(
     .orderBy(desc(agentRunEvents.createdAt))
     .limit(1);
   return rows[0]?.adkUserId ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Deletes
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete the authenticated user's chat history: ADK `events` (prompts and
+ * replies) and `sessions` (state) for one session, or for all of them when
+ * `sessionId` is omitted. `deleted` counts sessions removed; `kept` counts
+ * legacy 'default-user' sessions skipped because another identity ran them too.
+ *
+ * `agent_run_events` rows are kept: they hold no message text and the rate
+ * limiter counts them. listSessionsForUser hides runs whose events are gone.
+ * Only key columns are used, which both ADK `events` layouts share.
+ */
+export async function deleteSessionsForUser(
+  authedUserId: string,
+  sessionId?: string
+): Promise<{ deleted: number; kept: number }> {
+  const conditions = [eq(agentRunEvents.rateLimitIdentifier, authedUserId)];
+  if (sessionId) conditions.push(eq(agentRunEvents.sessionId, sessionId));
+
+  const rows = await db
+    .selectDistinct({
+      sessionId: agentRunEvents.sessionId,
+      appName: agentRunEvents.agentSlug,
+      adkUserId: agentRunEvents.userId,
+    })
+    .from(agentRunEvents)
+    .where(and(...conditions));
+  const shared = await sharedLegacySessions(authedUserId, rows);
+  const owned = deletableAdkSessions(authedUserId, rows);
+  const targets = deletableAdkSessions(authedUserId, rows, (k) =>
+    shared.has(`${k.sessionId}|${k.appName}`)
+  );
+  const kept = owned.length - targets.length;
+  if (targets.length === 0) return { deleted: 0, kept };
+
+  for (let i = 0; i < targets.length; i += DELETE_CHUNK) {
+    const keys = sql.join(
+      targets
+        .slice(i, i + DELETE_CHUNK)
+        .map((t) => sql`(${t.appName}, ${t.adkUserId}, ${t.sessionId})`),
+      sql`, `
+    );
+    // Events first, like the retention job, in case `events` references `sessions`.
+    await db.execute(sql`DELETE FROM events WHERE (app_name, user_id, session_id) IN (${keys})`);
+    await db.execute(sql`DELETE FROM sessions WHERE (app_name, user_id, id) IN (${keys})`);
+  }
+  return { deleted: targets.length, kept };
+}
+
+/** `session|app` keys of the user's legacy sessions that another identity also ran. */
+async function sharedLegacySessions(
+  authedUserId: string,
+  rows: { sessionId: string; adkUserId: string }[]
+): Promise<Set<string>> {
+  const legacyIds = [
+    ...new Set(rows.filter((r) => r.adkUserId === 'default-user').map((r) => r.sessionId)),
+  ];
+  if (legacyIds.length === 0) return new Set();
+  const others = await db
+    .selectDistinct({ sessionId: agentRunEvents.sessionId, appName: agentRunEvents.agentSlug })
+    .from(agentRunEvents)
+    .where(
+      and(
+        eq(agentRunEvents.userId, 'default-user'),
+        inArray(agentRunEvents.sessionId, legacyIds),
+        // A run with no identifier is someone we can't rule out, so it counts.
+        sql`${agentRunEvents.rateLimitIdentifier} IS DISTINCT FROM ${authedUserId}`
+      )
+    );
+  return new Set(others.map((r) => `${r.sessionId}|${r.appName}`));
 }
 
 // ---------------------------------------------------------------------------
