@@ -47,6 +47,9 @@ describe('isKnownRoute', () => {
 
   it('rejects nested paths under a dynamic route', () => {
     assert.equal(isKnownRoute('/agents/foo/bar'), false);
+    assert.equal(isKnownRoute('/guides/adk-mcp-toolset'), true);
+    assert.equal(isKnownRoute('/guides/adk-mcp-toolset/x'), false);
+    assert.equal(isKnownRoute('/guides/adk-mcp-toolset.md'), true);
   });
 });
 

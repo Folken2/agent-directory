@@ -51,6 +51,14 @@ const privateLinkHeaders = [
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  // /guides/<slug>.md is the guide as Markdown for coding agents (app/guides-md).
+  async rewrites() {
+    return {
+      beforeFiles: [{ source: '/guides/:slug([a-z0-9-]+).md', destination: '/guides-md/:slug' }],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
   output: 'standalone',
   // Include monorepo root so the standalone bundle carries agents/*/metadata.json.
   outputFileTracingRoot: join(__dirname, '..'),
@@ -62,7 +70,13 @@ const nextConfig: NextConfig = {
     '/': ['../agents/**/metadata.json'],
     '/examples': ['../agents/**/metadata.json'],
     '/api/agents': ['../agents/**/metadata.json'],
-    '/agents/[name]': ['../agents/**/metadata.json'],
+    '/agents/[name]': ['../agents/**/metadata.json', './content/guides/*.md'],
+    // Guides are Markdown files read with fs (lib/guides.ts).
+    '/guides': ['../agents/**/metadata.json', './content/guides/*.md'],
+    '/guides/[slug]': ['../agents/**/metadata.json', './content/guides/*.md'],
+    '/sitemap.xml': ['../agents/**/metadata.json', './content/guides/*.md'],
+    '/guides-md/[slug]': ['./content/guides/*.md'],
+    '/llms.txt': ['../agents/**/metadata.json', './content/guides/*.md'],
     '/agents/[name]/opengraph-image': ['../agents/**/metadata.json', './public/adk-logo.png'],
     ...(process.env.VERCEL ? {} : { '/api/analytics/pageview': [GEOIP_DATA] }),
   },
