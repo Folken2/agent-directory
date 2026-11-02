@@ -12,6 +12,7 @@ import { Snackbar } from "@/components/ui/snackbar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
+import { jsonLdScript, siteUrl } from "@/lib/seo";
 
 const googleSans = localFont({
   variable: "--font-google-sans",
@@ -36,7 +37,8 @@ export const viewport: Viewport = {
   interactiveWidget: "resizes-content",
 };
 
-const SITE_TITLE = "ADK Agent Directory | Design and try agents built with Google's Agent Development Kit";
+// Under ~60 chars so Google shows it whole; leads with the terms people search for.
+const SITE_TITLE = "ADK Agent Directory | Build and Try Google ADK Agents";
 const SITE_DESCRIPTION =
   "Describe the agent you want and an agent builder designs and builds it with you on Google's Agent Development Kit (ADK). Try working example agents. Independent open-source project, not affiliated with Google.";
 
@@ -57,7 +59,7 @@ export const metadata: Metadata = {
   authors: [{ name: "Albert Folch" }],
   creator: "Albert Folch",
   publisher: "Albert Folch",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://agentdirectory.folch.ai'),
+  metadataBase: new URL(siteUrl()),
   alternates: {
     canonical: '/',
   },
@@ -85,10 +87,10 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    // Add Google Search Console verification when available
-    // google: 'your-verification-code',
-  },
+  // Search Console HTML-tag verification; set the code in the deploy env.
+  ...(process.env.GOOGLE_SITE_VERIFICATION
+    ? { verification: { google: process.env.GOOGLE_SITE_VERIFICATION } }
+    : {}),
 };
 
 export default function RootLayout({
@@ -96,8 +98,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://agentdirectory.folch.ai';
-  
+  const baseUrl = siteUrl();
+
   const structuredData = {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
@@ -123,7 +125,7 @@ export default function RootLayout({
       >
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+          dangerouslySetInnerHTML={{ __html: jsonLdScript(structuredData) }}
         />
         <ThemeProvider>
           <TooltipProvider>
