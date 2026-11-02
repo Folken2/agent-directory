@@ -32,4 +32,4 @@ export function ProseSection({ title, children, id }: { title: string; children:
 }
 
 export const proseLink =
-  'text-md-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary rounded-sm';
+  'text-md-primary underline decoration-md-primary/40 underline-offset-4 hover:decoration-md-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary rounded-sm';

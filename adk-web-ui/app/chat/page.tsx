@@ -253,6 +253,9 @@ function ChatContent() {
                 <PanelLeft className="w-5 h-5 hidden lg:block" />
               </button>
 
+              <h1 className="sr-only">
+                {selectedAgent ? `Chat with ${selectedAgent.displayName || selectedAgent.name}` : 'Chat'}
+              </h1>
               <AgentSwitcher agent={selectedAgent} />
             </div>
 
@@ -268,6 +271,7 @@ function ChatContent() {
 
             <Link
               href={selectedAgent ? `/agents/${encodeURIComponent(selectedAgent.name)}` : '/'}
+              aria-label={selectedAgent ? 'Back to agent page' : 'Back to home'}
               className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />

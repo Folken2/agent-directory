@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   readClientConsent,
   setClientConsent,
@@ -12,6 +13,8 @@ import { Card } from '@/components/ui/card';
 
 export default function CookieConsentBanner() {
   const [visible, setVisible] = useState(false);
+  // On the chat the bottom of the screen is the composer: sit under the header instead.
+  const onChat = usePathname()?.startsWith('/chat') ?? false;
 
   useEffect(() => {
     setVisible(readClientConsent() === null);
@@ -28,7 +31,7 @@ export default function CookieConsentBanner() {
     <div
       role="dialog"
       aria-label="Cookie preferences"
-      className="fixed inset-x-0 bottom-0 z-[60] p-4 sm:p-6"
+      className={`fixed inset-x-0 z-[60] p-4 sm:p-6 ${onChat ? 'top-16' : 'bottom-0'}`}
     >
       <Card
         variant="elevated"
