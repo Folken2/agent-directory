@@ -37,7 +37,9 @@ export const KNOWN_STATIC_ROUTES: readonly string[] = [
   '/analytics/ops',
   '/auth/signin',
   '/chat',
+  '/contact',
   '/examples',
+  '/guides',
   '/me/sessions',
   '/privacy',
   '/settings',
@@ -56,8 +58,8 @@ export const RETIRED_STATIC_ROUTES: readonly string[] = [
   '/settings/keys',
 ] as const;
 
-/** Dynamic route patterns, anchored. Only `/agents/[name]` today. */
-const DYNAMIC_ROUTES: readonly RegExp[] = [/^\/agents\/[A-Za-z0-9_-]+$/];
+/** Dynamic route patterns, anchored: `/agents/[name]` and `/guides/[slug]`. */
+const DYNAMIC_ROUTES: readonly RegExp[] = [/^\/agents\/[A-Za-z0-9_-]+$/, /^\/guides\/[a-z0-9-]+$/];
 
 /** Crawler and browser plumbing — expected, but not a page. */
 const INFRA_PATHS: readonly string[] = [

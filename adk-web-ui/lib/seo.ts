@@ -7,8 +7,11 @@
 
 import type { MetadataRoute } from 'next';
 import type { CatalogAgent } from './agent-catalog';
+import { guidePath, type GuideMeta } from './guides';
 
 export const SITE_NAME = 'ADK Agent Directory';
+/** Author of the guides and the person behind /contact. */
+export const SITE_OWNER = 'Albert Folch';
 const DEFAULT_SITE_URL = 'https://agentdirectory.folch.ai';
 
 export function siteUrl(): string {
@@ -30,12 +33,28 @@ function parseDate(value: string | undefined): Date | undefined {
  * lastModified is left out unless we actually know it — a date that changes
  * on every build teaches Google to ignore it.
  */
-export function buildSitemap(agents: CatalogAgent[], baseUrl: string): MetadataRoute.Sitemap {
+export function buildSitemap(
+  agents: CatalogAgent[],
+  baseUrl: string,
+  guides: GuideMeta[] = []
+): MetadataRoute.Sitemap {
   const staticPages: MetadataRoute.Sitemap = [
     { url: baseUrl, changeFrequency: 'weekly', priority: 1 },
     { url: `${baseUrl}/examples`, changeFrequency: 'weekly', priority: 0.9 },
+    { url: `${baseUrl}/guides`, changeFrequency: 'weekly', priority: 0.9 },
     { url: `${baseUrl}/about`, changeFrequency: 'monthly', priority: 0.6 },
+    { url: `${baseUrl}/contact`, changeFrequency: 'yearly', priority: 0.5 },
   ];
+
+  const guidePages: MetadataRoute.Sitemap = guides.map((guide) => {
+    const lastModified = parseDate(guide.updated ?? guide.published);
+    return {
+      url: `${baseUrl}${guidePath(guide.slug)}`,
+      ...(lastModified ? { lastModified } : {}),
+      changeFrequency: 'monthly',
+      priority: 0.85,
+    };
+  });
 
   const agentPages: MetadataRoute.Sitemap = agents.map((agent) => {
     const lastModified = parseDate(agent.lastUpdated);
@@ -47,10 +66,23 @@ export function buildSitemap(agents: CatalogAgent[], baseUrl: string): MetadataR
     };
   });
 
-  return [...staticPages, ...agentPages];
+  return [...staticPages, ...guidePages, ...agentPages];
 }
 
 type Crumb = { label: string; href: string };
+
+function breadcrumbList(baseUrl: string, trail: Crumb[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [{ label: SITE_NAME, href: '/' }, ...trail].map((crumb, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: crumb.label,
+      item: `${baseUrl}${crumb.href === '/' ? '' : crumb.href}`,
+    })),
+  };
+}
 
 /** JSON-LD for an agent detail page: the agent as an app plus its breadcrumb trail. */
 export function agentJsonLd(agent: CatalogAgent, baseUrl: string, parent: Crumb) {
@@ -75,15 +107,7 @@ export function agentJsonLd(agent: CatalogAgent, baseUrl: string, parent: Crumb)
     ...(agent.version ? { softwareVersion: agent.version } : {}),
     ...(lastModified ? { dateModified: lastModified.toISOString() } : {}),
   };
-  const breadcrumbs = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: SITE_NAME, item: baseUrl },
-      { '@type': 'ListItem', position: 2, name: parent.label, item: `${baseUrl}${parent.href === '/' ? '' : parent.href}` },
-      { '@type': 'ListItem', position: 3, name: displayName, item: url },
-    ],
-  };
+  const breadcrumbs = breadcrumbList(baseUrl, [parent, { label: displayName, href: agentPath(agent.name) }]);
   return [app, breadcrumbs] as const;
 }
 
@@ -99,6 +123,58 @@ export function examplesJsonLd(agents: Array<{ name: string; displayName?: strin
       name: agent.displayName || agent.name,
       url: `${baseUrl}${agentPath(agent.name)}`,
     })),
+  };
+}
+
+/** JSON-LD for a guide: a TechArticle that mentions its example agents, plus its breadcrumb trail. */
+export function guideJsonLd(guide: GuideMeta, baseUrl: string) {
+  const url = `${baseUrl}${guidePath(guide.slug)}`;
+  const author = { '@type': 'Person', name: SITE_OWNER, url: `${baseUrl}/contact` };
+  const article = {
+    '@context': 'https://schema.org',
+    '@type': 'TechArticle',
+    headline: guide.title,
+    description: guide.description,
+    url,
+    mainEntityOfPage: url,
+    datePublished: guide.published,
+    dateModified: guide.updated ?? guide.published,
+    author,
+    publisher: author,
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: baseUrl },
+    ...(guide.keywords.length ? { keywords: guide.keywords.join(', ') } : {}),
+    ...(guide.agents.length
+      ? {
+          mentions: guide.agents.map((name) => ({
+            '@type': 'SoftwareApplication',
+            name,
+            url: `${baseUrl}${agentPath(name)}`,
+          })),
+        }
+      : {}),
+  };
+  const breadcrumbs = breadcrumbList(baseUrl, [
+    { label: 'Guides', href: '/guides' },
+    { label: guide.title, href: guidePath(guide.slug) },
+  ]);
+  return [article, breadcrumbs] as const;
+}
+
+/** JSON-LD for /contact: the page, about the person to contact. */
+export function contactJsonLd(baseUrl: string, sameAs: string[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ContactPage',
+    name: `Contact ${SITE_OWNER}`,
+    url: `${baseUrl}/contact`,
+    isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: baseUrl },
+    mainEntity: {
+      '@type': 'Person',
+      name: SITE_OWNER,
+      jobTitle: 'AI agent consultant',
+      knowsAbout: ['Google Agent Development Kit', 'AI agents', 'Model Context Protocol'],
+      ...(sameAs.length ? { sameAs } : {}),
+    },
   };
 }
 

@@ -1,7 +1,18 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadOfflineCatalog } from './agent-catalog.ts';
-import { agentJsonLd, buildSitemap, examplesJsonLd, jsonLdScript } from './seo.ts';
+import { loadGuides, type GuideMeta } from './guides.ts';
+import { agentJsonLd, buildSitemap, contactJsonLd, examplesJsonLd, guideJsonLd, jsonLdScript } from './seo.ts';
+
+const GUIDE: GuideMeta = {
+  slug: 'adk-mcp-toolset',
+  title: 'How to connect an MCP server',
+  seoTitle: 'MCP guide',
+  description: 'Connect one.',
+  published: '2026-11-02',
+  agents: ['exa_mcp_agent'],
+  keywords: ['ADK', 'MCP'],
+};
 
 const BASE = 'https://example.test';
 
@@ -18,8 +29,24 @@ describe('buildSitemap', () => {
     assert.ok(!urls.some((url) => url.includes('/chat')));
   });
 
+  it('lists the guides index, every guide, and /contact', () => {
+    const guides = loadGuides();
+    const urls = buildSitemap([], BASE, guides).map((entry) => entry.url);
+
+    assert.ok(urls.includes(`${BASE}/guides`));
+    assert.ok(urls.includes(`${BASE}/contact`));
+    for (const guide of guides) assert.ok(urls.includes(`${BASE}/guides/${guide.slug}`), `missing ${guide.slug}`);
+  });
+
+  it('dates a guide by its update, else its publication', () => {
+    const entries = buildSitemap([], BASE, [GUIDE, { ...GUIDE, slug: 'b', updated: '2026-12-01' }]);
+    const bySlug = (slug: string) => entries.find((entry) => entry.url === `${BASE}/guides/${slug}`);
+    assert.equal((bySlug('adk-mcp-toolset')?.lastModified as Date).toISOString().slice(0, 10), '2026-11-02');
+    assert.equal((bySlug('b')?.lastModified as Date).toISOString().slice(0, 10), '2026-12-01');
+  });
+
   it('only sets lastModified from a real agent date', () => {
-    const [, , , dated, undated, bad] = buildSitemap(
+    const [, , , , , dated, undated, bad] = buildSitemap(
       [
         { name: 'a', displayName: 'A', description: '', tools: [], lastUpdated: '2026-01-15' },
         { name: 'b', displayName: 'B', description: '', tools: [] },
@@ -47,6 +74,30 @@ describe('JSON-LD', () => {
       crumbs.itemListElement.map((item) => item.item),
       [BASE, `${BASE}/examples`, `${BASE}/agents/trip_planner`]
     );
+  });
+
+  it('builds a TechArticle and a Guides breadcrumb trail for a guide', () => {
+    const [article, crumbs] = guideJsonLd(GUIDE, BASE);
+    assert.equal(article['@type'], 'TechArticle');
+    assert.equal(article.url, `${BASE}/guides/adk-mcp-toolset`);
+    assert.equal(article.dateModified, '2026-11-02');
+    assert.deepEqual(article.mentions?.map((item) => item.url), [`${BASE}/agents/exa_mcp_agent`]);
+    assert.deepEqual(
+      crumbs.itemListElement.map((item) => [item.position, item.item]),
+      [
+        [1, BASE],
+        [2, `${BASE}/guides`],
+        [3, `${BASE}/guides/adk-mcp-toolset`],
+      ]
+    );
+  });
+
+  it('builds a ContactPage, with sameAs only when profiles are configured', () => {
+    const page = contactJsonLd(BASE, ['https://www.linkedin.com/in/someone']);
+    assert.equal(page['@type'], 'ContactPage');
+    assert.equal(page.url, `${BASE}/contact`);
+    assert.deepEqual(page.mainEntity.sameAs, ['https://www.linkedin.com/in/someone']);
+    assert.ok(!('sameAs' in contactJsonLd(BASE, []).mainEntity));
   });
 
   it('numbers the examples list from 1', () => {

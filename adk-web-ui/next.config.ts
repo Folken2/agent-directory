@@ -57,7 +57,11 @@ const nextConfig: NextConfig = {
     '/': ['../agents/**/metadata.json'],
     '/examples': ['../agents/**/metadata.json'],
     '/api/agents': ['../agents/**/metadata.json'],
-    '/agents/[name]': ['../agents/**/metadata.json'],
+    '/agents/[name]': ['../agents/**/metadata.json', './content/guides/*.md'],
+    // Guides are Markdown files read with fs (lib/guides.ts).
+    '/guides': ['../agents/**/metadata.json', './content/guides/*.md'],
+    '/guides/[slug]': ['../agents/**/metadata.json', './content/guides/*.md'],
+    '/sitemap.xml': ['../agents/**/metadata.json', './content/guides/*.md'],
     '/agents/[name]/opengraph-image': ['../agents/**/metadata.json', './public/adk-logo.png'],
     ...(process.env.VERCEL ? {} : { '/api/analytics/pageview': [GEOIP_DATA] }),
   },
