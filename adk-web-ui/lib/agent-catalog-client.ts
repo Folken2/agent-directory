@@ -11,13 +11,24 @@ type SnapshotAgent = {
   name: string;
   displayName?: string;
   description?: string;
+  tools?: string[];
+  tags?: string[];
+  useCases?: Array<{ title: string; description: string }>;
+  samplePrompts?: string[];
+  author?: string;
   logo?: string;
   category?: string;
+  githubUrl?: string;
 };
 
 const snapshot = snapshotJson as {
   agents: Array<string | SnapshotAgent>;
 };
+
+const REPO_BASE = (process.env.NEXT_PUBLIC_AGENTS_REPO_URL || 'https://github.com/Folken2/agent-directory').replace(
+  /\/$/,
+  ''
+);
 
 let cachedMap: Map<string, Agent> | null = null;
 
@@ -36,14 +47,21 @@ function buildMap(): Map<string, Agent> {
       name: entry.name,
       displayName: entry.displayName || formatAgentDisplayName(entry.name),
       description: entry.description || '',
+      tools: entry.tools ?? [],
+      tags: entry.tags ?? [],
+      useCases: entry.useCases ?? [],
+      samplePrompts: entry.samplePrompts ?? [],
+      author: entry.author,
       logo: entry.logo,
       category: entry.category,
+      // Same default as lib/agent-metadata.ts, so the chat's "View on GitHub" matches /api/agents.
+      githubUrl: entry.githubUrl || `${REPO_BASE}/tree/main/agents/${entry.name}`,
     });
   }
   return map;
 }
 
-/** Sync map of slug → agent (logo + displayName) from the bundled snapshot. */
+/** Sync map of slug → agent from the bundled snapshot. */
 export function getCatalogAgentMap(): Map<string, Agent> {
   if (!cachedMap) cachedMap = buildMap();
   return cachedMap;
@@ -54,8 +72,13 @@ export function listCatalogAgentSlugs(): string[] {
   return [...getCatalogAgentMap().keys()].sort();
 }
 
+/** The agent as the snapshot knows it, or null when the slug isn't in the catalog. */
+export function findCatalogAgent(slug: string): Agent | null {
+  return getCatalogAgentMap().get(slug) ?? null;
+}
+
 export function getCatalogAgent(slug: string): Agent {
-  const hit = getCatalogAgentMap().get(slug);
+  const hit = findCatalogAgent(slug);
   if (hit) return hit;
   return {
     name: slug,
