@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { ProsePage, ProseSection, proseLink } from '@/components/ProsePage';
 
 const ISSUES_URL = 'https://github.com/Folken2/agent-directory/issues';
@@ -50,17 +51,25 @@ export default function PrivacyPage() {
 
       <ProseSection title="Chats with agents">
         <p>
-          What you send to an agent and its replies are stored so the conversation can continue and, when you
-          are signed in, so you can see your history. The site owner can read them to fix agents and improve
-          the directory. Conversations are deleted 30 days after their last message, whether or not you are
-          signed in.
+          What you send to an agent and its replies are stored so the conversation can continue. If you are
+          not signed in, the conversation is deleted 30 days after its last message.
+        </p>
+        <p>
+          If you are signed in, your conversations are your chat history and are kept until you delete them.
+          There is no delete button yet; we will add one. Until then, ask us to delete your history through
+          the{' '}
+          <Link href="/contact" className={proseLink}>contact page</Link>.
+        </p>
+        <p>
+          The site owner can read messages from the last 30 days to fix agents and improve the directory. Older
+          messages are not shown to the site owner, including ones kept in a signed-in user&apos;s history.
         </p>
       </ProseSection>
 
       <ProseSection title="Sign-in">
         <p>
-          Google sign-in uses separate authentication cookies required to keep you signed in, keep your recent
-          chat history and apply rate limits. We store your name, email address and profile picture from Google.
+          Google sign-in uses separate authentication cookies required to keep you signed in, keep your chat
+          history and apply rate limits. We store your name, email address and profile picture from Google.
           Those cookies are not advertising cookies.
         </p>
       </ProseSection>

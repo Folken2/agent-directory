@@ -13,6 +13,7 @@ import { sql, type SQL } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { unwrapExecuteRows } from '@/lib/drizzle/unwrap-rows';
 import { isAnalyticsDbAvailable } from './db-available';
+import { transcriptCutoff } from './retention-rollup';
 import { timelineRangeDays, type TimelineRange } from './timeline-range';
 import {
   BUILDER_APP,
@@ -80,11 +81,20 @@ export function rangeStart(range: TimelineRange, now: Date = new Date()): Date |
   return d;
 }
 
+/**
+ * Earliest message content ops may read: the range start, but never further
+ * back than the 30-day transcript window. Signed-in users keep their chat
+ * history beyond that; ops does not get to see it.
+ */
+export function opsContentStart(range: TimelineRange, now: Date = new Date()): Date {
+  const floor = transcriptCutoff(now);
+  const start = rangeStart(range, now);
+  return start && start > floor ? start : floor;
+}
+
 /** ADK writes naive UTC timestamps; compare against a UTC wall-clock value. */
 function sinceFilter(column: SQL, range: TimelineRange): SQL {
-  const start = rangeStart(range);
-  if (!start) return sql``;
-  return sql`AND ${column} >= (${start.toISOString()})::timestamptz AT TIME ZONE 'UTC'`;
+  return sql`AND ${column} >= (${opsContentStart(range).toISOString()})::timestamptz AT TIME ZONE 'UTC'`;
 }
 
 /** Message text, tool calls, from an event's `content.parts`. */
@@ -325,6 +335,7 @@ export async function fetchTranscript(appName: string, sessionId: string): Promi
           WHERE p ? 'function_response') AS results
       FROM ${adkEventsRelation(schema)} AS e
       WHERE e.app_name = ${appName} AND e.session_id = ${sessionId}
+        AND e.ts >= (${transcriptCutoff().toISOString()})::timestamptz AT TIME ZONE 'UTC'
       ORDER BY e.ts ASC
       LIMIT 500
     `)

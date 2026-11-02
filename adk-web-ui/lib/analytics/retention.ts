@@ -4,8 +4,10 @@
  *   1. Raw `page_views` and `engagement_events` older than 90 days are rolled
  *      up into `page_view_daily` / `engagement_daily`, one UTC day at a time,
  *      and that day's raw rows are then deleted.
- *   2. ADK `events` (prompts and replies) and `sessions` (transcript state)
- *      not touched in 30 days are deleted.
+ *   2. Anonymous visitors' ADK `events` (prompts and replies) and `sessions`
+ *      (transcript state) older than 30 days are deleted. Signed-in users'
+ *      chats are their history and are kept until they delete them; ops still
+ *      only reads the last 30 days of anyone's messages (adk-events.ts).
  *
  * Each day is rolled up from the full raw day and upserted before the delete,
  * so a run that dies half-way is repaired by the next one.
@@ -19,6 +21,8 @@ import { detectAdkEventsSchema } from './adk-events';
 import { isAnalyticsDbAvailable } from './db-available';
 import { ensurePageViewsSchema } from './ensure-schema';
 import {
+  LEGACY_ADK_USER,
+  SIGNED_IN_ADK_PREFIX,
   rawCutoff,
   rollUpEngagement,
   rollUpPageViews,
@@ -184,12 +188,38 @@ async function hasRollupTables(): Promise<boolean> {
   return Boolean(rows[0]?.ok);
 }
 
-/** Deletes ADK prompts/replies and session state older than the transcript window. */
+/**
+ * SQL twin of `isSignedInAdkSession` for a row with `user_id` and the given
+ * session id column. Authenticated runs stamp `rate_limit_identifier` with the
+ * user's UUID; anonymous ones with an opaque token.
+ */
+function signedInSession(sessionId: ReturnType<typeof sql>) {
+  return sql`(
+    starts_with(user_id, ${SIGNED_IN_ADK_PREFIX})
+    OR (user_id = ${LEGACY_ADK_USER} AND EXISTS (
+      SELECT 1 FROM agent_run_events r
+      WHERE r.session_id = ${sessionId}
+        AND r.rate_limit_identifier ~ '^[0-9a-f]{8}-[0-9a-f]{4}-'
+    ))
+  )`;
+}
+
+/** Deletes anonymous visitors' prompts, replies and session state older than the transcript window. */
 async function pruneTranscripts(cutoff: string): Promise<{ events: number; sessions: number }> {
   if (!(await detectAdkEventsSchema())) return { events: 0, sessions: 0 };
-  const events = countOf(await db.execute(sql`DELETE FROM events WHERE "timestamp" < ${cutoff}`));
+  const events = countOf(
+    await db.execute(sql`
+      DELETE FROM events
+      WHERE "timestamp" < ${cutoff} AND NOT ${signedInSession(sql`events.session_id`)}
+    `)
+  );
   // Sessions untouched since the cutoff have no newer events left.
-  const sessions = countOf(await db.execute(sql`DELETE FROM sessions WHERE update_time < ${cutoff}`));
+  const sessions = countOf(
+    await db.execute(sql`
+      DELETE FROM sessions
+      WHERE update_time < ${cutoff} AND NOT ${signedInSession(sql`sessions.id`)}
+    `)
+  );
   return { events, sessions };
 }
 

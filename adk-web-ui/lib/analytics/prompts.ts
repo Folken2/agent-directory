@@ -15,7 +15,7 @@ import { sql } from 'drizzle-orm';
 import { db } from '@/lib/drizzle/db';
 import { unwrapExecuteRows } from '@/lib/drizzle/unwrap-rows';
 import snapshotJson from '@/lib/agent-catalog.snapshot.json';
-import { adkEventsRelation, detectAdkEventsSchema, rangeStart } from './adk-events';
+import { adkEventsRelation, detectAdkEventsSchema, opsContentStart } from './adk-events';
 import type { TimelineRange } from './timeline-range';
 
 const MAX_PROMPT_ROWS = 5_000;
@@ -67,7 +67,7 @@ export async function fetchPromptRecords(
 ): Promise<PromptRecord[]> {
   const schema = await detectAdkEventsSchema();
   if (!schema) return [];
-  const start = rangeStart(range);
+  const start = opsContentStart(range);
 
   const rows = unwrapExecuteRows<{ app_name: string; text: string | null }>(
     await db.execute(sql`
@@ -81,7 +81,7 @@ export async function fetchPromptRecords(
       FROM ${adkEventsRelation(schema)} AS e
       WHERE e.author = 'user'
         AND e.content IS NOT NULL
-        ${start ? sql`AND e.ts >= (${start.toISOString()})::timestamptz AT TIME ZONE 'UTC'` : sql``}
+        AND e.ts >= (${start.toISOString()})::timestamptz AT TIME ZONE 'UTC'
         ${agentSlug ? sql`AND e.app_name = ${agentSlug}` : sql``}
       ORDER BY e.ts DESC
       LIMIT ${MAX_PROMPT_ROWS}

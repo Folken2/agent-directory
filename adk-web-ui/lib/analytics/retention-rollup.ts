@@ -56,9 +56,28 @@ export function rawCutoff(now: Date = new Date(), days = RAW_RETENTION_DAYS): Da
   return d;
 }
 
-/** Stored prompts and transcripts last touched before this instant are deleted. */
+/**
+ * Anonymous chats last touched before this instant are deleted, and ops never
+ * shows message content older than this, for anyone.
+ */
 export function transcriptCutoff(now: Date = new Date(), days = TRANSCRIPT_RETENTION_DAYS): Date {
   return new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+}
+
+/** ADK user id prefix for signed-in chats (see `defaultAdkUserId` in lib/identity.ts). */
+export const SIGNED_IN_ADK_PREFIX = 'u_';
+/** Pre-identity sessions all share this id; their owner is known from agent_run_events. */
+export const LEGACY_ADK_USER = 'default-user';
+
+/**
+ * Whether an ADK session is a signed-in user's own chat history, which the
+ * retention job keeps until the user deletes it. Anonymous chats (`a_…`) are
+ * deleted after the transcript window. A legacy `default-user` session counts
+ * as signed-in when its runs were made by an authenticated user.
+ */
+export function isSignedInAdkSession(adkUserId: string, legacyRunAuthenticated = false): boolean {
+  if (adkUserId.startsWith(SIGNED_IN_ADK_PREFIX)) return true;
+  return adkUserId === LEGACY_ADK_USER && legacyRunAuthenticated;
 }
 
 /** Host of a referrer URL, without `www.`; '' when missing or unparsable. */

@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  isSignedInAdkSession,
   rawCutoff,
   referrerHost,
   rollUpEngagement,
@@ -82,5 +83,24 @@ describe('rollUpEngagement', () => {
     assert.equal(noLanding.visits, 1);
     const beats = rows.find((r) => r.eventType === 'heartbeat')!;
     assert.deepEqual([beats.events, beats.visits, beats.durationMs], [2, 1, 45_000]);
+  });
+});
+
+describe('isSignedInAdkSession', () => {
+  it('keeps signed-in users and drops anonymous visitors', () => {
+    assert.equal(isSignedInAdkSession('u_3f2b1c4d-0000-4000-8000-000000000000'), true);
+    assert.equal(isSignedInAdkSession('a_9c1e7f'), false);
+  });
+
+  it('keeps a legacy default-user session only when its runs were authenticated', () => {
+    assert.equal(isSignedInAdkSession('default-user', true), true);
+    assert.equal(isSignedInAdkSession('default-user', false), false);
+    assert.equal(isSignedInAdkSession('default-user'), false);
+  });
+
+  it('does not treat a lookalike id as signed in', () => {
+    assert.equal(isSignedInAdkSession('U_abc'), false);
+    assert.equal(isSignedInAdkSession('xu_abc'), false);
+    assert.equal(isSignedInAdkSession('a_u_abc'), false);
   });
 });
