@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import AgentGrid from '@/components/AgentGrid';
@@ -7,6 +8,10 @@ import { loadExampleAgents } from '@/lib/agent-catalog';
 
 const moreLink =
   'inline-flex items-center gap-1 rounded-full text-label-large text-md-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary';
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 export default function Home() {
   const examples = loadExampleAgents();

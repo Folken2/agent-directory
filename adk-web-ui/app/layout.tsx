@@ -60,9 +60,8 @@ export const metadata: Metadata = {
   creator: "Albert Folch",
   publisher: "Albert Folch",
   metadataBase: new URL(siteUrl()),
-  alternates: {
-    canonical: '/',
-  },
+  // No canonical here: it would be inherited by every page without its own and
+  // mark them all as duplicates of the homepage. Each page sets its own.
   openGraph: {
     type: 'website',
     locale: 'en_US',
