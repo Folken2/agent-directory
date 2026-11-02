@@ -6,7 +6,7 @@ import { useDarkMode } from '@/lib/hooks/useDarkMode';
 import { useArtifactsForConversation } from '@/lib/hooks/useArtifactsForConversation';
 import { useStreamingChat } from '@/lib/hooks/useStreamingChat';
 import RateLimitBanner from './RateLimitBanner';
-import MessageList from './chat/MessageList';
+import MessageList, { preloadConversationView } from './chat/MessageList';
 import Composer from './chat/Composer';
 import AgentEngagementTracker from '@/components/analytics/AgentEngagementTracker';
 import { cn } from '@/lib/utils';
@@ -43,6 +43,13 @@ export default function ChatInterface({ initialPrompt, autoSendPrompt, onAutoSen
     dismissRateLimit,
     busy,
   } = useStreamingChat();
+
+  // The empty chat ships without the message renderers; fetch them while the
+  // user reads the empty state, so the first reply doesn't wait on a chunk.
+  useEffect(() => {
+    const idle = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1));
+    idle(preloadConversationView);
+  }, []);
 
   const autoSentRef = useRef<string | null>(null);
   useEffect(() => {

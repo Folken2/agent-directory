@@ -1,9 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
 import AgentGrid from '@/components/AgentGrid';
 import BuilderHero from '@/components/home/BuilderHero';
 import { Page, PageHeader, Section } from '@/components/layout/Page';
 import { loadExampleAgents } from '@/lib/agent-catalog';
+
+export const metadata: Metadata = {
+  title: 'Page not found | ADK Agent Directory',
+};
 
 export default function NotFound() {
   return (

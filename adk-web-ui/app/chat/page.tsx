@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import ChatInterface from '@/components/ChatInterface';
 import ChatHistory from '@/components/ChatHistory';
 import AgentSwitcher from '@/components/chat/AgentSwitcher';
-import PreviewPanel from '@/components/preview/PreviewPanel';
 import { useAppStore } from '@/lib/store';
 import { toConversationId, toSessionId, replayedMessageId } from '@/lib/ids';
 import { Agent, ChatConversation, Message } from '@/lib/types';
@@ -16,6 +16,11 @@ import { BUILDER_AGENT, MAX_BUILDER_PROMPT_LENGTH, resolveChatAgentName } from '
 import { parsePreviewState } from '@/lib/preview/types';
 import { loadConversation, saveConversation } from '@/lib/chat/local-history';
 import ChatSkeleton from '@/components/chat/ChatSkeleton';
+import { findCatalogAgent } from '@/lib/agent-catalog-client';
+
+// Only builder chats with a running preview show this panel; keep its markdown
+// renderer out of the chat's first load.
+const PreviewPanel = dynamic(() => import('@/components/preview/PreviewPanel'));
 
 function ChatContent() {
   const {
@@ -84,6 +89,10 @@ function ChatContent() {
       const fromList = agents.find(a => a.name === agentName);
       if (fromList) return fromList;
       if (selectedAgent?.name === agentName) return selectedAgent;
+      // The bundled catalog knows every listed agent, so the composer is usable
+      // without waiting on /api/agents (a Railway /list-apps round trip).
+      const fromCatalog = findCatalogAgent(agentName);
+      if (fromCatalog) return fromCatalog;
       try {
         const r = await fetch('/api/agents');
         if (!r.ok) return null;
@@ -244,6 +253,9 @@ function ChatContent() {
                 <PanelLeft className="w-5 h-5 hidden lg:block" />
               </button>
 
+              <h1 className="sr-only">
+                {selectedAgent ? `Chat with ${selectedAgent.displayName || selectedAgent.name}` : 'Chat'}
+              </h1>
               <AgentSwitcher agent={selectedAgent} />
             </div>
 
@@ -259,6 +271,7 @@ function ChatContent() {
 
             <Link
               href={selectedAgent ? `/agents/${encodeURIComponent(selectedAgent.name)}` : '/'}
+              aria-label={selectedAgent ? 'Back to agent page' : 'Back to home'}
               className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-md-on-surface-variant hover:text-md-on-surface hover:bg-md-surface-container rounded-lg transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
