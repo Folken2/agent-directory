@@ -38,6 +38,11 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=()' },
 ];
 
+// App pages (chat has endless ?agent= variants, the rest is per-user): keep
+// them out of the index but let crawlers follow their links. robots.txt still
+// allows them so Google can see this header.
+const appPageHeaders = [{ key: 'X-Robots-Tag', value: 'noindex, follow' }];
+
 // Build links carry a secret token: keep them out of referrers and search engines.
 const privateLinkHeaders = [
   { key: 'Referrer-Policy', value: 'no-referrer' },
@@ -87,12 +92,18 @@ const nextConfig: NextConfig = {
       { source: '/contribute/:path*', destination: '/about', permanent: true },
       { source: '/settings/keys', destination: '/settings', permanent: false },
       { source: '/settings/connections', destination: '/settings', permanent: false },
+      // Retired agent slugs still in Google's index.
+      { source: '/agents/image_agent', destination: '/agents/image_generation_agent', permanent: true },
+      { source: '/agents/simple_agent_web_search_EXA', destination: '/agents/exa_mcp_agent', permanent: true },
     ];
   },
   async headers() {
     return [
       { source: '/:path*', headers: securityHeaders },
       // Later entries override the same header key from earlier ones.
+      { source: '/chat', headers: appPageHeaders },
+      { source: '/me/:path*', headers: appPageHeaders },
+      { source: '/settings/:path*', headers: appPageHeaders },
       { source: '/builds/:path*', headers: privateLinkHeaders },
       { source: '/api/builds/:path*', headers: privateLinkHeaders },
     ];
