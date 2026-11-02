@@ -23,6 +23,7 @@ import SignOutButton from '@/components/auth/SignOutButton';
 const destinations = [
   { name: 'Build', href: '/' },
   { name: 'Examples', href: '/examples' },
+  { name: 'Guides', href: '/guides' },
   { name: 'About', href: '/about' },
 ];
 

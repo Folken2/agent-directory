@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowRight, ArrowUpRight, MessageSquare } from 'lucide-react';
+import { ArrowRight, ArrowUpRight, BookOpen, MessageSquare } from 'lucide-react';
 import { getCatalogAgent, loadExampleAgents, loadOfflineCatalog } from '@/lib/agent-catalog';
 import { BUILDER_AGENT, builderChatHref } from '@/lib/builder';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,7 @@ import AgentLogo from '@/components/agent/AgentLogo';
 import AgentGrid from '@/components/AgentGrid';
 import BuildCta from '@/components/story/BuildCta';
 import { agentJsonLd, jsonLdScript, siteUrl } from '@/lib/seo';
+import { guidePath, guidesForAgent } from '@/lib/guides';
 
 type Params = Promise<{ name: string }>;
 
@@ -78,6 +79,7 @@ export default async function AgentDetailPage({ params }: { params: Params }) {
   const useCases = agent.useCases ?? [];
   const prompts = agent.samplePrompts ?? [];
   const related = isBuilder ? [] : relatedAgents(agent.name, agent.category);
+  const guide = guidesForAgent(agent.name)[0];
   const adaptHref = builderChatHref(
     `Design an agent like ${displayName} (${agent.description}) for my use case: `,
     { autoSend: false }
@@ -109,6 +111,19 @@ export default async function AgentDetailPage({ params }: { params: Params }) {
               </Link>
               <AgentActions name={agent.name} displayName={displayName} description={agent.description} />
             </div>
+            {guide ? (
+              <p className="mt-5 text-body-medium">
+                <Link
+                  href={guidePath(guide.slug)}
+                  data-ga-event="guide_click"
+                  data-ga-agent={agent.name}
+                  className="inline-flex items-center gap-1.5 rounded-sm text-md-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
+                >
+                  <BookOpen className="size-4" aria-hidden />
+                  Learn how it&apos;s built: {guide.title}
+                </Link>
+              </p>
+            ) : null}
           </>
         }
       />

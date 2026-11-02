@@ -4,6 +4,7 @@ import { NOT_AFFILIATED_NOTICE } from '@/lib/site';
 import { Page, PageHeader } from '@/components/layout/Page';
 import { proseLink } from '@/components/ProsePage';
 import BuildCta from '@/components/story/BuildCta';
+import { SITE_OWNER } from '@/lib/seo';
 
 const REPO_URL = 'https://github.com/Folken2/agent-directory';
 const ADK_URL = 'https://google.github.io/adk-docs/';
@@ -57,7 +58,17 @@ export default function AboutPage() {
         </section>
       </div>
 
-      <p className="mt-16 max-w-3xl border-t border-md-outline/60 pt-6 text-body-medium text-md-on-surface-variant">
+      <section className="mt-16 max-w-3xl space-y-3 text-body-large text-md-on-surface-variant">
+        <h2 className="text-headline-small tracking-tight text-md-on-surface">Who builds it</h2>
+        <p>
+          Agent Directory is built by {SITE_OWNER}. The{' '}
+          <Link href="/guides" className={proseLink}>guides</Link> explain how the example agents are put together. If
+          you want help designing an ADK agent or taking one to production,{' '}
+          <Link href="/contact" data-ga-event="contact_click" className={proseLink}>get in touch</Link>.
+        </p>
+      </section>
+
+      <p className="mt-12 max-w-3xl border-t border-md-outline/60 pt-6 text-body-medium text-md-on-surface-variant">
         {NOT_AFFILIATED_NOTICE}
       </p>
 
