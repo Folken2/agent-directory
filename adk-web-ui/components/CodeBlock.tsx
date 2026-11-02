@@ -54,12 +54,12 @@ export default function CodeBlock({
       <div className="relative rounded-lg overflow-hidden border border-md-outline/50 bg-[hsl(var(--md-surface-container-high))]">
         {code && (
           <div className="flex items-center justify-between px-3 py-1.5 border-b border-md-outline/40 bg-md-surface-container/30">
-            <span className="text-[10px] font-mono uppercase tracking-wider text-md-on-surface-variant/80">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-md-on-surface-variant">
               {language ?? 'plain text'}
             </span>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1 text-[11px] text-md-on-surface-variant hover:text-md-on-surface transition-colors px-1.5 py-0.5 rounded opacity-60 group-hover:opacity-100"
+              className="inline-flex items-center gap-1 text-[11px] text-md-on-surface-variant hover:text-md-on-surface transition-colors px-1.5 py-0.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary"
               title="Copy code"
               aria-label="Copy code"
             >
@@ -82,6 +82,8 @@ export default function CodeBlock({
           style={dark ? oneDark : oneLight}
           customStyle={{ margin: 0, padding: '1rem', fontSize: '0.875rem', lineHeight: '1.6', background: 'transparent' }}
           PreTag="div"
+          // Long lines scroll sideways; make that reachable by keyboard.
+          tabIndex={0}
           showLineNumbers={false}
           codeTagProps={{ style: { background: 'transparent' } }}
         >

@@ -1,12 +1,18 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { NOT_AFFILIATED_NOTICE, profileLinks } from '@/lib/site';
 
 const linkClass =
   'rounded-sm transition-colors hover:text-md-on-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary';
 
 export default function Footer() {
+  // The chat is a full-height app screen; skipping the footer there also skips
+  // DirectoryPulse's stats requests, which competed with the chat's own.
+  const pathname = usePathname();
+  if (pathname?.startsWith('/chat')) return null;
+
   const external = profileLinks();
 
   return (

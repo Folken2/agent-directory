@@ -93,7 +93,7 @@ export default function ChatHistory() {
     <div className="px-2 py-10 text-center">
       <MessageSquare className="w-7 h-7 mx-auto mb-3 text-md-on-surface-variant/40" />
       <p className="text-[13px] font-medium text-md-on-surface-variant">No past chats yet</p>
-      <p className="text-label-small text-md-on-surface-variant/60 uppercase tracking-widest mt-2">
+      <p className="text-[12px] text-md-on-surface-variant mt-1">
         Start a new chat to begin
       </p>
     </div>
@@ -169,7 +169,7 @@ export default function ChatHistory() {
         ) : !showActiveAnon ? (
           <>
             {renderEmpty}
-            <p className="px-3 mt-4 text-[11px] text-md-on-surface-variant/70 text-center">
+            <p className="px-3 mt-4 text-[12px] text-md-on-surface-variant text-center">
               Sign in to keep your chat history across sessions.
             </p>
           </>
