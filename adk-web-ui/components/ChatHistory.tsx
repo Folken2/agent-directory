@@ -44,6 +44,8 @@ export default function ChatHistory() {
   const [dbSessions, setDbSessions] = useState<ChatSessionSummary[]>([]);
   const [loadingDb, setLoadingDb] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<DeleteTarget | null>(null);
+  // Bumped after "Delete all" so the list is re-read: the server may keep some.
+  const [reloadKey, setReloadKey] = useState(0);
 
   // Per-agent DB sessions for authenticated users. Filtered server-side, so
   // there's no cross-agent leakage and the list survives page refreshes.
@@ -69,7 +71,7 @@ export default function ChatHistory() {
     return () => {
       cancelled = true;
     };
-  }, [isAuthed, selectedAgent?.name, currentConversation?.id]);
+  }, [isAuthed, selectedAgent?.name, currentConversation?.id, reloadKey]);
 
   const handleNewChat = () => {
     if (!selectedAgent) return;
@@ -89,7 +91,8 @@ export default function ChatHistory() {
       target === 'all'
         ? dbSessions.some((s) => currentConversation?.id === toConversationId(s.sessionId))
         : currentConversation?.id === toConversationId(target);
-    setDbSessions((prev) => (target === 'all' ? [] : prev.filter((s) => s.sessionId !== target)));
+    if (target === 'all') setReloadKey((k) => k + 1);
+    else setDbSessions((prev) => prev.filter((s) => s.sessionId !== target));
     setPendingDelete(null);
     if (deletedActive && selectedAgent) {
       router.replace(`/chat?agent=${encodeURIComponent(selectedAgent.name)}`);

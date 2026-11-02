@@ -12,7 +12,8 @@ export type DeleteTarget = 'all' | string;
 
 /**
  * Confirm dialog for deleting signed-in chat history. Open while `target` is
- * set; calls `onDeleted` once the server has deleted it.
+ * set; calls `onDeleted` once the server has deleted it. Legacy chats someone
+ * else also used are kept by the server; the dialog then says so before closing.
  */
 export function DeleteChatsDialog({
   target,
@@ -25,6 +26,12 @@ export function DeleteChatsDialog({
 }) {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const finish = () => {
+    if (target) onDeleted(target);
+    setNotice(null);
+  };
 
   const confirm = async () => {
     if (!target) return;
@@ -33,8 +40,19 @@ export function DeleteChatsDialog({
     const url = target === 'all' ? '/api/me/sessions' : `/api/me/sessions/${encodeURIComponent(target)}`;
     try {
       const res = await fetch(url, { method: 'DELETE' });
+      const body = (await res.json().catch(() => ({}))) as { error?: string; kept?: number };
+      if (res.status === 409) {
+        setError(body.error ?? 'This chat cannot be deleted here.');
+        return;
+      }
       // 404: already gone, which is what the user wanted.
       if (!res.ok && res.status !== 404) throw new Error(String(res.status));
+      if (body.kept) {
+        setNotice(
+          `${body.kept} ${body.kept === 1 ? 'chat' : 'chats'} from before sign-in ${body.kept === 1 ? 'was' : 'were'} also used by someone else, so ${body.kept === 1 ? 'it was' : 'they were'} kept. Ask us to delete ${body.kept === 1 ? 'it' : 'them'} through the contact page.`
+        );
+        return;
+      }
       onDeleted(target);
     } catch {
       setError('Could not delete. Please try again.');
@@ -49,7 +67,8 @@ export function DeleteChatsDialog({
       onOpenChange={(open) => {
         if (open || deleting) return;
         setError(null);
-        onClose();
+        if (notice) finish();
+        else onClose();
       }}
     >
       <DialogContent
@@ -62,17 +81,26 @@ export function DeleteChatsDialog({
         }
       >
         {error && <p className="text-sm text-md-error">{error}</p>}
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="text" disabled={deleting}>
-              Cancel
+        {notice ? (
+          <>
+            <p className="text-sm text-md-on-surface">{notice}</p>
+            <DialogFooter>
+              <Button onClick={finish}>Close</Button>
+            </DialogFooter>
+          </>
+        ) : (
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="text" disabled={deleting}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button onClick={confirm} disabled={deleting} className="bg-md-error text-md-on-error hover:bg-md-error/92">
+              {deleting && <Loader2 className="animate-spin" />}
+              Delete
             </Button>
-          </DialogClose>
-          <Button onClick={confirm} disabled={deleting} className="bg-md-error text-md-on-error hover:bg-md-error/92">
-            {deleting && <Loader2 className="animate-spin" />}
-            Delete
-          </Button>
-        </DialogFooter>
+          </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

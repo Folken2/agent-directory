@@ -27,11 +27,11 @@ export async function DELETE() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   if (!process.env.DATABASE_URL) {
-    return NextResponse.json({ deleted: 0 });
+    return NextResponse.json({ deleted: 0, kept: 0 });
   }
   try {
-    const deleted = await deleteSessionsForUser(session.user.id);
-    return NextResponse.json({ deleted });
+    const result = await deleteSessionsForUser(session.user.id);
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error deleting user sessions:', error);
     return NextResponse.json({ error: 'Failed to delete sessions' }, { status: 500 });

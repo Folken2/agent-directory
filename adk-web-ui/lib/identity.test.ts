@@ -126,6 +126,15 @@ describe('deletableAdkSessions', () => {
     assert.deepEqual(deletableAdkSessions('user-1', keys), [key('u_user-1'), key('u_user-1', 'session-1', 'other-agent')]);
   });
 
+  it('keeps legacy default-user sessions another identity also ran', () => {
+    const keys = [key('default-user', 'session-1'), key('default-user', 'session-2'), key('u_user-1', 'session-3')];
+    const isShared = (k: { sessionId: string }) => k.sessionId !== 'session-2';
+    assert.deepEqual(deletableAdkSessions('user-1', keys, isShared), [
+      key('default-user', 'session-2'),
+      key('u_user-1', 'session-3'),
+    ]);
+  });
+
   it('skips rows missing a session id or app name', () => {
     assert.deepEqual(deletableAdkSessions('user-1', [key('u_user-1', ''), key('u_user-1', 'session-1', '')]), []);
   });

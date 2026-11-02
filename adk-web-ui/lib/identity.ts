@@ -81,14 +81,23 @@ export type AdkSessionKey = { sessionId: string; appName: string; adkUserId: str
  * or the legacy 'default-user' sentinel; any other stored id is ignored, so a
  * planted run row can't aim a delete at someone else's session. Deduplicated,
  * since every run of a session writes its own row.
+ *
+ * Legacy 'default-user' sessions could be run by anyone holding the id, so
+ * one that `isShared` (another identity also ran it) is left alone: deleting
+ * it would delete someone else's chat too.
  */
-export function deletableAdkSessions(userId: string, keys: AdkSessionKey[]): AdkSessionKey[] {
+export function deletableAdkSessions(
+  userId: string,
+  keys: AdkSessionKey[],
+  isShared: (key: AdkSessionKey) => boolean = () => false
+): AdkSessionKey[] {
   const own = defaultAdkUserId({ kind: 'user', userId });
   const seen = new Set<string>();
   const out: AdkSessionKey[] = [];
   for (const key of keys) {
     if (!key.sessionId || !key.appName) continue;
     if (key.adkUserId !== own && key.adkUserId !== 'default-user') continue;
+    if (key.adkUserId === 'default-user' && isShared(key)) continue;
     const id = `${key.sessionId}|${key.appName}|${key.adkUserId}`;
     if (seen.has(id)) continue;
     seen.add(id);
