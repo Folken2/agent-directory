@@ -12,6 +12,7 @@ import AgentActions from '@/components/agent/AgentActions';
 import AgentLogo from '@/components/agent/AgentLogo';
 import AgentGrid from '@/components/AgentGrid';
 import BuildCta from '@/components/story/BuildCta';
+import { agentJsonLd, jsonLdScript, siteUrl } from '@/lib/seo';
 
 type Params = Promise<{ name: string }>;
 
@@ -84,6 +85,10 @@ export default async function AgentDetailPage({ params }: { params: Params }) {
 
   return (
     <Page>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(agentJsonLd(agent, siteUrl(), parent)) }}
+      />
       <PageHeader
         breadcrumbs={[parent, { label: displayName }]}
         leading={<AgentLogo src={agent.logo} name={displayName} size="lg" className="mt-1" />}
@@ -93,7 +98,12 @@ export default async function AgentDetailPage({ params }: { params: Params }) {
             {byline ? <p className="text-body-medium">{byline}</p> : null}
             <p className="mt-3">{agent.description}</p>
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Link href={chatHref} className={buttonVariants({ variant: 'filled' })}>
+              <Link
+                href={chatHref}
+                data-ga-event="try_agent"
+                data-ga-agent={agent.name}
+                className={buttonVariants({ variant: 'filled' })}
+              >
                 <MessageSquare />
                 Try it in chat
               </Link>
@@ -125,6 +135,8 @@ export default async function AgentDetailPage({ params }: { params: Params }) {
                   <li key={prompt}>
                     <Link
                       href={`${chatHref}&prompt=${encodeURIComponent(prompt)}`}
+                      data-ga-event="try_prompt"
+                      data-ga-agent={agent.name}
                       className="group flex items-start gap-4 px-5 py-4 text-body-medium text-md-on-surface transition-colors hover:bg-md-on-surface/4 focus-visible:bg-md-on-surface/8 focus-visible:outline-none"
                     >
                       <span className="flex-1">{prompt}</span>
@@ -194,7 +206,12 @@ export default async function AgentDetailPage({ params }: { params: Params }) {
             title="Want one like this for your case?"
             body="Start from this example in the builder and adapt it to your own data, tools and workflow."
           >
-            <Link href={adaptHref} className={buttonVariants({ variant: 'filled' })}>
+            <Link
+              href={adaptHref}
+              data-ga-event="adapt_agent"
+              data-ga-agent={agent.name}
+              className={buttonVariants({ variant: 'filled' })}
+            >
               Adapt this agent in the builder
               <ArrowRight />
             </Link>

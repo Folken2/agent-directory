@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { BUILDER_EXAMPLE_PROMPTS, MAX_BUILDER_PROMPT_LENGTH, builderChatHref } from '@/lib/builder';
+import { trackGtagEvent } from '@/lib/analytics/track-engagement';
 
 const MAX_HEIGHT = 200;
 
@@ -41,6 +42,7 @@ export default function BuilderHero({
   const submit = () => {
     if (!canSubmit) return;
     setSubmitting(true);
+    trackGtagEvent('builder_start', { placement: compact ? 'page_end' : 'hero' });
     router.push(builderChatHref(value));
   };
 
