@@ -10,6 +10,26 @@ test('desktop nav shows destinations and theme switch', async ({ page }) => {
   await expect(nav.getByRole('button', { name: /^Theme:/ })).toBeVisible();
 });
 
+test('Analytics link shows only for sessions allowed to view it', async ({ page }) => {
+  const nav = page.getByRole('navigation', { name: 'Main' });
+  const analytics = nav.getByRole('link', { name: 'Analytics' });
+  const user = { id: 'u1', role: 'user', name: 'Test', email: 'test@example.com' };
+
+  await page.route('**/api/auth/session', (route) =>
+    route.fulfill({ json: { user, expires: '2099-01-01T00:00:00.000Z' } })
+  );
+  await page.goto('/about');
+  await expect(nav.getByRole('button', { name: /^Theme:/ })).toBeVisible();
+  await expect(analytics).toHaveCount(0);
+
+  await page.unroute('**/api/auth/session');
+  await page.route('**/api/auth/session', (route) =>
+    route.fulfill({ json: { user: { ...user, canViewAnalytics: true }, expires: '2099-01-01T00:00:00.000Z' } })
+  );
+  await page.goto('/about');
+  await expect(analytics).toHaveAttribute('href', '/analytics');
+});
+
 test('theme menu opens from the top bar and applies a choice', async ({ page }) => {
   await page.goto('/about');
   const trigger = page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: /^Theme:/ });

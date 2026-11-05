@@ -81,6 +81,9 @@ export default function Navigation() {
         { name: 'Settings', href: '/settings' },
       ]
     : [];
+  const visibleDestinations = session?.user?.canViewAnalytics
+    ? [...destinations, { name: 'Analytics', href: '/analytics' }]
+    : destinations;
 
   return (
     <header className="sticky top-0 z-50 bg-md-surface-container-low/85 backdrop-blur supports-[backdrop-filter]:bg-md-surface-container-low/70">
@@ -96,7 +99,7 @@ export default function Navigation() {
         </Link>
 
         <div className="hidden items-center gap-1 md:flex">
-          {destinations.map((d) => (
+          {visibleDestinations.map((d) => (
             <NavLink key={d.href} href={d.href}>{d.name}</NavLink>
           ))}
           <ThemeMenu className="ml-2" />
@@ -141,7 +144,7 @@ export default function Navigation() {
           </SheetTrigger>
           <SheetContent side="right" title="Menu">
             <div className="flex flex-col gap-1 px-1">
-              {[...destinations, ...accountLinks].map((d) => (
+              {[...visibleDestinations, ...accountLinks].map((d) => (
                 <SheetClose asChild key={d.href}>
                   <NavLink href={d.href} className="h-12">{d.name}</NavLink>
                 </SheetClose>
