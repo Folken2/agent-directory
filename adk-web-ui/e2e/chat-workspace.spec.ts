@@ -48,6 +48,26 @@ test.describe('Chat workspace', () => {
     await expect(page.getByRole('button', { name: /Agent: Deep Research Agent/ })).toBeVisible();
   });
 
+  test('a failed run shows a friendly error and Retry, not provider text', async ({ page }) => {
+    // Response captured from the live site when the provider returned 402.
+    const events = [
+      { author: 'adk_agent_builder', errorCode: 'Payment Required', errorMessage: 'Your prepaid credits are depleted.' },
+      { error: 'ClientError: 402 Payment Required.', error_details: { error_type: 'ClientError' } },
+    ];
+    await page.route('**/api/run_sse', (route) =>
+      route.fulfill({
+        status: 200,
+        headers: { 'Content-Type': 'text/event-stream' },
+        body: events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join(''),
+      }),
+    );
+    await page.goto('/chat');
+    await send(page, 'Analyze this');
+    await expect(page.getByRole('paragraph').filter({ hasText: 'Something went wrong on our side.' })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible();
+    await expect(page.getByText(/402|Payment Required|credits/)).toHaveCount(0);
+  });
+
   test('anonymous conversation survives a refresh, per agent', async ({ page }) => {
     await stubRunSse(page);
     await page.goto('/chat');
