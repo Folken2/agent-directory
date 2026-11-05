@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { adkClient } from './adk-client.ts';
+import { friendlyMessage } from './api-error.ts';
 
 // extractFunctionCalls is private; the test reaches it through a cast.
 const extract = (event: unknown) =>
@@ -83,5 +84,64 @@ describe('adk-client build state', () => {
     } finally {
       globalThis.fetch = original;
     }
+  });
+});
+
+describe('adk-client failed runs', () => {
+  // Response captured from the live site on 2026-11-05 (HTTP 200, run failed).
+  const providerError = 'ClientError: 402 Payment Required. Your prepaid credits are depleted.';
+  const camelCaseEvent = {
+    author: 'data_analyst_agent',
+    errorCode: 'Payment Required',
+    errorMessage: 'Your prepaid credits are depleted.',
+  };
+  const exceptionFrame = {
+    error: providerError,
+    error_details: { error_type: 'ClientError', error_message: providerError, timestamp: 1 },
+  };
+
+  const run = async (events: unknown[]) => {
+    const body = events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join('');
+    const original = globalThis.fetch;
+    globalThis.fetch = (async () =>
+      new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' } })) as typeof fetch;
+    try {
+      const chunks = [];
+      for await (const chunk of adkClient.streamAgent('data_analyst_agent', 'Hi', 'session-abc')) chunks.push(chunk);
+      return chunks;
+    } finally {
+      globalThis.fetch = original;
+    }
+  };
+
+  const friendly = { type: 'error', error: friendlyMessage('internal'), code: 'internal' };
+
+  it('surfaces a camelCase errorCode event without its provider text', async () => {
+    const chunks = await run([camelCaseEvent]);
+    assert.deepEqual(chunks[0], friendly);
+  });
+
+  it('surfaces an {"error": ...} frame without its provider text', async () => {
+    const chunks = await run([exceptionFrame]);
+    assert.deepEqual(chunks[0], friendly);
+  });
+
+  it('never leaks provider or billing text when both arrive together', async () => {
+    const chunks = await run([camelCaseEvent, exceptionFrame]);
+    assert.ok(chunks.some((c) => c.type === 'error'));
+    assert.doesNotMatch(JSON.stringify(chunks), /402|Payment|credits|ClientError/);
+  });
+
+  it("keeps the app's own guard frames and their friendly copy", async () => {
+    const chunks = await run([{ error_code: 'idle_timeout', error: friendlyMessage('idle_timeout') }]);
+    assert.deepEqual(chunks[0], { type: 'error', error: friendlyMessage('idle_timeout'), code: 'idle_timeout' });
+  });
+
+  it('shows the reply when errorCode is only a finish reason on an event with content', async () => {
+    const chunks = await run([
+      { author: 'data_analyst_agent', errorCode: 'MAX_TOKENS', content: { parts: [{ text: 'Cut off here' }] } },
+    ]);
+    assert.ok(chunks.some((c) => c.type === 'text' && c.content === 'Cut off here'));
+    assert.ok(!chunks.some((c) => c.type === 'error'));
   });
 });

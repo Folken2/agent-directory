@@ -12,7 +12,7 @@ import { parseGuideDocument } from './guide/parse';
 import { parseBuild } from './build/parse';
 import { BUILD_STATE_KEY } from './build/types';
 import { parsePreviewState, PREVIEW_STATE_KEY } from './preview/types';
-import { ChatApiError, errorFromResponse, friendlyMessage } from './api-error';
+import { ApiErrorCode, ChatApiError, errorFromResponse, friendlyMessage, isApiErrorCode } from './api-error';
 
 const API_BASE_URL = '';
 
@@ -112,6 +112,25 @@ function extractInlineDataFromPart(part: any): { data: string; mimeType: string;
     mimeType,
     filename,
   };
+}
+
+/**
+ * The code to show for an SSE event that reports a failed run, or null.
+ * Handles three shapes: this app's stream-guard frames (`error_code`), ADK
+ * events (`errorCode`, camelCase because ADK serializes by alias), and the
+ * `{"error": ...}` frame ADK sends when a run raises. Provider codes map to
+ * 'internal' so their text and billing details never reach the UI.
+ */
+function runErrorCode(eventData: any): ApiErrorCode | null {
+  const code = eventData.error_code ?? eventData.errorCode;
+  if (typeof code === 'string') {
+    // ADK also sets errorCode to a finish reason (e.g. MAX_TOKENS) on events
+    // that still carry the reply, so only a contentless event is a failure.
+    const parts = eventData.content?.parts ?? eventData.parts;
+    if (Array.isArray(parts) && parts.length > 0) return null;
+    return isApiErrorCode(code) ? code : 'internal';
+  }
+  return typeof eventData.error === 'string' ? 'internal' : null;
 }
 
 class ADKClient {
@@ -360,12 +379,10 @@ class ADKClient {
               try {
                 const eventData = JSON.parse(line.slice(6));
 
-                if (typeof eventData.error_code === 'string') {
-                  yield {
-                    type: 'error',
-                    error: typeof eventData.error === 'string' ? eventData.error : friendlyMessage(eventData.error_code),
-                    code: eventData.error_code,
-                  };
+                const errorCode = runErrorCode(eventData);
+                if (errorCode) {
+                  debugLog('[ADK Client] Run failed:', eventData);
+                  yield { type: 'error', error: friendlyMessage(errorCode), code: errorCode };
                   continue;
                 }
 
