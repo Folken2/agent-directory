@@ -139,4 +139,113 @@ describe('guardStream', () => {
     assert.equal(errorLog.length, 1);
     assert.match(String((errorLog[0]?.err as Error)?.message), /onEnd broke/);
   });
+
+  describe('failure events in the stream', () => {
+    const frame = (event: unknown) => `data: ${JSON.stringify(event)}\n\n`;
+    const camelCaseFailure = frame({ author: 'agent', errorCode: '402', errorMessage: 'Payment Required' });
+    const exceptionFrame = frame({ error: 'ClientError: 402 Payment Required' });
+
+    function sourceOf(chunks: Array<string | Uint8Array>) {
+      return new ReadableStream<Uint8Array>({
+        start(c) {
+          for (const chunk of chunks) c.enqueue(typeof chunk === 'string' ? enc.encode(chunk) : chunk);
+          c.close();
+        },
+      });
+    }
+
+    async function outcomeOf(chunks: Array<string | Uint8Array>) {
+      const h = harness();
+      const out = await readAll(guardStream(sourceOf(chunks), h.opts(1_000)));
+      return { out, outcomes: h.outcomes };
+    }
+
+    it('reports run_failed for a contentless errorCode event and passes it through', async () => {
+      const { out, outcomes } = await outcomeOf([frame({ content: { parts: [{ text: 'Hi' }] } }), camelCaseFailure]);
+      assert.ok(out.endsWith(camelCaseFailure));
+      assert.deepEqual(outcomes, ['run_failed']);
+    });
+
+    it('reports run_failed for an {"error": ...} frame', async () => {
+      const { out, outcomes } = await outcomeOf([exceptionFrame]);
+      assert.equal(out, exceptionFrame);
+      assert.deepEqual(outcomes, ['run_failed']);
+    });
+
+    it('treats errorCode on an event with content as a finish reason', async () => {
+      const { outcomes } = await outcomeOf([
+        frame({ errorCode: 'MAX_TOKENS', content: { parts: [{ text: 'Cut off here' }] } }),
+      ]);
+      assert.deepEqual(outcomes, ['completed']);
+    });
+
+    it('reports run_failed for a finish reason on an event with no content', async () => {
+      const { outcomes } = await outcomeOf([frame({ errorCode: 'MAX_TOKENS', content: { parts: [] } })]);
+      assert.deepEqual(outcomes, ['run_failed']);
+    });
+
+    it('ignores "error" that only appears in reply text or nested tool results', async () => {
+      const { outcomes } = await outcomeOf([
+        frame({ content: { parts: [{ text: 'an "error": "text" in a reply' }] } }),
+        frame({ content: { parts: [{ functionResponse: { response: { error: 'tool said no' } } }] } }),
+        'data: not json "error"\n\n',
+        'data: null\n\n',
+      ]);
+      assert.deepEqual(outcomes, ['completed']);
+    });
+
+    it('detects a frame split across chunks, one byte at a time, unchanged', async () => {
+      const bytes = enc.encode(camelCaseFailure);
+      const { out, outcomes } = await outcomeOf(Array.from(bytes, (b) => Uint8Array.of(b)));
+      assert.equal(out, camelCaseFailure);
+      assert.deepEqual(outcomes, ['run_failed']);
+    });
+
+    it('survives a multi-byte character split across chunks', async () => {
+      const bytes = enc.encode(frame({ error: 'fallo en la petición ✗' }));
+      const middle = bytes.indexOf(0xe2) + 1; // inside the 3-byte ✗
+      const { outcomes } = await outcomeOf([bytes.slice(0, middle), bytes.slice(middle)]);
+      assert.deepEqual(outcomes, ['run_failed']);
+    });
+
+    it('detects a final frame with no trailing newline', async () => {
+      const { outcomes } = await outcomeOf([exceptionFrame.trimEnd()]);
+      assert.deepEqual(outcomes, ['run_failed']);
+    });
+
+    it('stays failed when a later event carries content', async () => {
+      const { outcomes } = await outcomeOf([exceptionFrame, frame({ content: { parts: [{ text: 'Hi' }] } })]);
+      assert.deepEqual(outcomes, ['run_failed']);
+    });
+
+    it('still finds failures after an oversized line it skipped', async () => {
+      const big = frame({ error: 'x'.repeat(1 << 21) });
+      const skipped = await outcomeOf([big.slice(0, 1 << 20), big.slice(1 << 20, -2), big.slice(-2)]);
+      assert.deepEqual(skipped.outcomes, ['completed']);
+      assert.equal(skipped.out, big);
+      const after = await outcomeOf([big.slice(0, -2), big.slice(-2), exceptionFrame]);
+      assert.deepEqual(after.outcomes, ['run_failed']);
+    });
+
+    it('reports run_failed when the reader cancels after seeing the failure', async () => {
+      const h = harness();
+      const source = new ReadableStream<Uint8Array>({
+        start(c) { c.enqueue(enc.encode(exceptionFrame)); /* then stall */ },
+      });
+      const reader = guardStream(source, h.opts(1_000)).getReader();
+      await reader.read();
+      await reader.cancel();
+      assert.deepEqual(h.outcomes, ['run_failed']);
+      assert.equal(h.aborted, 1);
+    });
+
+    it('reports run_failed when the failure is followed by silence', async () => {
+      const h = harness();
+      const source = new ReadableStream<Uint8Array>({
+        start(c) { c.enqueue(enc.encode(exceptionFrame)); /* then stall */ },
+      });
+      await readAll(guardStream(source, h.opts(30)));
+      assert.deepEqual(h.outcomes, ['run_failed']);
+    });
+  });
 });
