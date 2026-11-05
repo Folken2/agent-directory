@@ -153,6 +153,8 @@ export async function POST(request: NextRequest) {
       if (outcome === 'completed' || outcome === 'client_cancelled') {
         void track('completed', outcome === 'client_cancelled' ? 'client_cancelled' : undefined);
       } else {
+        // The quota reservation stays: unlike failBeforeStream, the agent ran
+        // and may have spent model calls, and the daily cap is what bounds them.
         console.warn(`[run_sse] stream ended ${outcome} requestId=${requestId}`);
         void track('error', outcome);
       }

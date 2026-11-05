@@ -49,6 +49,33 @@ export function friendlyMessage(code: unknown): string {
   return isApiErrorCode(code) ? FRIENDLY_MESSAGES[code] : FRIENDLY_MESSAGES.internal;
 }
 
+/**
+ * The code to show for an SSE event that reports a failed run, or null.
+ * Handles three shapes: this app's stream-guard frames (`error_code`), ADK
+ * events (`errorCode`, camelCase because ADK serializes by alias), and the
+ * `{"error": ...}` frame ADK sends when a run raises. Provider codes map to
+ * 'internal' so their text and billing details never reach the UI.
+ */
+export function runErrorCode(eventData: unknown): ApiErrorCode | null {
+  if (typeof eventData !== 'object' || eventData === null) return null;
+  const event = eventData as {
+    error_code?: unknown;
+    errorCode?: unknown;
+    error?: unknown;
+    parts?: unknown;
+    content?: { parts?: unknown } | null;
+  };
+  const code = event.error_code ?? event.errorCode;
+  if (typeof code === 'string') {
+    // ADK also sets errorCode to a finish reason (e.g. MAX_TOKENS) on events
+    // that still carry the reply, so only a contentless event is a failure.
+    const parts = event.content?.parts ?? event.parts;
+    if (Array.isArray(parts) && parts.length > 0) return null;
+    return isApiErrorCode(code) ? code : 'internal';
+  }
+  return typeof event.error === 'string' ? 'internal' : null;
+}
+
 export type RateLimitPayload = {
   exceeded: true;
   count: number;

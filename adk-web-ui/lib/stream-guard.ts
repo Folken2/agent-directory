@@ -3,21 +3,64 @@
  * connection (and keep spending) forever, and so the route learns how the
  * stream ended, which is the only correct moment to record run completion.
  */
-import { FRIENDLY_MESSAGES, type ApiErrorCode } from './api-error.ts';
+import { FRIENDLY_MESSAGES, runErrorCode, type ApiErrorCode } from './api-error.ts';
 
 export type StreamOutcome =
   | 'completed'
   | 'idle_timeout'
   | 'max_duration'
   | 'client_cancelled'
-  | 'upstream_error';
+  | 'upstream_error'
+  // The stream carried a failure event. Wins over how the stream then ended:
+  // a visitor pressing Stop on an errored run must not read as a clean cancel.
+  | 'run_failed';
 
 const encoder = new TextEncoder();
+
+// Lines longer than this go unscanned so an artifact payload can't grow the
+// buffer. Failure frames are far smaller, and big frames carry content anyway.
+const MAX_SCAN_LINE_CHARS = 1 << 20;
 
 export function sseErrorFrame(code: ApiErrorCode): Uint8Array {
   return encoder.encode(
     `data: ${JSON.stringify({ error_code: code, error: FRIENDLY_MESSAGES[code] })}\n\n`
   );
+}
+
+function isFailureLine(line: string): boolean {
+  // Most frames never mention an error, so spare them the JSON parse.
+  if (!line.startsWith('data: ') || !line.includes('"error')) return false;
+  try {
+    return runErrorCode(JSON.parse(line.slice(6))) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Line-buffers a copy of the stream, since frames (and multi-byte characters)
+ * can split across chunks. Call with a chunk to scan it, or with nothing at
+ * the end of the stream. Returns whether that call saw a failure event.
+ */
+function failureScanner(): (chunk?: Uint8Array) => boolean {
+  const decoder = new TextDecoder();
+  let pending = '';
+  let skippingLongLine = false;
+
+  return (chunk) => {
+    const lines = (pending + decoder.decode(chunk, { stream: chunk !== undefined })).split('\n');
+    pending = chunk === undefined ? '' : (lines.pop() ?? '');
+    let failed = false;
+    for (const line of lines) {
+      if (skippingLongLine) skippingLongLine = false;
+      else if (isFailureLine(line)) failed = true;
+    }
+    if (pending.length > MAX_SCAN_LINE_CHARS) {
+      pending = '';
+      skippingLongLine = true;
+    }
+    return failed;
+  };
 }
 
 export function guardStream(
@@ -30,6 +73,8 @@ export function guardStream(
   }
 ): ReadableStream<Uint8Array> {
   const reader = source.getReader();
+  const scan = failureScanner();
+  let runFailed = false;
   let ended = false;
   let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let maxTimer: ReturnType<typeof setTimeout> | undefined;
@@ -45,7 +90,7 @@ export function guardStream(
 
   const notify = (outcome: StreamOutcome) => {
     try {
-      Promise.resolve(opts.onEnd(outcome)).catch((e) => {
+      Promise.resolve(opts.onEnd(runFailed ? 'run_failed' : outcome)).catch((e) => {
         console.error('[stream-guard] onEnd failed', e);
       });
     } catch (e) {
@@ -88,12 +133,15 @@ export function guardStream(
             if (ended) return;
             if (done) {
               if (!finish()) return;
+              runFailed ||= scan();
               // Cleanup first, then notify.
               controller.close();
               notify('completed');
               return;
             }
             armIdle();
+            // Scan first: a consumer reacting to this frame can cancel at once.
+            runFailed ||= scan(value);
             controller.enqueue(value);
           }
         } catch (error) {
