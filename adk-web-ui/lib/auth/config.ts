@@ -5,6 +5,7 @@ import { users, accounts, sessions, verificationTokens } from '@/lib/drizzle/sch
 import type { JWT } from 'next-auth/jwt';
 import type { Session, User } from 'next-auth';
 import type { AdapterUser } from '@auth/core/adapters';
+import { isAnalyticsOpsEmail } from '@/lib/analytics/ops-access';
 
 // Validate required environment variables
 const requiredEnvVars = {
@@ -128,6 +129,8 @@ export const authConfig = {
           session.user.image = token.picture;
         }
       }
+      // The nav runs in the browser and can't read the server-only allowlist.
+      session.user.canViewAnalytics = isAnalyticsOpsEmail(session.user.email);
       return session;
     },
   },

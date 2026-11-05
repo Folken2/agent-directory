@@ -6,6 +6,8 @@ declare module 'next-auth' {
     user: {
       id: string;
       role: 'user' | 'admin';
+      /** Shows the Analytics link only; the pages check the allowlist themselves. */
+      canViewAnalytics?: boolean;
     } & DefaultSession['user'];
   }
 
